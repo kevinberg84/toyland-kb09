@@ -1,0 +1,6 @@
+build*/
+artifacts/
+tools/pluginval*/
+*.zip
+*.user
+Research/*.pdf
