@@ -1,6 +1,10 @@
 build*/
 artifacts/
 tools/pluginval*/
+tools/vst3sdk/
+tools/validator-build/
+Research/rendered/
+__pycache__/
 *.zip
 *.user
 Research/*.pdf

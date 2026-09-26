@@ -1,0 +1,1594 @@
+PROJECT: BUILD A HIGH-FIDELITY ROLAND SH-09 VST3 EMULATION
+
+You are the primary engineer for this project.
+
+Your job is to research, design, implement, compile, validate, debug, correct,
+and deliver a working Windows x64 VST3 emulation of the Roland SH-09 for use
+primarily in Ableton Live.
+
+This is NOT a request for:
+
+- sample code
+- a mockup
+- an unfinished prototype
+- a proof of concept
+- a design document without a working product
+
+The required deliverable is a genuinely usable compiled VST3 instrument.
+
+You are expected to work autonomously through research, implementation,
+testing, debugging, correction, rebuilding, and retesting before presenting
+the result.
+
+The project should be treated as a serious attempt at recreating the original
+SH-09 rather than merely producing an SH-09-inspired subtractive synthesizer.
+
+======================================================================
+CORE PRIORITIES
+======================================================================
+
+Priorities, in order:
+
+1. Sonic fidelity to the original SH-09.
+2. Behavioral fidelity to the original SH-09.
+3. Accurate recreation of the external audio input and envelope follower.
+4. Stability and real-time audio safety.
+5. Excellent integration with Ableton Live.
+6. Photorealistic reproduction of the physical SH-09.
+7. Useful optional modern extensions that do not alter Authentic mode.
+8. Efficient CPU usage consistent with the required sound quality.
+
+Do not sacrifice clearly audible fidelity merely to reduce CPU usage.
+
+Do not claim circuit accuracy, hardware accuracy, or measured equivalence
+unless evidence actually supports that claim.
+
+======================================================================
+KNOWN DEVELOPMENT ENVIRONMENT
+======================================================================
+
+You have access to:
+
+C:\Dev
+
+The important directories are:
+
+C:\Dev\JUCE
+    JUCE framework.
+
+C:\Dev\SH-09
+    Main project workspace.
+
+C:\Dev\JUCE-Test
+    Existing JUCE toolchain test project.
+
+The development environment has ALREADY BEEN TESTED successfully.
+
+Verified:
+
+- Windows x64
+- Visual Studio Community 2026
+- Visual Studio Developer Environment 18.10.2
+- MSVC 19.51.36260
+- native x64 compiler target
+- CMake 4.3.1-msvc1
+- Windows SDK
+- JUCE v9.0.2
+
+A real JUCE program was successfully configured, compiled, linked, and run.
+
+It reported:
+
+JUCE version: JUCE v9.0.2
+
+Therefore, do not waste significant time proving that JUCE or the C++
+compiler exists unless an actual new failure indicates a problem.
+
+IMPORTANT:
+
+PowerShell script execution is disabled by Windows policy.
+
+Do NOT weaken or change PowerShell execution policy.
+
+Use the normal Visual Studio x64 developer command environment, CMake
+Visual Studio generator, vcvars utilities, or another legitimate approach.
+
+======================================================================
+FILESYSTEM PERMISSIONS
+======================================================================
+
+You may freely create, edit, reorganize, compile, test, and delete
+project-generated files under:
+
+C:\Dev\SH-09
+
+You may read and build against:
+
+C:\Dev\JUCE
+
+Do not modify JUCE itself unless absolutely necessary.
+
+Do not modify unrelated files elsewhere on the computer.
+
+Use:
+
+C:\Dev\SH-09\build
+
+for build output whenever practical.
+
+Use:
+
+C:\Dev\SH-09\artifacts
+
+for finished binaries and distributable files.
+
+======================================================================
+VERSION CONTROL
+======================================================================
+
+Initialize a Git repository in:
+
+C:\Dev\SH-09
+
+Commit meaningful working milestones.
+
+Examples:
+
+- verified VST3 skeleton
+- first functional monophonic synth
+- oscillator implementation
+- filter implementation
+- envelope implementation
+- external input implementation
+- complete Authentic mode
+- initial GUI
+- validation fixes
+- release candidate
+
+Do not make meaningless commit spam.
+
+A known-good state should always be recoverable.
+
+======================================================================
+PROJECT ORGANIZATION
+======================================================================
+
+Use a clean structure approximately like:
+
+C:\Dev\SH-09\
+
+    CMakeLists.txt
+
+    Source\
+        Plugin\
+        DSP\
+        Synth\
+        ExternalInput\
+        GUI\
+        Parameters\
+        Presets\
+        Utilities\
+
+    Tests\
+
+    Assets\
+        Authentic\
+        AlternativeBranding\
+        Wear\
+        References\
+
+    Presets\
+
+    Research\
+
+    docs\
+
+    tools\
+
+    scripts\
+
+    build\
+
+    artifacts\
+
+    VSTLab\
+
+Adjust this structure if another organization is materially better.
+
+======================================================================
+PHASE 0 — LEARN THE JUCE/VST3 WORKFLOW
+======================================================================
+
+Before implementing the SH-09, research current professional JUCE 9/VST3
+development practices.
+
+Prefer primary sources:
+
+- JUCE documentation
+- JUCE source/examples
+- JUCE CMake documentation
+- Steinberg VST3 documentation
+- Microsoft MSVC/CMake documentation
+- Ableton Live documentation
+
+Research:
+
+- juce::AudioProcessor
+- VST3 instrument configuration
+- MIDI/event input
+- audio buses
+- auxiliary/sidechain audio buses
+- host automation
+- parameter smoothing
+- state serialization
+- MIDI event offsets within processBlock()
+- arbitrary block sizes
+- arbitrary sample rates
+- GUI/audio thread communication
+- real-time audio safety
+- denormal handling
+- VST3 validation
+- resizable/high-DPI JUCE interfaces
+- Ableton Live VST3 behavior
+- Ableton Live sidechain/external-input behavior
+
+Create:
+
+docs\VST3_RESEARCH.md
+
+Cite sources.
+
+Clearly distinguish factual requirements from engineering choices.
+
+======================================================================
+PHASE 1 — BUILD A THROWAWAY VST3
+======================================================================
+
+Before writing the SH-09, build a disposable synth at:
+
+C:\Dev\SH-09\VSTLab
+
+It must:
+
+- build as Windows x64 VST3
+- use JUCE 9.0.2
+- use CMake
+- receive MIDI
+- generate audio
+- contain an oscillator
+- contain a simple filter
+- expose host-automatable parameters
+- save and restore state
+- provide a functional GUI
+
+Actually compile it.
+
+Actually instantiate it in a VST3 host or validator.
+
+Actually exercise audio processing.
+
+Do not proceed merely because source code looks correct.
+
+Document the test in:
+
+docs\VST3_SMOKE_TEST.md
+
+Once successful, proceed to the real instrument.
+
+======================================================================
+PHASE 2 — RESEARCH THE REAL SH-09
+======================================================================
+
+Perform extensive research before writing the final DSP.
+
+Locate and study, at minimum:
+
+- Roland SH-09 owner's manual
+- Roland SH-09 service manual/service notes
+- schematics
+- block diagrams
+- calibration procedures
+- specifications
+- original connection diagrams
+- high-resolution photographs of multiple real units
+- reliable recordings/demonstrations of real units
+- datasheets for significant components used in the instrument
+
+PRIMARY SOURCES TAKE PRECEDENCE.
+
+Trace the actual signal path from the schematic.
+
+Do not assume the SH-09 is electrically identical to:
+
+- SH-101
+- SH-2
+- SYSTEM-100
+- Juno-series synths
+- Jupiter-series synths
+- any other Roland product
+
+Similarity must be demonstrated, not assumed.
+
+======================================================================
+RESEARCH THE VCO
+======================================================================
+
+Determine:
+
+- oscillator topology
+- tuning system
+- range selector implementation
+- saw generation
+- square generation
+- pulse generation
+- PWM
+- oscillator modulation
+- auto-bend
+- tuning response
+- waveform geometry
+- waveform asymmetry if documented
+- calibration behavior
+- frequency response
+- any relevant distortion/nonlinearity
+
+Do not generate naive digital saw/square waves.
+
+Use appropriate anti-aliasing.
+
+======================================================================
+RESEARCH THE SUB OSCILLATOR
+======================================================================
+
+Determine:
+
+- actual divider design
+- available modes
+- octave relationships
+- phase relationship to VCO
+- waveform shape
+- amplitude
+- interaction with main oscillator
+
+The software sub oscillator should derive logically from the main oscillator
+as the hardware does rather than acting like an unrelated oscillator.
+
+======================================================================
+RESEARCH NOISE
+======================================================================
+
+Determine:
+
+- noise source
+- approximate spectral behavior
+- gain
+- signal path
+- interaction with mixer/filter
+
+Do not simply add arbitrary broadband white noise because the original has
+a control labeled NOISE.
+
+======================================================================
+RESEARCH THE LFO / MODULATOR
+======================================================================
+
+Determine:
+
+- rate range
+- waveform generation
+- waveform shapes
+- delay behavior
+- random/sample-and-hold behavior
+- modulation routing
+- control ranges
+
+======================================================================
+RESEARCH THE MIXER AND INTERNAL GAIN STAGING
+======================================================================
+
+This is important.
+
+Determine:
+
+- nominal oscillator level
+- sub oscillator level
+- noise level
+- external input level
+- headroom
+- mixer summing behavior
+- clipping or saturation behavior
+- filter input drive
+- whether control interactions change the sound through gain staging
+
+Do not treat every synth block as an isolated ideal mathematical module.
+
+======================================================================
+RESEARCH THE VCF
+======================================================================
+
+The filter is one of the most important parts of this emulation.
+
+Determine from the service documentation:
+
+- exact topology
+- pole structure
+- OTA architecture
+- semiconductor devices
+- BA662 usage where applicable
+- cutoff control
+- frequency mapping
+- keyboard tracking
+- envelope modulation
+- LFO modulation
+- resonance feedback
+- resonance onset
+- self-oscillation
+- self-oscillation level
+- self-oscillation pitch behavior
+- input saturation
+- feedback saturation
+- level changes as resonance increases
+- inter-stage nonlinearities
+
+Do not substitute a generic four-pole digital filter and label it an SH-09
+model.
+
+Use a circuit-informed model where justified.
+
+Investigate:
+
+- zero-delay-feedback structures
+- nonlinear feedback
+- OTA modeling
+- oversampling
+- nonlinear solver approaches
+- numerical stabilization techniques
+
+Choose techniques based on audible fidelity and stability.
+
+======================================================================
+RESEARCH THE VCA
+======================================================================
+
+Determine:
+
+- topology
+- control law
+- envelope interaction
+- gate behavior
+- saturation
+- signal-dependent behavior
+- output-stage contribution
+
+======================================================================
+RESEARCH THE ENVELOPE
+======================================================================
+
+Determine:
+
+- physical ADSR topology
+- attack time
+- decay time
+- release time
+- sustain behavior
+- slider-to-time mapping
+- exponential or other control curves
+- trigger logic
+- Gate mode
+- Gate + Trigger mode
+- LFO-trigger mode
+- repeated-note behavior
+- legato behavior
+
+Implement the actual behavior rather than a generic ADSR.
+
+======================================================================
+RESEARCH THE KEYBOARD LOGIC
+======================================================================
+
+Reproduce:
+
+- monophonic operation
+- low-note priority
+- gate behavior
+- trigger behavior
+- note replacement behavior
+- repeated-note behavior
+- legato behavior
+- portamento
+- bender behavior
+
+The onscreen keyboard must also follow this behavior.
+
+======================================================================
+PHASE 3 — EXTERNAL AUDIO INPUT AND ENVELOPE FOLLOWER
+======================================================================
+
+THIS FEATURE IS REQUIRED.
+
+The original SH-09's external signal and envelope-follower functionality is
+an important part of the instrument and must not be omitted.
+
+Research the original circuitry thoroughly.
+
+Determine:
+
+- external input path
+- input sensitivity
+- preamplification
+- available gain
+- clipping/overload behavior
+- mixer injection point
+- filter routing
+- VCA routing
+- envelope follower circuit
+- envelope follower response
+- attack behavior
+- release behavior
+- usable input range
+- interaction with synth controls
+- any documented special operating procedures
+
+The plug-in must allow external DAW audio to be processed through the
+SH-09 signal path.
+
+At minimum, users should be able to route external audio through:
+
+EXTERNAL INPUT
+       ↓
+SH-09 input/mixer stage
+       ↓
+SH-09 filter
+       ↓
+VCA/output
+
+and use the incoming signal to drive the modeled envelope follower.
+
+======================================================================
+ABLETON EXTERNAL-AUDIO ARCHITECTURE
+======================================================================
+
+Research CURRENT Ableton Live VST3 behavior before choosing the architecture.
+
+Preferred solution:
+
+Create a single VST3 instrument with an auxiliary/sidechain audio input if
+Ableton Live exposes and routes that input reliably.
+
+The workflow should be as simple as practical:
+
+1. Load the SH-09 VST3.
+2. Choose an audio source in Live.
+3. Route it to the plug-in's external input.
+4. Adjust SH-09 external-input controls.
+5. Hear the incoming audio processed by the SH-09 circuitry.
+6. Use that incoming audio to drive the envelope follower.
+
+Do not assume that because VST3 supports an auxiliary bus, Ableton presents
+it conveniently.
+
+ACTUALLY INVESTIGATE AND TEST THIS.
+
+If a single instrument VST3 cannot provide reliable/seamless external audio
+routing in current Ableton Live, use the following fallback:
+
+Build TWO plug-in targets sharing the same DSP code.
+
+1. SH-09
+   VST3 instrument.
+
+2. SH-09 External
+   VST3 audio effect.
+
+The audio-effect version should expose the SH-09 external-input/filter/
+envelope-follower signal path naturally on an audio track.
+
+Both versions must share the same core implementations of:
+
+- filter
+- VCA
+- envelope follower
+- saturation
+- gain staging
+- relevant modulation
+
+Do not duplicate independent approximations.
+
+The second target exists only if required by host architecture.
+
+Choose whichever architecture provides the most seamless real-world Ableton
+workflow.
+
+Document the decision in:
+
+docs\EXTERNAL_AUDIO_ARCHITECTURE.md
+
+======================================================================
+NO GATE/CV HARDWARE EMULATION
+======================================================================
+
+Do NOT spend project time implementing analog Gate/CV hardware I/O.
+
+Do NOT require:
+
+- DC-coupled interfaces
+- CV generation
+- CV input calibration
+- Gate voltage generation
+- analog Gate output
+- hardware voltage scaling
+
+The DAW/MIDI environment replaces those functions for this project.
+
+Focus engineering resources on:
+
+- MIDI
+- audio input
+- envelope following
+- authentic synthesis
+- DSP fidelity
+- host integration
+
+======================================================================
+PHASE 4 — RESEARCH EXISTING ROLAND EMULATIONS
+======================================================================
+
+Research how successful vintage Roland emulations have been approached.
+
+Study public technical information about Roland's own:
+
+- Analog Circuit Behavior / ACB work
+- SH-101 software
+- SH-2 software
+- SYSTEM-100 software
+- other technically relevant vintage Roland emulations
+
+Investigate what Roland has publicly said about:
+
+- component modeling
+- circuit-block modeling
+- nonlinearities
+- stage interaction
+- oscillator behavior
+- filter behavior
+- resonance
+- envelope interaction
+- instability
+- component tolerances
+- calibration differences
+- behavior not obvious from a schematic
+
+Also research respected third-party Roland-style emulations, including where
+technically relevant:
+
+- TAL-BassLine-101
+- Softube Roland-inspired synth models
+- D16 LuSH-101
+- other well-regarded SH-family implementations
+
+Use:
+
+- public documentation
+- interviews
+- technical articles
+- academic material
+- legitimate measurements
+- audio demonstrations
+- publicly available spectrum plots
+- legally published source code
+
+Do NOT:
+
+- decompile commercial software
+- bypass protection
+- reverse engineer proprietary binaries
+- copy proprietary source
+- copy graphical assets
+- copy commercial preset libraries
+
+IMPORTANT:
+
+Other Roland synths are research clues, NOT substitutes for SH-09 evidence.
+
+For every technique considered transferable, ask:
+
+- Is the topology actually similar?
+- Are the components actually similar?
+- Is the operating regime similar?
+- Is there SH-09 evidence supporting the transfer?
+
+Create:
+
+docs\ROLAND_EMULATION_RESEARCH.md
+
+Use these classifications:
+
+VERIFIED
+SUPPORTED
+INFERRED
+SPECULATIVE
+
+======================================================================
+PHASE 5 — RESEARCH VIRTUAL-ANALOG DSP
+======================================================================
+
+Research reputable approaches for:
+
+- band-limited oscillators
+- PolyBLEP/minBLEP
+- oversampling
+- nonlinear OTA modeling
+- nonlinear filters
+- zero-delay-feedback filters
+- nonlinear solvers
+- SPICE-informed modeling
+- ADAA where relevant
+- envelope modeling
+- sample-rate invariance
+- numerical stability
+- denormal prevention
+
+Study open-source implementations where legally permitted.
+
+Document licenses.
+
+Do not introduce code carrying undesirable licensing requirements without
+understanding the implications.
+
+Create:
+
+docs\DSP_RESEARCH.md
+
+======================================================================
+PHASE 6 — DESIGN THE DSP BEFORE IMPLEMENTING IT
+======================================================================
+
+Create:
+
+docs\DSP_DESIGN.md
+
+For each block describe:
+
+HARDWARE BEHAVIOR
+
+DIGITAL MODEL
+
+EVIDENCE
+
+KNOWN UNCERTAINTIES
+
+VALIDATION METHOD
+
+CPU COST
+
+OVERSAMPLING REQUIREMENT
+
+Model the signal path as a connected analog system where appropriate:
+
+VCO
+ ↓
+SUB / NOISE
+ ↓
+MIXER
+ ↓
+FILTER INPUT STAGE
+ ↓
+VCF
+ ↓
+VCA
+ ↓
+OUTPUT
+
+with EXTERNAL AUDIO entering at its authentic point.
+
+Avoid the common mistake of making each block sound individually plausible
+while ignoring interaction between stages.
+
+======================================================================
+PHASE 7 — IMPLEMENT AUTHENTIC MODE
+======================================================================
+
+Build the authentic SH-09 first.
+
+Authentic mode should reproduce the original controls and behavior.
+
+Do not add modern features until this works.
+
+The synth must be:
+
+- monophonic
+- low-note priority
+- faithful in triggering behavior
+- faithful in portamento behavior
+- faithful in modulation routing
+- faithful in control ranges where known
+
+Velocity should not change the authentic sound unless the original had a
+comparable response.
+
+MIDI pitch bend should map sensibly to the original bender behavior.
+
+======================================================================
+PHASE 8 — MODERN EXTENSIONS
+======================================================================
+
+After Authentic mode is complete, research features musicians wish the SH-09
+had possessed.
+
+Optional modern features may include, where musically useful:
+
+- velocity response
+- aftertouch modulation
+- tempo-synced LFO
+- expanded LFO ranges
+- additional modulation routing
+- MIDI Learn
+- alternate pitch-bend ranges
+- preset browser
+- oversampling/quality selector
+- optional unison
+- optional additional voices/polyphony
+- additional envelope behavior
+- patch randomization
+- parameter lock
+- alternative tuning
+- other well-justified features
+
+Do not add everything merely because it is possible.
+
+Research what users actually value.
+
+All non-original features must live in a clearly separated area such as:
+
+MODERN
+
+ADVANCED
+
+or a rear-panel/settings page.
+
+There must be an obvious way to return to:
+
+AUTHENTIC SH-09
+
+Modern features must not silently alter authentic presets.
+
+======================================================================
+PHASE 9 — AGE / CONDITION SYSTEM
+======================================================================
+
+Implement an optional AGE or CONDITION system.
+
+This feature should alter BOTH:
+
+1. visual condition
+2. sonic condition
+
+The default Authentic mode should represent a healthy, properly calibrated
+SH-09.
+
+Increasing Age/Condition should introduce realistic consequences of an older
+analog instrument only where technically defensible.
+
+Research possible effects such as:
+
+- oscillator calibration drift
+- oscillator waveform imperfections
+- filter calibration variation
+- filter cutoff tracking imperfections
+- resonance variation
+- envelope timing variation
+- gain-stage variation
+- increased noise
+- mild control tolerance differences
+- subtle channel/output coloration
+
+Do NOT make it a gimmicky randomizer.
+
+Do NOT simply add:
+
+random pitch wobble
++
+hiss
++
+distortion
+
+and label that "aging."
+
+Use correlated, slow, physically plausible parameter variation.
+
+Keep extreme behavior bounded and musically usable.
+
+The same AGE control should affect the GUI.
+
+Possible visual aging:
+
+- slightly faded printing
+- minor edge wear
+- tiny scratches
+- slider-track wear
+- subtle key discoloration
+- modest plastic aging
+- minor surface variation
+- slight dust/grain
+
+At maximum normal AGE, the synth should look like a well-used 45-year-old
+instrument, not something recovered from a shipwreck.
+
+Visual aging must be deterministic and stable.
+
+Do not regenerate random scratches on every repaint.
+
+======================================================================
+PHASE 10 — GUI
+======================================================================
+
+Create a highly faithful, photorealistic recreation of the Roland SH-09.
+
+Research multiple real units.
+
+Reproduce:
+
+- overall proportions
+- black panel
+- control locations
+- slider spacing
+- knobs
+- switches
+- typography style
+- labels
+- panel borders
+- screw locations
+- keyboard proportions
+- key colors
+- wear patterns
+- physical depth cues
+
+Include the onscreen keyboard.
+
+The keyboard must be playable with the mouse and must visually respond to:
+
+- mouse input
+- incoming MIDI
+- currently selected monophonic note
+
+The GUI should be resizable while maintaining an appropriate aspect ratio.
+
+High-DPI rendering must remain sharp.
+
+Do not simply use one photograph as a bitmap and place invisible controls
+over it.
+
+Construct the UI so controls remain functional and scalable.
+
+======================================================================
+BRANDING
+======================================================================
+
+This project is currently intended primarily for private use.
+
+The private skin may closely recreate:
+
+ROLAND
+SH-09
+
+branding.
+
+However, all branding must be modular.
+
+Create an alternate branding asset set capable of replacing:
+
+ROLAND
+SH-09
+
+without changing DSP or layout.
+
+The owner has suggested possible parody concepts such as:
+
+TOYLAND
+TH-09
+
+Do not assume those names are legally clear.
+
+Research current use in relevant:
+
+- audio software
+- music equipment
+- synthesizer
+- plug-in
+- software instrument
+
+markets.
+
+If TOYLAND appears unsuitable, propose several alternatives.
+
+Do not make a legal conclusion such as "trademark cleared."
+
+The purpose is simply to maintain a ready-to-swap neutral/private alternative.
+
+======================================================================
+PHASE 11 — PRESETS
+======================================================================
+
+Create a useful factory preset bank demonstrating the instrument.
+
+Include representative categories such as:
+
+- bass
+- lead
+- acid/resonant
+- percussion
+- noise effects
+- sample-and-hold effects
+- self-oscillating filter sounds
+- drones
+- external-input/filter patches
+- envelope-follower patches
+- aged/condition examples
+- modern-extension demonstrations
+
+Do not copy proprietary preset banks.
+
+Where original Roland documentation provides example settings that can
+legitimately be recreated as parameter settings, document the source.
+
+Presets must restore completely and reliably.
+
+======================================================================
+PHASE 12 — TEST INFRASTRUCTURE
+======================================================================
+
+Build automated test infrastructure before declaring the project finished.
+
+Tests must cover at least:
+
+OSCILLATOR
+- frequency accuracy
+- octave switching
+- pitch-bend response
+- waveform continuity
+- alias behavior
+- pulse width
+- PWM
+- extreme frequency ranges
+
+SUB OSCILLATOR
+- octave relationships
+- mode switching
+- phase relationship
+- long-run stability
+
+LFO
+- frequency
+- waveform
+- delay
+- sample-and-hold behavior
+
+ENVELOPE
+- attack timing
+- decay timing
+- sustain
+- release timing
+- retrigger
+- Gate
+- Gate + Trigger
+- LFO triggering
+- zero/minimum control values
+- maximum control values
+
+KEYBOARD
+- low-note priority
+- multiple held notes
+- legato
+- repeated notes
+- portamento
+- note-off ordering
+
+FILTER
+- cutoff response
+- resonance
+- self-oscillation
+- tracking
+- modulation
+- high input drive
+- minimum cutoff
+- maximum cutoff
+- rapid automation
+- numerical stability
+
+VCA
+- gain
+- envelope behavior
+- silence
+- overload
+
+EXTERNAL INPUT
+- mono audio
+- stereo audio if supported
+- silence
+- low-level input
+- high-level input
+- clipping behavior
+- filter processing
+- envelope follower
+- envelope follower response
+- routing changes
+- enabling/disabling the external bus
+
+STATE
+- save/restore
+- presets
+- automation
+- editor reopen
+- DAW project reload
+
+HOST CONDITIONS
+- 44.1 kHz
+- 48 kHz
+- 88.2 kHz
+- 96 kHz
+- 192 kHz
+
+Test multiple buffer sizes including:
+
+- very small
+- common studio sizes
+- unusual/non-power-of-two sizes if host permits
+- large offline-render blocks
+
+Test:
+
+- transport starts/stops
+- rapid note bursts
+- automation while audio runs
+- GUI opening and closing repeatedly
+- GUI resizing
+- repeated plug-in instantiation
+- repeated destruction
+- long-duration rendering
+
+======================================================================
+PHASE 13 — FAILURE / STRESS TESTING
+======================================================================
+
+Actively try to break the plug-in.
+
+Test extreme combinations including:
+
+- maximum resonance
+- maximum modulation
+- minimum cutoff
+- maximum cutoff
+- extreme oscillator frequencies
+- all mixer signals maximum
+- external input maximum
+- rapid parameter changes
+- rapid MIDI
+- repeated preset switching
+- sample-rate changes
+- buffer-size changes
+- continuous operation
+
+Check every rendered block for:
+
+- NaN
+- infinity
+- denormal issues
+- runaway feedback
+- unstable filter states
+- unexplained DC
+- unexpected silence
+- clipping outside intended behavior
+
+Use assertions/tests where appropriate.
+
+======================================================================
+PHASE 14 — VST3 VALIDATION
+======================================================================
+
+Run legitimate VST3 validation tools.
+
+Where practical use:
+
+- Steinberg validator/test tools
+- pluginval
+- JUCE AudioPluginHost
+- other reputable validation utilities
+
+Do not treat one validator passing as sufficient.
+
+Correct failures.
+
+Run validation again after corrections.
+
+Save validation output under:
+
+C:\Dev\SH-09\artifacts\Validation\
+
+======================================================================
+PHASE 15 — ACTUAL HOST TESTING
+======================================================================
+
+If Ableton Live is installed and accessible in your environment, test the
+plug-in in Ableton Live.
+
+Do not merely assume JUCE/VST3 compatibility means it works in Live.
+
+Test:
+
+- Live scans it successfully
+- plug-in opens
+- MIDI produces sound
+- automation works
+- preset/state recall works
+- UI behaves correctly
+- external audio can be routed correctly
+- envelope follower responds
+- audio can pass through the modeled filter
+- stopping/starting transport does not break state
+- reopening the Live project restores the patch
+- deleting/reloading the plug-in does not crash Live
+
+For the external-input architecture, explicitly verify the actual user
+workflow.
+
+If Live itself cannot be automated or accessed in your environment:
+
+DO NOT claim the Ableton test passed.
+
+Instead maximize coverage using validators/test hosts and clearly identify
+the final Ableton test that remains for the user.
+
+======================================================================
+PHASE 16 — LISTENING AND REFERENCE VALIDATION
+======================================================================
+
+Compare the model against reliable recordings of real SH-09 hardware.
+
+Where appropriate compare:
+
+- oscillator spectra
+- waveform shape
+- filter sweeps
+- resonance
+- self-oscillation
+- envelope timing
+- external-input behavior
+- envelope-following behavior
+- bass patches
+- lead patches
+- high-resonance patches
+
+Treat YouTube/audio demonstrations as listening references, not laboratory
+measurements.
+
+Do not tune the model blindly to one compressed internet video.
+
+======================================================================
+PHASE 17 — FUTURE REAL-HARDWARE CALIBRATION
+======================================================================
+
+Build a measurement/calibration framework so the plug-in can later be compared
+to a real SH-09.
+
+Support importing recordings of:
+
+- raw oscillator waveforms
+- frequency sweeps
+- resonance sweeps
+- self-oscillation
+- envelope responses
+- external-input sweeps
+- saturation tests
+- noise samples
+
+Provide analysis tools or scripts capable of comparing:
+
+- frequency
+- waveform
+- harmonics
+- THD
+- filter magnitude response
+- resonance
+- self-oscillation pitch
+- envelope timing
+- level
+- noise
+
+Do not claim real-unit measurement accuracy unless such measurements are
+actually performed.
+
+======================================================================
+PHASE 18 — SELF-CORRECTION LOOP
+======================================================================
+
+THIS PHASE IS MANDATORY.
+
+You must NOT simply finish coding and present the result.
+
+Before release, perform an autonomous review of your own work.
+
+Use this loop:
+
+IMPLEMENT
+   ↓
+BUILD
+   ↓
+TEST
+   ↓
+ANALYZE FAILURES
+   ↓
+FIX
+   ↓
+REBUILD
+   ↓
+RETEST
+   ↓
+REVIEW AGAIN
+
+Repeat until no known critical defect remains.
+
+Do not wait for the user to discover obvious problems you could have found
+yourself.
+
+======================================================================
+MANDATORY SELF-REVIEW
+======================================================================
+
+Before presenting the plug-in, conduct a fresh code review as if you were
+reviewing another engineer's project.
+
+Search specifically for:
+
+- incorrect parameter ranges
+- off-by-one MIDI errors
+- incorrect note priority
+- missing parameter smoothing
+- race conditions
+- heap allocation in processBlock()
+- blocking locks
+- dangling references
+- lifetime problems
+- GUI/audio-thread races
+- buffer overruns
+- invalid bus assumptions
+- uninitialized state
+- bad sample-rate assumptions
+- incorrect preset serialization
+- incorrect VST3 metadata
+- hard-coded absolute paths
+- accidental Debug dependencies
+- missing resources
+- incorrect asset paths
+- filter instability
+- uncontrolled feedback
+- denormal problems
+- NaN propagation
+- state incompatibility
+- duplicated DSP implementations
+- external-input routing errors
+- envelope-follower routing errors
+
+Correct any problems found.
+
+Then rebuild and rerun all relevant tests.
+
+======================================================================
+FRESH-BUILD TEST
+======================================================================
+
+After completing development:
+
+1. Delete or rename the normal build directory.
+2. Configure the project from source again.
+3. Perform a clean Release x64 build.
+4. Confirm no required file exists only because of an old build.
+5. Run the resulting clean binary through validation again.
+
+A project that works only with stale build artifacts is not complete.
+
+======================================================================
+RELEASE-CANDIDATE FREEZE TEST
+======================================================================
+
+Once you believe the project is complete:
+
+STOP adding features.
+
+Create a release candidate.
+
+Then perform only:
+
+- validation
+- bug fixes
+- regression testing
+
+Every bug fix must trigger the relevant regression tests again.
+
+Do not destabilize a working release candidate with last-minute feature creep.
+
+======================================================================
+COMPLETION GATE
+======================================================================
+
+You may present the project as COMPLETE only if all applicable requirements
+below are satisfied.
+
+BUILD:
+
+[ ] Clean x64 Release build succeeds.
+[ ] No critical compiler warnings remain.
+[ ] VST3 artifact exists.
+[ ] Artifact does not depend on project source files at runtime.
+
+DSP:
+
+[ ] MIDI produces correct sound.
+[ ] Monophonic behavior works.
+[ ] Low-note priority works.
+[ ] Oscillator works across supported range.
+[ ] Sub oscillator works.
+[ ] LFO works.
+[ ] Envelope works.
+[ ] Portamento works.
+[ ] Filter remains stable.
+[ ] Resonance works.
+[ ] Self-oscillation works.
+[ ] VCA works.
+[ ] External audio path works.
+[ ] Envelope follower works.
+
+HOST:
+
+[ ] VST3 validator passes or any remaining warning is explained.
+[ ] Test host successfully instantiates plug-in.
+[ ] State save/restore works.
+[ ] Automation works.
+[ ] Multiple sample rates work.
+[ ] Multiple block sizes work.
+
+GUI:
+
+[ ] All controls operate.
+[ ] Labels are readable.
+[ ] Mouse interaction works.
+[ ] Keyboard works.
+[ ] MIDI keyboard display works.
+[ ] Resizing works.
+[ ] High-DPI rendering works.
+[ ] Age control affects appearance correctly.
+
+STABILITY:
+
+[ ] No known crash.
+[ ] No known hang.
+[ ] No NaNs.
+[ ] No infinities.
+[ ] No uncontrolled filter runaway.
+[ ] No real-time heap allocation in normal processing path.
+[ ] No blocking audio-thread locks.
+
+RELEASE:
+
+[ ] Presets load.
+[ ] State restoration works.
+[ ] Clean build confirmed.
+[ ] Validation rerun after last code change.
+[ ] Documentation matches actual final behavior.
+
+If any box cannot legitimately be checked:
+
+DO NOT mark it complete.
+
+Either:
+
+A. fix it,
+
+or
+
+B. explicitly describe the remaining limitation.
+
+======================================================================
+DELIVERABLES
+======================================================================
+
+Deliver:
+
+1. Compiled Windows x64 VST3.
+
+2. Complete source.
+
+3. CMake build system.
+
+4. Preset bank.
+
+5. Required UI assets.
+
+6. Alternate branding assets.
+
+7. Documentation:
+
+README.md
+
+docs\BUILD.md
+docs\VST3_RESEARCH.md
+docs\VST3_SMOKE_TEST.md
+docs\SH09_RESEARCH.md
+docs\ROLAND_EMULATION_RESEARCH.md
+docs\DSP_RESEARCH.md
+docs\DSP_DESIGN.md
+docs\EXTERNAL_AUDIO_ARCHITECTURE.md
+docs\MODERN_FEATURE_RESEARCH.md
+docs\VALIDATION.md
+docs\KNOWN_LIMITATIONS.md
+
+8. Test results.
+
+9. Validator logs.
+
+10. Final release notes.
+
+Place the final binary under:
+
+C:\Dev\SH-09\artifacts\Release\
+
+Also state the Windows VST3 installation destination.
+
+Do not overwrite or install into protected system locations without the
+user's permission.
+
+======================================================================
+FINAL REPORT
+======================================================================
+
+When finished, give the user a concise report containing:
+
+BUILD
+- exact artifact path
+- build configuration
+- JUCE version
+- compiler version
+
+FEATURES
+- authentic SH-09 functions implemented
+- external-input workflow
+- envelope-follower workflow
+- modern additions
+- Age/Condition behavior
+
+VALIDATION
+- validators run
+- test hosts used
+- tests passed
+- Ableton tests performed, if actually performed
+
+FIDELITY
+Separate features into:
+
+VERIFIED FROM PRIMARY SH-09 DOCUMENTATION
+
+SUPPORTED BY OTHER EVIDENCE
+
+ENGINEERING INFERENCES
+
+UNVERIFIED WITHOUT PHYSICAL SH-09 MEASUREMENTS
+
+LIMITATIONS
+List all known limitations honestly.
+
+Do not conceal a known bug in order to call the project complete.
+
+======================================================================
+FINAL PRINCIPLE
+======================================================================
+
+The standard is not:
+
+"It compiles."
+
+The standard is:
+
+"I researched the original instrument, designed an evidence-based model,
+built it, tested it, tried to break it, found and corrected defects, rebuilt
+it cleanly, validated it again, and can explain exactly what is and is not
+verified."
+
+Do not present the plug-in until you have reached that standard.
