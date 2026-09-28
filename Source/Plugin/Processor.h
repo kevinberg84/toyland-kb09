@@ -4,6 +4,7 @@
 #include "../Parameters/Parameters.h"
 #include <array>
 #include <atomic>
+#include <limits>
 class SH09Processor final : public juce::AudioProcessor, private juce::VST3ClientExtensions {
 public:
  SH09Processor();
@@ -11,7 +12,7 @@ public:
  bool acceptsMidi() const override {return true;}
  bool producesMidi() const override {return false;}
  bool isMidiEffect() const override {return false;}
- double getTailLengthSeconds() const override {return 12.0;}
+ double getTailLengthSeconds() const override {return std::numeric_limits<double>::infinity();}
  int getNumPrograms() override;
  int getCurrentProgram() override {return currentProgram.load();}
  void setCurrentProgram(int) override;
@@ -38,6 +39,7 @@ private:
  sh09::Controls readControls() const noexcept;
  void handleMidi(const juce::uint8*,int) noexcept;
  void clearKeyDisplay() noexcept;
+ void updateKeyDisplay(int,bool) noexcept;
  sh09::Engine engine;
  std::array<std::atomic<float>*,sh09::specs.size()> raw{};
  std::atomic<int> currentProgram{0};

@@ -2,6 +2,7 @@ build*/
 artifacts/
 tools/pluginval*/
 tools/vst3sdk/
+tools/vst3sdk-build/
 tools/validator-build/
 Research/rendered/
 __pycache__/

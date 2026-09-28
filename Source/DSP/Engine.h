@@ -29,25 +29,27 @@ public:
  int currentNote() const noexcept {return selected;}
  float envelopeLevel() const noexcept {return float(env);}
  float followerLevel() const noexcept {return float(follower[2]);}
+ double currentPitch() const noexcept {return pitch;}
+ double modulatorLevel() const noexcept {return lastLfo;}
  int latencySamples() const noexcept {return 128;}
  std::uint64_t solverFailures() const noexcept {return failures;}
  static constexpr int oversamplingFactor=4;
 private:
  static constexpr int firLength=513, alignment=256;
- struct Frame {double source=0,env=0,gate=0,cutoff=1000,resonance=0,gain=0,externalLevel=0;};
+ struct Frame {double source=0,amplitude=0,cutoff=1000,resonance=0,gain=0,externalLevel=0,followerAmount=0;};
  enum class Stage {idle,attack,decay,sustain,release};
  Controls target{},smooth{};
- bool initialized=false;
+ bool initialized=false,muted=false,pendingMode=false;
  double fs=44100,internalFs=176400,smoothing=0,controlBend=0,bendTarget=0,pressure=0,pressureTarget=0,tempo=120;
  std::array<unsigned char,128> keys{};
  std::array<float,128> velocities{};
  int selected=-1,lastNote=60;
  double pitch=60,selectedVelocity=1;
  bool pitchInitialized=false;
- double phase=0,lfoPhase=0,lfoDelayElapsed=0,randomLfo=0,env=0,gateGain=0,modeGain=1;
+ double phase=0,lfoPhase=0,lfoDelayElapsed=0,randomLfo=0,lastLfo=0,env=0,gateGain=0,modeGain=1;
  unsigned int cycle=0;
  Stage stage=Stage::idle;
- double noiseLP=0,noiseDC=0,externalDC=0;
+ double noiseLP=0,noiseDC=0,externalDC=0,outputDC=0;
  std::array<double,3> follower{};
  std::array<double,4> filterState{},filterY{};
  std::uint32_t randomState=0x91e10da5u;

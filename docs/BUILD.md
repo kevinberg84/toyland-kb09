@@ -18,3 +18,5 @@ The conventional system VST3 destination is `C:\Program Files\Common Files\VST3\
 For a fresh-build test, first close hosts using the project binary, rename the existing project-local `build` directory to a dated backup, configure into a new `build`, rebuild Release x64, and rerun validation on the new bundle. Do not delete unrelated files or change system security settings.
 
 JUCE licensing applies independently to the user's distribution model. The installed JUCE 9 source offers its commercial EULA or AGPLv3 route. No third-party emulator source or assets are incorporated. This project does not choose a commercial JUCE license on the user's behalf.
+
+The clean binary imports the release Microsoft C++ x64 runtime (`MSVCP140.dll`, `VCRUNTIME140.dll`, `VCRUNTIME140_1.dll`) and Windows system DLLs. It requires that runtime on the destination PC. `artifacts/Validation/dependencies.txt` records the actual imports; there are no Debug-runtime imports or JUCE/source-folder runtime references.

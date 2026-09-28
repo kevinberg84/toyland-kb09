@@ -1,6 +1,6 @@
 # External audio architecture decision
 
-Research date: 2026-09-26. Status: **single-instrument architecture supported by official documentation; final Live routing result must be established by testing the compiled plug-in.** This research record makes no claim that Ableton tests have passed.
+Research date: 2026-09-26. Test update: 2026-09-27. Status: **single-instrument auxiliary routing was observed working in Ableton Live 11.0**, including saved-Set recall. Exact evidence and unperformed cases are in LIVE_TEST.md; the research below distinguishes protocol support from observed host behavior.
 
 ## Evidence
 
@@ -39,14 +39,14 @@ This is an **engineering choice**, based on the official routing evidence. It pr
 
 The input and output may share memory. Clearing the entire process buffer before reading the external bus would destroy the external audio. Read input samples before writing output, or copy through preallocated fixed-capacity chunks. Do not clear input-only channels.
 
-## Expected Live workflow, pending actual verification
+## Live workflow
 
 1. Add SH-09 to a MIDI track and an audio source to another track.
 2. Expand the SH-09 device's Sidechain panel, enable Sidechain, choose the source track under Audio From and choose the desired tap (usually Post FX).
 3. Set the sidechain mix to 100% and establish a known gain. Open the plug-in's external-input preset or set its input level/filter/VCA controls explicitly.
 4. Prevent the source track's direct output from confusing the test, using appropriate source monitoring/output routing. Verify SH-09's output is the only monitored processed path.
 5. Check external input/follower activity, then move cutoff, resonance and follower controls. The external signal can become audible through this plug-in's DSP because it deliberately routes auxiliary samples into its audio path.
-6. Save the Live Set, close/reopen it, and confirm patch and source routing survive.
+6. Save the Live Set, close/reopen it, and confirm patch and source routing survive. This was observed in the shipped test Set; see LIVE_TEST.md.
 
 If the integrated device panel is absent, the documented alternative is the source track's Audio To chooser: select the SH-09 MIDI track, then select the plug-in sidechain/input destination in the lower chooser. This is a documented route to test, not a guarantee that the present binary is discoverable under that name.
 
@@ -59,3 +59,9 @@ Record a screenshot or exact UI observation of the discovered input, the Live ve
 If both documented routes fail after verifying correct `kAux` metadata and successful input processing in an independent test host, implement a second **SH-09 External** effect target. It must use the same engine classes, filter, VCA, follower, gain staging and saturation. Only bus adapter/default presentation should differ. It receives the ordinary audio-track main input, appears as `Fx Filter`, and needs a separate persistent product identity. That fallback is conditional on an observed host problem; it is not justified solely by uncertainty or by a blocked Live license dialog.
 
 If Live cannot be operated in the environment, preserve the preferred architecture, maximize direct-host tests, and clearly mark Live workflow acceptance as unverified. Do not assert either that a single instrument is reliable in the installed Live version or that a fallback is required without that evidence.
+
+## Compiled-module evidence, 2026-09-27
+
+Steinberg VST 3.8.1 validator actually loaded the compiled SH-09 0.9.0 module and reported audio input 0 `External Input` as **Aux, default active**, audio output 0 `Output` as **Main, default active**, and event input 0 `MIDI Input` as **Main, default active**. The fresh-build log `artifacts/Validation/sh09-steinberg-fresh.txt` records 47 tests passed and zero failed.
+
+The project VST3 host also exercised mono, stereo and disabled external input, equal left/right contribution, antiphase cancellation, filter cutoff response and a follower-driven increase in filtered output energy without MIDI. Non-finite and extreme finite input remained bounded at the output. These establish the compiled module's bus and processing behavior in independent test hosts. They do not substitute for Live UI/routing/project-reload observations.

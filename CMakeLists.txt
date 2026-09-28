@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(SH09 VERSION 0.1.0 LANGUAGES C CXX)
+project(SH09 VERSION 0.9.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(JUCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../JUCE" CACHE PATH "JUCE source directory")
@@ -10,3 +10,21 @@ juce_add_console_app(SH09Host PRODUCT_NAME "SH09 Validation Host")
 target_sources(SH09Host PRIVATE Tests/Host.cpp)
 target_compile_definitions(SH09Host PRIVATE JUCE_PLUGINHOST_VST3=1 JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 target_link_libraries(SH09Host PRIVATE juce::juce_audio_utils juce::juce_recommended_config_flags)
+juce_add_plugin(SH09
+    COMPANY_NAME "Private Instruments" BUNDLE_ID "local.privateinstruments.sh09"
+    PLUGIN_MANUFACTURER_CODE PrIv PLUGIN_CODE Sh09 PRODUCT_NAME "SH-09"
+    FORMATS VST3 Standalone IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT FALSE
+    IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE VST3_CATEGORIES Instrument Synth
+    EDITOR_WANTS_KEYBOARD_FOCUS TRUE)
+target_sources(SH09 PRIVATE Source/Plugin/Processor.cpp Source/GUI/Editor.cpp Source/DSP/Engine.cpp)
+target_compile_definitions(SH09 PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
+target_link_libraries(SH09 PRIVATE juce::juce_audio_utils juce::juce_recommended_config_flags)
+add_executable(SH09DSPTests Tests/DSPTests.cpp Source/DSP/Engine.cpp)
+target_compile_features(SH09DSPTests PRIVATE cxx_std_20)
+add_test(NAME SH09DSP COMMAND SH09DSPTests)
+add_executable(SH09Render Tests/Render.cpp Source/DSP/Engine.cpp)
+target_compile_features(SH09Render PRIVATE cxx_std_20)
+juce_add_console_app(SH09ProcessorTests PRODUCT_NAME "SH09 Processor Tests")
+target_sources(SH09ProcessorTests PRIVATE Tests/ProcessorTests.cpp)
+target_link_libraries(SH09ProcessorTests PRIVATE SH09 juce::juce_audio_utils juce::juce_recommended_config_flags)
+add_test(NAME SH09Processor COMMAND SH09ProcessorTests)

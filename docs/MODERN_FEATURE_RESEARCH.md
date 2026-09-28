@@ -26,7 +26,7 @@ This table is a research recommendation. The final README and release notes must
 
 ## Authentic and Modern state contract
 
-**INFERRED:** Show an obvious Authentic/Modern state. Entering Authentic disables non-original modulation routes and resets sound-affecting extensions to their documented neutral values. A patch which depends on a Modern route must identify that dependency. Presets should serialize mode, condition, quality policy, routing, seed and all original panel settings; do not silently inherit modern state from the previously loaded patch.
+**INFERRED, updated to implemented behavior:** Show an obvious Authentic/Modern state. Entering Authentic disables the effect of velocity, aftertouch, tempo sync and input trim while retaining their stored settings for returning to Modern. It does not reset those settings; this supersedes the original reset-on-entry proposal. Condition remains a separately explicit option. Factory patches serialize all implemented parameter values and mode; quality is fixed at 4x and condition is deterministic rather than a separately selectable seed. Modern-dependent factory patches identify Modern in their names.
 
 A preset labeled Authentic with Age zero denotes a healthy calibrated target. The label describes intended topology/control behavior; it is not a measured-accuracy certificate. Sound-changing condition is an explicit extension even when the main panel resembles the hardware. A cosmetic-only branding switch should not touch audio parameters, automation IDs, preset contents or VST3 class identity.
 

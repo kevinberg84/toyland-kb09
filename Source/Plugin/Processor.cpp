@@ -2,10 +2,12 @@
 #include "../GUI/Editor.h"
 #include "../Presets/Factory.h"
 #include <cmath>
+#include <string_view>
 SH09Processor::SH09Processor():AudioProcessor(BusesProperties()
  .withInput("External Input",juce::AudioChannelSet::stereo(),true)
  .withOutput("Output",juce::AudioChannelSet::stereo(),true)),state(*this,nullptr,"SH09State",sh09::makeParameters()) {
  for(size_t i=0;i<raw.size();++i)raw[i]=state.getRawParameterValue(sh09::specs[i].id);
+ setLatencySamples(engine.latencySamples());
  clearKeyDisplay();
 }
 int SH09Processor::getNumPrograms(){return int(sh09::factoryPresets().size());}
@@ -13,9 +15,9 @@ const juce::String SH09Processor::getProgramName(int i){return juce::isPositiveA
 void SH09Processor::setCurrentProgram(int index){
  if(!juce::isPositiveAndBelow(index,getNumPrograms()))return;
  for(const auto& spec:sh09::specs){
-   if(juce::StringRef(spec.id)=="branding")continue;
+   if(std::string_view(spec.id)=="branding")continue;
    float value=spec.initial;
-   for(const auto& item:sh09::factoryPresets()[size_t(index)].values)if(juce::StringRef(item.first)==spec.id)value=item.second;
+   for(const auto& item:sh09::factoryPresets()[size_t(index)].values)if(std::string_view(item.first)==spec.id)value=item.second;
    auto* parameter=state.getParameter(spec.id);
    parameter->setValueNotifyingHost(parameter->convertTo0to1(value));
  }
@@ -33,8 +35,12 @@ sh09::Controls SH09Processor::readControls() const noexcept {
  return c;
 }
 void SH09Processor::clearKeyDisplay() noexcept {for(auto& k:keyDisplay)k.store(0,std::memory_order_relaxed);}
+void SH09Processor::updateKeyDisplay(int note,bool down) noexcept {
+ auto& key=keyDisplay[size_t(note)];const int count=key.load(std::memory_order_relaxed);
+ key.store(juce::jlimit(0,255,count+(down?1:-1)),std::memory_order_relaxed);
+}
 void SH09Processor::prepareToPlay(double rate,int){
- engine.prepare(rate);engine.setControls(readControls());clearKeyDisplay();displayedNote.store(-1);
+ engine.prepare(rate);engine.setControls(readControls());setLatencySamples(engine.latencySamples());clearKeyDisplay();displayedNote.store(-1);
  queueRead.store(queueWrite.load(std::memory_order_acquire),std::memory_order_release);
 }
 void SH09Processor::reset(){engine.reset();clearKeyDisplay();displayedNote.store(-1);}
@@ -53,8 +59,8 @@ void SH09Processor::queueKeyboard(int note,bool down) noexcept {
 void SH09Processor::handleMidi(const juce::uint8* bytes,int n) noexcept {
  if(n<1)return; int status=bytes[0]&0xf0;
  if((status==0x90||status==0x80)&&n>=3){int note=bytes[1]&127;bool on=status==0x90&&bytes[2]!=0;
-   if(on){engine.noteOn(note,bytes[2]&127);keyDisplay[size_t(note)].store(1,std::memory_order_relaxed);}
-   else{engine.noteOff(note);keyDisplay[size_t(note)].store(0,std::memory_order_relaxed);}
+   if(on)engine.noteOn(note,bytes[2]&127);else engine.noteOff(note);
+   updateKeyDisplay(note,on);
  }else if(status==0xe0&&n>=3){engine.pitchBend(float(((bytes[2]&127)<<7)|(bytes[1]&127))/8192.0f-1.0f);}
  else if(status==0xd0&&n>=2)engine.setAftertouch(float(bytes[1]&127)/127.0f);
  else if(status==0xb0&&n>=3){
@@ -68,9 +74,9 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  engine.setControls(readControls());
  if(guiBendDirty.exchange(false,std::memory_order_acq_rel))engine.pitchBend(guiBend.load(std::memory_order_relaxed));
  if(auto* playhead=getPlayHead())if(auto position=playhead->getPosition())if(auto bpm=position->getBpm())engine.setTempo(*bpm);
- if(queueOverflow.exchange(false)){engine.allSoundOff();clearKeyDisplay();}
  auto r=queueRead.load(std::memory_order_relaxed); const auto w=queueWrite.load(std::memory_order_acquire);
- while(r!=w){const auto event=keyboardQueue[r];if(event.down)engine.noteOn(event.note,100);else engine.noteOff(event.note);keyDisplay[size_t(event.note)].store(event.down?1:0,std::memory_order_relaxed);r=(r+1u)%unsigned(keyboardQueue.size());}
+ if(queueOverflow.exchange(false)){engine.allSoundOff();clearKeyDisplay();r=w;}
+ while(r!=w){const auto event=keyboardQueue[r];if(event.down)engine.noteOn(event.note,100);else engine.noteOff(event.note);updateKeyDisplay(event.note,event.down);r=(r+1u)%unsigned(keyboardQueue.size());}
  queueRead.store(r,std::memory_order_release);
  auto input=getBusBuffer(buffer,true,0);auto output=getBusBuffer(buffer,false,0);
  auto event=midi.cbegin(); const auto end=midi.cend();

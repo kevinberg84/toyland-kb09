@@ -3,7 +3,7 @@
 class Lab final : public juce::AudioProcessor {
 public:
     Lab() : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-        state(*this, nullptr, "Lab", {std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"cutoff",1},"Cutoff",juce::NormalisableRange<float>(40,18000,0,0.3f),5000),
+        state(*this, nullptr, "Lab", {std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"cutoff",1},"Cutoff",juce::NormalisableRange<float>(40,18000,0,0.3f),5000.0f),
             std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"gain",1},"Gain",0.0f,0.5f,0.15f)}) {}
     const juce::String getName() const override { return "SH09 VST Lab"; }
     bool acceptsMidi() const override { return true; }
