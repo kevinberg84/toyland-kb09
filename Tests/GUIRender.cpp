@@ -34,128 +34,13 @@ struct Checks {
     }
 };
 
-// Check the wear itself, independently of key tint, position, final opacity, or
-// small polish highlights. Those can make final screenshots differ even when a
-// copied stain is used. This is a bounded duplicate detector, not proof against
-// every arbitrary affine/image transformation or a claim of photographic realism.
-struct WearAlphaShape {
-    static constexpr int side = 64;
-    std::array<float, side * side> alpha {};
-    bool valid = false;
-};
+void checkPersonalArtwork(Checks& checks) {
+    const auto chassis=juce::ImageFileFormat::loadFrom(BinaryData::chassispersonalaged_png,BinaryData::chassispersonalaged_pngSize);
+    checks.expect(chassis.isValid()&&chassis.getWidth()==1774&&chassis.getHeight()==887,
+                  "personal wear endpoint keeps the clean chassis registration and dimensions");
+    const auto cap=juce::ImageFileFormat::loadFrom(BinaryData::faderpersonalv2_png,BinaryData::faderpersonalv2_pngSize);
+    checks.expect(cap.isValid()&&cap.hasAlphaChannel(),"corrected top-and-side-stripe cap has a transparent surrounding canvas");
 
-WearAlphaShape wearAlphaShape(const juce::Image& image) {
-    WearAlphaShape result;
-    if (!image.isValid()) return result;
-    int maximum = 0;
-    for (int y = 0; y < image.getHeight(); ++y)
-        for (int x = 0; x < image.getWidth(); ++x)
-            maximum = std::max(maximum, int(image.getPixelAt(x, y).getAlpha()));
-    if (maximum < 32) return result;
-
-    int left = image.getWidth(), top = image.getHeight(), right = -1, bottom = -1;
-    for (int y = 0; y < image.getHeight(); ++y)
-        for (int x = 0; x < image.getWidth(); ++x)
-            if (float(image.getPixelAt(x, y).getAlpha()) >= float(maximum) * .15f) {
-                left = std::min(left, x); right = std::max(right, x);
-                top = std::min(top, y); bottom = std::max(bottom, y);
-            }
-    if (right < left || bottom < top) return result;
-    const auto normalised = image.getClippedImage({left, top, right - left + 1, bottom - top + 1})
-                                 .rescaled(WearAlphaShape::side, WearAlphaShape::side,
-                                           juce::Graphics::highResamplingQuality);
-    for (int y = 0; y < WearAlphaShape::side; ++y)
-        for (int x = 0; x < WearAlphaShape::side; ++x)
-            result.alpha[size_t(y * WearAlphaShape::side + x)] =
-                float(normalised.getPixelAt(x, y).getAlpha()) / float(maximum);
-    result.valid = true;
-    return result;
-}
-
-// Translation and independent x/y scaling disappear through the content bounds.
-// Test all eight quarter-turn/reflection combinations; RGB colour is never read.
-double wearShapeDifference(const WearAlphaShape& a, const WearAlphaShape& b) {
-    if (!a.valid || !b.valid) return 0.0;
-    constexpr int side = WearAlphaShape::side;
-    double best = 1.0;
-    for (int transform = 0; transform < 8; ++transform) {
-        double difference = 0.0, mass = 0.0;
-        int supportDifference = 0, supportUnion = 0;
-        for (int y = 0; y < side; ++y) for (int x = 0; x < side; ++x) {
-            int tx = transform >= 4 ? side - 1 - x : x, ty = y;
-            for (int rotation = 0; rotation < transform % 4; ++rotation) {
-                const int oldX = tx;
-                tx = side - 1 - ty; ty = oldX;
-            }
-            const float av = a.alpha[size_t(y * side + x)];
-            const float bv = b.alpha[size_t(ty * side + tx)];
-            difference += std::abs(av - bv);
-            mass += std::max(av, bv);
-            const bool as = av >= .2f, bs = bv >= .2f;
-            supportDifference += as != bs ? 1 : 0;
-            supportUnion += as || bs ? 1 : 0;
-        }
-        const auto opacityDifference = mass > 0.0 ? difference / mass : 0.0;
-        const auto outlineDifference = supportUnion > 0 ? double(supportDifference) / double(supportUnion) : 0.0;
-        best = std::min(best, std::min(opacityDifference, outlineDifference));
-    }
-    return best;
-}
-
-void checkWearAtlas(Checks& checks) {
-    const auto atlas = juce::ImageFileFormat::loadFrom(BinaryData::wearatlas_png, BinaryData::wearatlas_pngSize);
-    checks.expect(atlas.isValid() && atlas.hasAlphaChannel() && atlas.getWidth() == 1448 && atlas.getHeight() == 1086,
-                  "wear atlas is the registered 1448x1086 RGBA source");
-    if (!atlas.isValid() || atlas.getWidth() != 1448 || atlas.getHeight() != 1086) return;
-
-    std::array<WearAlphaShape, 37> shapes;
-    for (int tile = 0; tile < int(shapes.size()); ++tile) {
-        // Measured source gutters: generated marks start 36px below the nominal
-        // grid. The two-pixel x inset excludes isolated neighbouring edge pixels.
-        const auto crop = atlas.getClippedImage({(tile % 8) * 181 + 2, (tile / 8) * 181 + 36, 177, 181});
-        int visible = 0, edgePixels = 0;
-        for (int y = 0; y < crop.getHeight(); ++y)
-            for (int x = 0; x < crop.getWidth(); ++x)
-                if (crop.getPixelAt(x, y).getAlpha() > 25) {
-                    ++visible;
-                    if (x == 0 || y == 0 || x == crop.getWidth() - 1 || y == crop.getHeight() - 1) ++edgePixels;
-                }
-        shapes[size_t(tile)] = wearAlphaShape(crop);
-        checks.expect(shapes[size_t(tile)].valid && visible >= 32 && visible < crop.getWidth() * crop.getHeight() * 9 / 10,
-                      "wear tile " + juce::String(tile) + " contains a visible mark on transparent background");
-        checks.expect(edgePixels <= 4,
-                      "wear tile " + juce::String(tile) + " is isolated from neighbouring marks (edge pixels "
-                      + juce::String(edgePixels) + ")");
-    }
-
-    const auto compareGroup = [&shapes, &checks](int first, int end, const juce::String& name) {
-        double closest = 1.0;
-        int closestA = -1, closestB = -1;
-        for (int a = first; a < end; ++a) for (int b = first; b < a; ++b) {
-            const auto distance = wearShapeDifference(shapes[size_t(a)], shapes[size_t(b)]);
-            if (distance < closest) { closest = distance; closestA = a; closestB = b; }
-        }
-        // Four percent tolerates antialiasing/resampling differences in a copy;
-        // colour, placement, and a different overall opacity cannot rescue it.
-        checks.expect(closest >= .04, name + " have distinct normalised alpha shapes, including quarter turns/mirrors"
-                      + " (closest tiles " + juce::String(closestA) + "/" + juce::String(closestB)
-                      + ", difference " + juce::String(closest, 4) + ")");
-    };
-    compareGroup(0, 32, "all 32 individual key stains");
-    compareGroup(32, 34, "the two independently sourced key cracks");
-    compareGroup(34, 37, "the three individual rotary corrosion patches");
-    compareGroup(0, 37, "all 37 assigned wear marks across material groups");
-
-    // Negative control: explicitly verify rejection of a mirrored/quarter-turned
-    // copy. RGB, position and size are excluded by the alpha normalisation above.
-    auto clone = shapes[0];
-    for (int y = 0; y < WearAlphaShape::side; ++y)
-        for (int x = 0; x < WearAlphaShape::side; ++x)
-            clone.alpha[size_t(y * WearAlphaShape::side + x)] =
-                shapes[0].alpha[size_t((WearAlphaShape::side - 1 - x) * WearAlphaShape::side
-                                      + (WearAlphaShape::side - 1 - y))];
-    checks.expect(shapes[0].valid && wearShapeDifference(shapes[0], clone) < .00001,
-                  "wear duplicate detector rejects a mirrored/quarter-turned copy (negative control)");
 }
 
 void setParameter(SH09Processor& processor, const char* id, float value) {
@@ -228,9 +113,12 @@ int changedPixels(const juce::Image& before, const juce::Image& after, int thres
     for (int y = 0; y < before.getHeight(); ++y)
         for (int x = 0; x < before.getWidth(); ++x) {
             const auto p = a.getPixelColour(x, y), q = b.getPixelColour(x, y);
-            const auto delta = std::max({std::abs(int(p.getRed()) - int(q.getRed())),
-                                        std::abs(int(p.getGreen()) - int(q.getGreen())),
-                                        std::abs(int(p.getBlue()) - int(q.getBlue())),
+            // Compare visible, premultiplied colour. Unpremultiplying a dust
+            // edge with alpha 1 vs 2 can amplify rounding into a false jump.
+            const auto channel=[](juce::uint8 colour,juce::uint8 alpha){return int(colour)*int(alpha)/255;};
+            const auto delta = std::max({std::abs(channel(p.getRed(),p.getAlpha()) - channel(q.getRed(),q.getAlpha())),
+                                        std::abs(channel(p.getGreen(),p.getAlpha()) - channel(q.getGreen(),q.getAlpha())),
+                                        std::abs(channel(p.getBlue(),p.getAlpha()) - channel(q.getBlue(),q.getAlpha())),
                                         std::abs(int(p.getAlpha()) - int(q.getAlpha()))});
             if (delta > threshold) ++changed;
         }
@@ -287,6 +175,76 @@ void checkOpaqueCaps(juce::Component& editor, Checks& checks) {
                   "cap-opacity check retains genuinely different surrounding backgrounds");
 }
 
+void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& checks) {
+    constexpr std::array<const char*,18> faderIDs{{"lfoRate","lfoDelay","vcoMod","pulseWidth","vcoLevel","subLevel","extLevel",
+        "cutoff","resonance","vcfEnv","vcfMod","attack","decay","sustain","release","bendVco","bendVcf","portamento"}};
+    std::array<juce::Slider*,faderIDs.size()> sliders{};
+    std::array<juce::Rectangle<int>,faderIDs.size()> bounds{};
+    bool allPresent=true;
+    for(size_t i=0;i<faderIDs.size();++i) {
+        sliders[i]=dynamic_cast<juce::Slider*>(findComponent(editor,faderIDs[i]));
+        if(sliders[i]!=nullptr)bounds[i]=sliders[i]->getBounds();else allPresent=false;
+    }
+    checks.expect(allPresent,"all 18 physical faders are available for individual cap-loss checks");
+    if(!allPresent)return;
+    std::array<float,legacyParameterIDs.size()> expected{};
+    for(size_t i=0;i<expected.size();++i)expected[i]=processor.state.getParameter(legacyParameterIDs[i])->getValue();
+    const float initialAge=processor.state.getRawParameterValue("age")->load();
+    const auto capture=[&](float age) {
+        setParameter(processor,"age",age);settleEditor();
+        std::array<juce::Image,faderIDs.size()> images;
+        for(size_t i=0;i<images.size();++i)
+            images[i]=sliders[i]->createComponentSnapshot(sliders[i]->getLocalBounds(),true,2.0f);
+        return images;
+    };
+    struct Event {const char* id;float onset;};
+    for(const auto event:{Event{"vcoLevel",.64f},Event{"release",.88f}}) {
+        const auto before=capture(event.onset-.0001f),after=capture(event.onset+.0001f),later=capture(event.onset+.003f);
+        juce::StringArray changed;
+        bool targetFixed=false;
+        for(size_t i=0;i<sliders.size();++i) {
+            if(changedPixels(before[i],after[i],12)>40)changed.add(faderIDs[i]);
+            if(juce::String(faderIDs[i])==event.id)targetFixed=changedPixels(after[i],later[i],12)==0;
+        }
+        checks.expect(changed.size()==1&&changed[0]==event.id,
+                      juce::String("Age ")+juce::String(event.onset,2)+" abruptly removes only the "+event.id+" cap");
+        checks.expect(targetFixed,juce::String(event.id)+" post appears at full size and stays fixed after cap loss");
+    }
+    bool metadataSame=true,soundSame=true;
+    for(size_t i=0;i<sliders.size();++i)
+        metadataSame=metadataSame&&findComponent(editor,faderIDs[i])==sliders[i]&&bounds[i]==sliders[i]->getBounds()
+            &&sliders[i]->isEnabled()&&sliders[i]->getSliderStyle()==juce::Slider::LinearVertical
+            &&sliders[i]->hitTest(sliders[i]->getWidth()/2,sliders[i]->getHeight()/2);
+    for(size_t i=0;i<expected.size();++i)if(juce::String(legacyParameterIDs[i])!="age")
+        soundSame=soundSame&&std::abs(expected[i]-processor.state.getParameter(legacyParameterIDs[i])->getValue())<1.e-6f;
+    checks.expect(metadataSame&&soundSame,"cap loss preserves every fader identity, hit area, enablement and sound parameter value");
+    // The post is opaque metal rather than a transparent outline over the slot.
+    setParameter(processor,"age",.95f);settleEditor();
+    for(const auto* id:{"vcoLevel","release"}) {
+        auto* slider=dynamic_cast<juce::Slider*>(findComponent(editor,id));
+        std::array<juce::Image,2> images;
+        for(int i=0;i<2;++i) {
+            images[size_t(i)]=juce::Image(juce::Image::ARGB,120,160,true,juce::SoftwareImageType());
+            juce::Graphics g(images[size_t(i)]);g.fillAll(i==0?juce::Colours::red:juce::Colours::blue);
+            slider->getLookAndFeel().drawLinearSlider(g,30,20,45,110,75,20,130,juce::Slider::LinearVertical,*slider);
+        }
+        checks.expect(changedPixels(images[0].getClippedImage({51,69,3,8}),images[1].getClippedImage({51,69,3,8}))==0,
+                      juce::String(id)+" exposed metal blade fully hides contrasting backgrounds");
+        const double original=slider->getValue();
+        slider->setValue(.41,juce::sendNotificationSync);settleEditor();
+        checks.expect(std::abs(processor.state.getRawParameterValue(id)->load()-.41f)<1.e-5f,
+                      juce::String(id)+" remains attached and adjustable with its cap missing");
+        slider->setValue(original,juce::sendNotificationSync);settleEditor();
+    }
+    juce::MemoryBlock state;processor.getStateInformation(state);
+    SH09Processor restored;restored.setStateInformation(state.getData(),int(state.getSize()));
+    bool roundTrips=true;
+    for(const auto* id:legacyParameterIDs)
+        roundTrips=roundTrips&&std::abs(processor.state.getParameter(id)->getValue()-restored.state.getParameter(id)->getValue())<1.e-6f;
+    checks.expect(roundTrips,"aged state with both missing caps round-trips all 35 existing parameters");
+    setParameter(processor,"age",initialAge);settleEditor();
+}
+
 void checkAgeEvents(SH09Processor& processor, juce::Component& editor, Checks& checks) {
     auto* keyboard=findComponent(editor,"keyboard");
     if(keyboard==nullptr)return;
@@ -297,23 +255,38 @@ void checkAgeEvents(SH09Processor& processor, juce::Component& editor, Checks& c
     };
     // Compare the real renderer across tiny threshold crossings. An ordinary
     // continuous tint cannot create this many >12-level pixel changes.
-    for(const float onset:{.25f,.38f,.49f,.60f,.72f,.86f}) {
+    for(const float onset:{.60f}) {
         const auto before=capture(onset-.0001f),appeared=capture(onset+.0001f),later=capture(onset+.005f);
         const int jump=changedPixels(before,appeared,12),drift=changedPixels(appeared,later,12);
         checks.expect(jump>30,"stain event "+juce::String(onset,2)+" appears abruptly in actual panel pixels");
         checks.expect(drift<juce::jmax(20,jump/5),"stain event "+juce::String(onset,2)+" stays fixed after appearance");
     }
-    for(const float onset:{.82f,.94f}) {
+    for(const float onset:{.56f,.94f}) {
         capture(onset-.0001f);
         const auto before=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,2.0f);
         capture(onset+.0001f);
         const auto appeared=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,2.0f);
-        checks.expect(changedPixels(before,appeared,20)>10,"key crack "+juce::String(onset,2)+" first appears as a discrete trace");
+        if(onset<.9f) {
+            int changedKeys=0;
+            for(int key=0;key<19;++key) {
+                const int left=juce::roundToInt(float(key)*before.getWidth()/19)+2;
+                const int right=juce::roundToInt(float(key+1)*before.getWidth()/19)-2;
+                const juce::Rectangle<int> face(left,before.getHeight()*64/100,right-left,before.getHeight()*36/100);
+                if(changedPixels(before.getClippedImage(face),appeared.getClippedImage(face),20)>10)++changedKeys;
+            }
+            checks.expect(changedKeys==1,"exactly one white key gains a discrete hairline crack at Age .56");
+        } else checks.expect(changedPixels(before,appeared,20)==0,"no second key crack appears at the former Age .94 threshold");
     }
     const float width=float(keyboard->getWidth())/19;
+    juce::Colour healthyIvory;
     for(const float age:{0.0f,1.0f}) {
         capture(age);
         const auto keys=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+        const auto ivory=keys.getPixelAt(juce::roundToInt(width*.5f),keyboard->getHeight()-40);
+        if(age==0)healthyIvory=ivory;
+        else checks.expect(healthyIvory.getBlue()-ivory.getBlue()>=25
+                           && ivory.getFloatBlue()/ivory.getFloatRed()<healthyIvory.getFloatBlue()/healthyIvory.getFloatRed()-.10f,
+                           "aged ivory visibly yellows while retaining the photographed key shading");
         std::vector<juce::Image> whites,blacks;
         for(int i=0;i<19;++i) {
             const int x=juce::roundToInt((float(i)+.5f)*width)-10;
@@ -374,28 +347,147 @@ bool writePNG(const juce::Image& image, const juce::File& file) {
     return false;
 }
 
+void checkSizeChoices(juce::AudioProcessorEditor& editor, const juce::File& directory, Checks& checks) {
+    auto* small=dynamic_cast<juce::Button*>(findComponent(editor,"sizeS"));
+    auto* medium=dynamic_cast<juce::Button*>(findComponent(editor,"sizeM"));
+    auto* large=dynamic_cast<juce::Button*>(findComponent(editor,"sizeL"));
+    auto* maximise=dynamic_cast<juce::Button*>(findComponent(editor,"maximise"));
+    checks.expect(small!=nullptr&&medium!=nullptr&&large!=nullptr&&maximise!=nullptr,
+                  "S, M, L and maximise actions are exposed by the actual editor");
+    if(small==nullptr||medium==nullptr||large==nullptr||maximise==nullptr)return;
+    if(!small->onClick||!medium->onClick||!large->onClick||!maximise->onClick) {
+        checks.expect(false,"all editor size buttons have working actions");return;
+    }
+    medium->onClick();settleEditor();
+    const auto mediumSize=juce::Point<int>(editor.getWidth(),editor.getHeight());
+    small->onClick();settleEditor();
+    const auto smallSize=juce::Point<int>(editor.getWidth(),editor.getHeight());
+    checks.expect(smallSize.x<mediumSize.x&&smallSize.y<mediumSize.y,
+                  "S requests a genuinely smaller viewport than enlarged M");
+    checks.expect(smallSize.x>=480&&smallSize.y>=260,
+                  "S retains a usable viewport on the fixture display");
+    checkFooterGeometry(editor,checks,"S button-selected viewport");
+    std::vector<juce::Rectangle<float>> headerBounds;
+    bool visible=true,distinct=true;
+    for(const auto* id:{"sizeS","sizeM","sizeL","maximise","factoryPreset","savePreset","loadPreset"}) {
+        auto* component=findComponent(editor,id);
+        visible=visible&&fitsVisibleAncestors(component,editor);
+        if(component!=nullptr) {
+            const auto bounds=editor.getLocalArea(component,component->getLocalBounds().toFloat());
+            for(const auto& previous:headerBounds)distinct=distinct&&!previous.intersects(bounds);
+            headerBounds.push_back(bounds);
+        }
+    }
+    checks.expect(visible&&distinct,"S keeps size, maximise and preset actions visible and separate");
+    const auto snapshot=editor.createComponentSnapshot(editor.getLocalBounds(),true,1.0f);
+    checks.expect(writePNG(snapshot,directory.getChildFile("init_small.png")),"button-selected S viewport PNG export");
+    for(const auto* mode:{"S","M"}) {
+        if(juce::String(mode)=="S")small->onClick();else medium->onClick();
+        settleEditor();
+        const auto preceding=juce::Point<int>(editor.getWidth(),editor.getHeight());
+        if(juce::String(mode)=="S")large->onClick();else maximise->onClick();
+        settleEditor();
+        checks.expect(editor.getWidth()>=preceding.x&&editor.getHeight()>=preceding.y,
+                      juce::String(mode)+" maximise requests a larger viewport");
+        checkFooterGeometry(editor,checks,juce::String(mode)+" to L viewport");
+        maximise->onClick();settleEditor();
+        checks.expect(preceding==juce::Point<int>(editor.getWidth(),editor.getHeight()),
+                      juce::String(mode)+" viewport dimensions restore exactly after maximise");
+    }
+    medium->onClick();settleEditor();
+}
+
 void renderBenderPositions(SH09Processor& processor, juce::Component& editor,
                           const juce::File& directory, Checks& checks) {
     auto* bender = dynamic_cast<juce::Slider*>(findComponent(editor, "bender"));
     checks.expect(bender != nullptr, "bender is available for position snapshot evidence");
     if (bender == nullptr) return;
-    std::array<juce::Image, 3> positions;
+    const float initialAge=processor.state.getRawParameterValue("age")->load();
+    const double initialBend=bender->getValue();
     const std::array<const char*, 3> names {"left", "neutral", "right"};
-    for (size_t i = 0; i < positions.size(); ++i) {
-        bender->setValue(double(i) - 1.0, juce::sendNotificationSync);
-        positions[i] = bender->createComponentSnapshot(bender->getLocalBounds(), true, 3.0f);
-        const auto file = directory.getChildFile(juce::String("bender_") + names[i] + ".png");
-        checks.expect(writePNG(positions[i], file), "actual bender " + juce::String(names[i]) + " PNG export");
-        std::cout << "IMAGE " << file.getFullPathName() << '\n';
+    for(const auto age:{0.0f,.91f,.92f}) {
+        setParameter(processor,"age",age);settleEditor();
+        std::array<juce::Image,3> positions;
+        const auto prefix=age==0.0f?juce::String("bender_"):"bender_age"+juce::String(juce::roundToInt(age*100))+"_";
+        for (size_t i = 0; i < positions.size(); ++i) {
+            bender->setValue(double(i) - 1.0, juce::sendNotificationSync);
+            positions[i] = bender->createComponentSnapshot(bender->getLocalBounds(), true, 3.0f);
+            const auto file = directory.getChildFile(prefix + names[i] + ".png");
+            checks.expect(writePNG(positions[i], file), prefix + names[i] + " actual-render PNG export");
+            std::cout << "IMAGE " << file.getFullPathName() << '\n';
+        }
+        checks.expect(changedPixels(positions[0], positions[1], 12) >= 100
+                      && changedPixels(positions[1], positions[2], 12) >= 100
+                      && changedPixels(positions[0], positions[2], 12) >= 100,
+                      prefix + "left, neutral and right positions visibly differ");
+        const bool springCallback=bool(bender->onDragEnd);
+        if(springCallback)bender->onDragEnd();
+        const auto restored=bender->createComponentSnapshot(bender->getLocalBounds(),true,3.0f);
+        checks.expect(springCallback&&bender->getValue()==0.0&&changedPixels(positions[1],restored)==0,
+                      prefix + "actual drag-end callback restores zero and identical neutral pixels");
     }
-    checks.expect(changedPixels(positions[0], positions[1], 12) >= 100
-                  && changedPixels(positions[1], positions[2], 12) >= 100
-                  && changedPixels(positions[0], positions[2], 12) >= 100,
-                  "left, neutral and right bender positions visibly differ");
-    bender->setValue(0.0, juce::sendNotificationSync);
-    processMidi(processor, juce::MidiMessage::allNotesOff(1));
-    const auto restored = bender->createComponentSnapshot(bender->getLocalBounds(), true, 3.0f);
-    checks.expect(changedPixels(positions[1], restored) == 0, "bender neutral appearance restores after both extremes");
+    const auto capture=[&](float age) {
+        setParameter(processor,"age",age);settleEditor();
+        return bender->createComponentSnapshot(bender->getLocalBounds(),true,3.0f);
+    };
+    // Isolate the bender so moving lamps/keys and other Age events cannot pass
+    // the break test. Adjacent samples distinguish an abrupt break from patina.
+    const auto below=capture(.9199f),at=capture(.92f),above=capture(.9201f);
+    checks.expect(changedPixels(below,at,12)>=100,
+                  "bender tip visibly breaks at Age .92 in actual renderer");
+    checks.expect(changedPixels(at,above,12)==0,
+                  "bender break is discrete; adjacent post-onset Age adds no visible damage event");
+    checks.expect(changedPixels(below,capture(.9199f))==0,
+                  "lowering Age below .92 restores the identical intact bender tip");
+    setParameter(processor,"age",initialAge);bender->setValue(initialBend,juce::sendNotificationSync);settleEditor();
+}
+
+void checkBenderAudioCallbacks(SH09Processor& processor,juce::Component& editor,Checks& checks) {
+    auto* bender=dynamic_cast<juce::Slider*>(findComponent(editor,"bender"));
+    checks.expect(bender!=nullptr&&bool(bender->onValueChange)&&bool(bender->onDragEnd),
+                  "bender retains value-change and spring-return callbacks");
+    if(bender==nullptr||!bender->onValueChange||!bender->onDragEnd)return;
+    juce::MemoryBlock savedState;processor.getStateInformation(savedState);
+    const auto originalValue=bender->getValue();
+    processor.setCurrentProgram(0);
+    setParameter(processor,"wave",2);setParameter(processor,"vcaMode",2);
+    setParameter(processor,"vcoLevel",.8f);setParameter(processor,"subLevel",0);
+    setParameter(processor,"cutoff",1);setParameter(processor,"resonance",0);
+    setParameter(processor,"vcfEnv",0);setParameter(processor,"bendVco",1);setParameter(processor,"bendVcf",0);
+    const auto frequency=[&] {
+        juce::AudioBuffer<float> audio(2,blockSize);juce::MidiBuffer midi;
+        bool below=false;int cycles=0;float peak=0;
+        constexpr int settlingBlocks=32,measuredBlocks=96;
+        for(int block=0;block<settlingBlocks+measuredBlocks;++block) {
+            audio.clear();processor.processBlock(audio,midi);
+            if(block<settlingBlocks)continue;
+            for(int sample=0;sample<blockSize;++sample) {
+                const float value=audio.getSample(0,sample);peak=std::max(peak,std::abs(value));
+                // Hysteresis rejects small near-zero noise/ringing crossings.
+                if(value<-.005f)below=true;
+                else if(value>.005f&&below){++cycles;below=false;}
+            }
+        }
+        return peak>.01f?double(cycles)*sampleRate/double(measuredBlocks*blockSize):0.0;
+    };
+    for(const auto age:{.91f,.92f}) {
+        setParameter(processor,"age",age);processor.reset();
+        bender->setValue(0,juce::sendNotificationSync);bender->onDragEnd();
+        processMidi(processor,juce::MidiMessage::noteOn(1,69,juce::uint8(100)));
+        const auto neutral=frequency();
+        bender->setValue(1,juce::sendNotificationSync);const auto high=frequency();
+        bender->setValue(-1,juce::sendNotificationSync);const auto low=frequency();
+        bender->onDragEnd();const auto returned=frequency();
+        const auto context="bender Age "+juce::String(age,2);
+        checks.expect(neutral>400&&neutral<480&&high>neutral*1.9&&high<neutral*2.1
+                      &&low>neutral*.46&&low<neutral*.54,
+                      context+" intact/broken visual state still drives opposing octave bends in real audio");
+        checks.expect(bender->getValue()==0&&std::abs(returned-neutral)<neutral*.025,
+                      context+" drag-end callback returns the rendered audio to neutral pitch");
+        processMidi(processor,juce::MidiMessage::allNotesOff(1));
+    }
+    processor.setStateInformation(savedState.getData(),int(savedState.getSize()));
+    processor.reset();bender->setValue(originalValue,juce::sendNotificationSync);settleEditor();
 }
 
 void checkSwitchAttachment(SH09Processor& processor, juce::Component& editor, Checks& checks) {
@@ -530,7 +622,14 @@ struct EditorDeleter {
     }
 };
 
-struct Fixture { const char* name; int program; bool agedModern; bool external; };
+struct Fixture {
+    const char* name;
+    int program;
+    bool modern;
+    float age;
+    bool heldNote;
+    bool external;
+};
 
 void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& checks) {
     SH09Processor processor;
@@ -541,26 +640,32 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
     editor->setVisible(true);
     settleEditor();
     if (fixture.program == 0) {
+        checkSizeChoices(*editor,directory,checks);
         checkSwitchAttachment(processor, *editor, checks);
         checkKeyboardFeedback(processor, *editor, checks);
         checkOpaqueCaps(*editor, checks);
+        checkCapLoss(processor,*editor,checks);
         checkValueBubbleColours(*editor, checks);
         renderBenderPositions(processor, *editor, directory, checks);
+        checkBenderAudioCallbacks(processor,*editor,checks);
         checkAgeEvents(processor, *editor, checks);
     }
 
     // Change the patch after creating the editor to exercise attachment redraw.
     processor.setCurrentProgram(fixture.program);
-    if (fixture.agedModern) {
+    setParameter(processor,"age",fixture.age);
+    if (fixture.modern) {
         setParameter(processor, "modern", 1.0f);
-        setParameter(processor, "age", juce::String(fixture.name)=="worn"?1.0f:0.82f);
         setParameter(processor, "velocity", 0.8f);
         setParameter(processor, "aftertouch", 0.6f);
         setParameter(processor, "cutoff", 0.43f);
         setParameter(processor, "resonance", 0.6f);
     }
-    advanceAudio(processor, fixture.agedModern, fixture.external);
+    advanceAudio(processor, fixture.heldNote, fixture.external);
     settleEditor();
+    bool anyHeld=false;
+    for(const auto& key:processor.keyDisplay)anyHeld=anyHeld||key.load()!=0;
+    checks.expect(anyHeld==fixture.heldNote,juce::String(fixture.name)+" matches its explicit held-key fixture state");
 
     for (const auto size : {juce::Point<int>(3840, 2160), juce::Point<int>(2880, 1620)}) {
         editor->setSize(size.x, size.y);
@@ -606,7 +711,8 @@ int main(int argc, char** argv) {
     if (argc != 2 || juce::String(argv[1]) == "--help") {
         std::cout << "Usage: SH09GUIRender <output-directory>\n"
                      "Exports actual editor PNGs and component JSON at 3840x2160 and 2880x1620,\n"
-                     "plus three small bender-position PNGs; checks wide/tall footer geometry without PNG export.\n";
+                     "plus an unheld personal_age7 preview, a button-selected S viewport, and bender positions at Ages 0/.91/.92;\n"
+                     "checks discrete bender breakage, spring-return audio and wide/tall footer geometry.\n";
         return argc == 2 ? 0 : 2;
     }
     juce::ScopedJuceInitialiser_GUI initialiseGUI;
@@ -615,10 +721,13 @@ int main(int argc, char** argv) {
     try {
         if (auto result = directory.createDirectory(); result.failed()) throw std::runtime_error(result.getErrorMessage().toStdString());
         checks.expect(juce::MessageManager::getInstance()->isThisTheMessageThread(), "fixture runs on the JUCE message thread");
-        checkWearAtlas(checks);
+        checkPersonalArtwork(checks);
         checkCompatibility(checks);
-        for (const auto fixture : {Fixture{"init", 0, false, false}, Fixture{"aged_modern", 14, true, false},
-                                   Fixture{"external_follower", 12, false, true},Fixture{"worn",14,true,false}})
+        for (const auto fixture : {Fixture{"init",0,false,0.0f,false,false},
+                                   Fixture{"aged_modern",14,true,.82f,true,false},
+                                   Fixture{"external_follower",12,false,0.0f,false,true},
+                                   Fixture{"worn",14,true,1.0f,true,false},
+                                   Fixture{"personal_age7",14,true,.7f,false,false}})
             renderFixture(fixture, directory, checks);
     } catch (const std::exception& error) {
         checks.expect(false, juce::String("fixture exception: ") + error.what());

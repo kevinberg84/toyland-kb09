@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 100">
+  <!-- Photo-informed path used by the native renderer. No shaded substrate. -->
+  <path d="M5.6 0 C5.8 12 3.2 19 3.9 29 C4.1 38 6.5 44 5.9 53 C5.7 65 4 71 4.5 80 C4.6 87 2.2 95 1.5 100 M5.9 53 L8.4 58" fill="none" stroke="#6a5d46" stroke-opacity=".55" stroke-width=".32" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

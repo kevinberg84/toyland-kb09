@@ -1,6 +1,42 @@
 # Validation record
 
-## Current release — Toyland KB-09 0.11.0, 2026-10-07
+## Current Windows build — Toyland KB-09 0.12.0, 2026-10-07
+
+The photo-informed Windows VST3 and standalone are built and the VST3 is installed. The previous 0.11 bundle was verified and preserved outside DAW scan folders at `artifacts/Backup/Toyland KB-09-0.11.0-before-0.12.0/Toyland KB-09.vst3`.
+
+- VST3 inner module SHA-256: `E0605E732F9BB6E6D5CC1AB01633927F2DE9EE7ECF7DAEDAE1ED5D7E6D99EE86`.
+- Standalone SHA-256: `D9CF9E9E558179C7A25DEFF7B1CC686EA76CFC345EB6FF26226C441856E3CFDE`.
+- Installed bundle: `C:\Program Files\Common Files\VST3\Toyland KB-09.vst3`; its module hash matches the build. `moduleinfo.json` reports 0.12.0.
+- Personal test package: `artifacts/Release/Toyland KB-09-0.12.0-Windows-x64` and sibling ZIP. Includes offline working guide, start page, standalone and exported factory bank.
+- ZIP SHA-256: `451C38D20FAF7DEBCF83A87EDB9FFAB0CA9C3410E521BCC9C63157B291291434`. All 33 package files and every ZIP entry were verified; packaged VST3/standalone hashes match the tested build. `package-0.12-final.txt` records the result. The offline checker passes for all three packaged HTML documents, including cross-document fragment links and Start Here dependencies.
+
+| Current check | Result | Log under artifacts/Validation-KB09 |
+|---|---|---|
+| Release build | Exit 0 | build-0.12-final.txt; build-0.12-final-repair.txt for final notice/test correction |
+| DSP | 92 passed, 0 failed | dsp-0.12-final.txt |
+| Processor | 20 passed, 0 failed; zero tracked C++ new allocations | processor-0.12-final.txt |
+| Preset files | 58 passed, 0 failed; includes final actual-host bank | presets-0.12-final.txt |
+| Actual editor | 278 checks, 0 failures | gui-0.12-final.txt; artifacts/GUI-0.12-final/GUIRender.log |
+| Steinberg validator | 47 passed, 0 failed, exit 0 | steinberg-0.12-final.txt |
+| Pluginval 1.0.4 strictness 10, GUI enabled | SUCCESS, process exit 0 | pluginval-0.12-final-level10.txt; pluginval-0.12-final-exit.txt |
+| Actual VST3 host | 75 assertions, 0 failures; 600-second render | host-0.12-final.txt |
+| Installed identity/backup | Matching new module and verified previous module | installation-0.12-final.txt |
+
+Pluginval uses seed 9009, sample rates 44.1/48/88.2/96/192 kHz, and blocks 1/17/64/257/1024/8192. The actual-module host also covers 35 rate/buffer pairs, MIDI timing, external input and follower, state/automation, 16 preset exports/disk round-trips, ten native editor lifecycles and eight additional instances.
+
+The final endurance render processed 600 seconds with finite, audible output. Callback time was 49.1264 seconds (8.18774% of realtime); maximum observed 128-sample callback was 0.7052 ms against 2.66667 ms at 48 kHz. This is one offline measurement on this workstation, not a DAW CPU guarantee. The engine did not change during this visual update.
+
+The revised editor fixture exercises S/M/L buttons and restore, complete wide/tall footers, opaque caps and metal posts, separate cap-loss events at normalized AGE .64/.88, the single hairline at .56, fixed envelope coffee ring at .60, held white/black-key feedback, selector attachments and configured value-bubble contrast. Bender crops and callbacks check both extremes, exact spring return, and the abrupt cosmetic tip break at .92, including opposing pitch bends before/after damage. Alpha-aware pixel comparisons prevent near-transparent antialiasing edges from creating false wear jumps.
+
+Ten principal images cover five conditions at 3840 × 2160 and 2880 × 1620, plus S and bender crops. `personal_age7_3840x2160.png` shows the actual compiled editor with no held keys. The photograph-based cap correction, black knob top ticks, hairline, gray screw heads, project notice and full footer were visually reviewed. The old generic wear atlas and both shaded crack bitmap attempts are excluded from runtime. Native microdust/grime has independent seeded positions; distinct final key samples are checked. This does not establish uniqueness under every transformation, exact hardware dimensions, material chemistry or sonic equivalence.
+
+The user confirmed that disabling Live's Auto-Scale Plug-in Window fixed sharpness. That human report is recorded separately from our automated checks; it does not identify this new binary or establish a physical 4K/mixed-DPI test. New Live loading/Set recall, exhaustive mouse gestures and every DAW recipe remain owner/host checks. Previous native standalone measurements are historical below, not fresh observations of 0.12.
+
+The HTML manual was reviewed at desktop/mobile sizes by the browser agent. Final image/status replacement passed the static offline-dependency/anchor check. PDF pagination and native print-dialog behaviour are not certified. AU and AAX are not built or included.
+
+The initial Windows macro build failure is retained in build-0.12.txt. The final logs above supersede the intermediate GUI/preset runs described here. The first preset run used a nonexistent bank path; the final run uses the bank exported by the final VST3. The first GUI comparison amplified unpremultiplied near-transparent edge rounding; the repaired check compares visible premultiplied channels. Neither intermediate failure is represented as a pass.
+
+## Historical release — Toyland KB-09 0.11.0, 2026-10-07
 
 Final VST3 module SHA-256: `46BE3DC797F48DCC1468AEF235CE2B1E40938E9ED885275F42397B443155DACC`.
 Final standalone SHA-256: `93F1660185E8C67781D0118DAED461598080580EB30976AB6D5C11D227E6216A`.

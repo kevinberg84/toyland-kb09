@@ -1,0 +1,7 @@
+Built-in imagegen, user-owned SH-09 photograph references, 2026-10-07.
+
+Use case: product-mockup
+Asset: one hyperreal isolated original SH-09 rotary knob sprite for a 4K software GUI. References1and2 are user's actual RANGE knob from two camera angles; ignore panel and other controls.
+Reconstruct that EXACT three-part shape clean and new. Flat round silver metal top disc with a small black plastic rim, vertically ribbed black cylindrical grip, and distinctly wider flared silver metal skirt at its foot. Observe the original proportions in the photos, including the fairly tall grip wall and the gently sloping wide lower skirt. The top/grip diameter is about 72% of skirt diameter. Fine fairly deep vertical ribs as in the photo, not hundreds of microscopic ribs. Top turned-metal pattern subtle, satin silver, clean black glossy molded grip with soft highlights.
+Orthographic camera directly aligned in front, looking down about 55 degrees above mounting panel. No roll or yaw. Top ellipse about .8 as tall as wide. Match reference construction rather than previous generic music knob. Broad soft light upper left, neutral white balance. Center entire object on square canvas with about10% transparent padding; real alpha, completely opaque knob body and small soft contact shadow.
+Remove the black radial index mark from top (software draws rotating indicator). Remove dust, age, brown staining and scratches ONLY to create the fresh endpoint. No panel, scale, text, logos, hands or backgrounds. Exactly one knob. Largest practical detailed resolution.

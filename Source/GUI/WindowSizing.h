@@ -9,7 +9,7 @@ namespace sh09 {
 
     Integration:
       - Own this helper for the editor lifetime; add WindowSizing.cpp to the target.
-      - Forward M/L/maximise controls to chooseMedium/chooseLarge/toggleMaximise.
+      - Forward S/M/L/maximise controls to chooseSmall/chooseMedium/chooseLarge/toggleMaximise.
       - Forward only the EMPTY custom header's mouse events to the header methods.
         Do not forward slider, button, keyboard or text-field gestures.
       - In resized(), fit the design canvas into contentBounds(getLocalBounds().toFloat()).
@@ -20,7 +20,7 @@ namespace sh09 {
       - Do not reapply a fixed window aspect ratio: large mode needs a monitor-shaped
         window. This helper clears the default constrainer's fixed aspect ratio.
 
-    M fits the design aspect inside 90% of the current monitor's work-area width
+    S fits the design aspect inside 65% and M inside 90% of the current monitor's work-area width
     AND height. L fills that work area (taskbar stays accessible). The standalone
     uses its OWN JUCE native window's maximise API. VST3 asks the host to resize the
     editor; it never maximises the host/DAW. Floating-window movement is available
@@ -39,11 +39,12 @@ namespace sh09 {
 */
 class WindowSizing final {
 public:
-    enum class Mode { custom, medium, large };
+    enum class Mode { custom, compact, medium, large };
 
     WindowSizing(juce::AudioProcessorEditor&, int designWidth, int designHeight);
     ~WindowSizing();
 
+    void chooseSmall();
     void chooseMedium();
     void chooseLarge();
     void toggleMaximise();

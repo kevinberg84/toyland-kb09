@@ -1,0 +1,2 @@
+2 HTML documents; 30 IDs; 43 fragment links; 15 local references; 16 external citations
+PASS: standalone guide dependencies and anchors

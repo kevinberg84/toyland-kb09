@@ -1,14 +1,20 @@
 # Ableton Live observations
 
-## Current scope — 2026-10-07
+## Human report — 2026-10-07
 
-Toyland KB-09 0.11.0 is now installed in the standard VST3 folder, with verified module SHA-256 `46BE3DC797F48DCC1468AEF235CE2B1E40938E9ED885275F42397B443155DACC`. Its actual-VST3 test host passed 75 assertions and a 600-second render; that is separate from Live UI evidence.
+The user confirmed that disabling **Auto-Scale Plug-in Window** fixed the display. The latest report did not identify the precise Live build, display resolution/scaling, mixed-DPI measurements or a fresh-instance action. Record this as a successful user-reported toggle change; it does not establish a new scan/recall test, a full interaction sweep or results on a particular physical resolution.
+
+[HIDPI.md](HIDPI.md) separates that confirmation from suggested fresh-instance troubleshooting. [Manual DPI research](MANUAL_DPI_RESEARCH.md) covers vendor guidance and remaining verification needs for other DAWs. The earlier automated inspection limitation below remains part of the historical record.
+
+## Historical 0.11 checkpoint — 2026-10-07
+
+At this checkpoint, Toyland KB-09 0.11.0 was installed in the standard VST3 folder, with verified module SHA-256 `46BE3DC797F48DCC1468AEF235CE2B1E40938E9ED885275F42397B443155DACC`. Its actual-VST3 test host passed 75 assertions and a 600-second render; that is separate from Live UI evidence. The later human report did not independently identify a module hash.
 
 In the renamed 0.10 checkpoint, Live opened the copied `artifacts/HostTest/KB-09 Upgrade Recall.als` with both prior SH-09 instances identified as Toyland KB-09. External Follower and Sub Drone patches, the 3-Audio/Post FX auxiliary route, 0dB/100% sidechain settings and sustained processed master output returned. This established that particular upgrade recall for 0.10 while preserving the original Set. It is not a new 0.11 observation.
 
 After installing 0.11, Live was launched into its fresh Untitled window. Computer Use could list that window but repeatedly failed to inspect it with `foreground window did not report a process id`, including one bounded activation recovery. Fresh 0.11 scan/loading/recall and native plugin L were therefore not asserted. No existing user Set was edited or overwritten. The earlier copied Set remains available for a manual/current-host retest.
 
-The final 0.11 standalone was inspected at M (1051x642 logical pixels) and L (1280x720 logical pixels) on the 1920x1080 display at 150% Windows scaling. Both footers were completely visible, and L returned to the enlarged M. The 280 GUI/asset assertions cover 4K exports, wide/tall footer geometry, independent wear shapes, opaque fader caps and held white/black notes. A physical 4K display and exhaustive Live GUI interaction are outside this evidence. [HIDPI.md](HIDPI.md) documents the Live Auto-Scale setting and fresh-instance check; the current Live menu could not be inspected, so no Auto-Scale change or native Live sharpness result is claimed.
+The final 0.11 standalone was inspected at M (1051x642 logical pixels) and L (1280x720 logical pixels) on the 1920x1080 display at 150% Windows scaling. Both footers were completely visible, and L returned to the enlarged M. The 280 GUI/asset assertions cover 4K exports, wide/tall footer geometry, independent wear shapes, opaque fader caps and held white/black notes. These are historical automated/standalone observations, not measurements attributed to the later human report. A physical 4K display and exhaustive Live GUI interaction are outside this evidence. The automated run could not inspect Live's menu and made no verified Auto-Scale change; the user-reported success is recorded separately above.
 
 ## Historical SH-09 0.9.0 observations
 

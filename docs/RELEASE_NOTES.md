@@ -1,4 +1,17 @@
-# 0.11.0 — Toyland KB-09
+# 0.12.0 — Toyland KB-09
+
+Photo-informed controls and AGE wear now follow Kevin's personal SH-09. This Windows VST3/standalone build includes corrected compact opaque caps, stripes across their top and down the sides, native black knob-top indicator ticks, stepped exposed fader blades, raised ribbed switches and an arched bender. The owner's replacement volume knob, sticker and waveform tape are excluded.
+
+- The personal instrument represents AGE 7. Gradual dust collects at seams, slider openings, knob sides and key gaps; ink and individual keys yellow, metal dulls and knob rims tarnish finely. Gray screw heads replace red-rust stamps; brown corrosion follows exposed panel paint. The existing envelope coffee ring is retained. The old generic wear atlas is excluded from runtime.
+- MIDI 60 alone receives a nearly hairline crack, with no broad shadow or halo. It appears at displayed AGE 5.6 and can lengthen slightly. The VCO mixer cap disappears at 6.4, RELEASE at 8.8, and the bender tip breaks at 9.2. These discrete damage events leave the controls functional and reverse when AGE is reduced.
+- S joins M/L: approximately 65%, 90% and the full available work area. Complete header/panel/footer fitting remains uniform. A small unofficial/unaffiliated/not-for-sale notice is printed above the panel.
+- The personal test ZIP includes VST3, standalone, 16 exported factory sounds and a branded offline HTML guide. It documents the owner's confirmed Live Auto-Scale remedy and individually sourced settings for other DAWs. AU/macOS and AAX remain future builds.
+
+All current checks pass: DSP 92/0, processor 20/0 with zero tracked allocations, preset files 58/0, compiled GUI 278/0, Steinberg 47/0, actual-VST3 host 75/0 including a 600-second render, and GUI-enabled Pluginval strictness 10 with exit 0. The installed module matches the tested build. Exact hashes and evidence boundaries are in [VALIDATION.md](VALIDATION.md). Physical 4K/mixed-DPI and new-build owner Live recall remain separate checks.
+
+DSP and parameter/state identities are unchanged from 0.11. Older Modern patches still have the deeper MOD mapping introduced in 0.11; Authentic mappings are unchanged.
+
+# Historical 0.11.0 — Toyland KB-09
 
 This release adds user-preset files, deeper Modern modulation, revised black-metal materials and Age wear, clearer keyboard/value feedback, and a correction to Windows editor sizing. The single Toyland KB-09 identity, VST3 identifiers, 35 parameter slots and schema-1 sound state remain compatible. **Older Modern patches with nonzero MOD can sound deeper** because the Modern depth mapping has changed.
 

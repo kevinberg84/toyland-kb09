@@ -12,7 +12,7 @@
 
 namespace sh09 {
 namespace {
-constexpr double mediumFraction = .90;
+constexpr double smallFraction = .65, mediumFraction = .90;
 juce::Rectangle<float> fitAspect(juce::Rectangle<float> area, double ratio) noexcept {
     if (area.isEmpty() || !std::isfinite(ratio) || ratio <= 0) return {};
     const auto width = juce::jmin(area.getWidth(), float(double(area.getHeight()) * ratio));
@@ -289,12 +289,12 @@ struct WindowSizing::Impl final : private juce::Timer, private juce::ComponentLi
         }
         if(auto* window=standalone()) if(window->isFullScreen()) window->setFullScreen(false);
         const bool large=requested==Mode::large;
+        const double fraction=large?1.0:requested==Mode::compact?smallFraction:mediumFraction;
         auto area=availableInEditorUnits().toFloat();
 #if JUCE_WINDOWS
         const auto target=native();
         const auto metrics=measureNative();
         if(metrics.valid()) {
-            const double fraction=large?1.0:mediumFraction;
             // Unknown/docked host decoration uses a small logical allowance;
             // the monitor and editor scale still use measured physical pixels.
             const double chromeW=metrics.frameMeasured?juce::jmax(0,metrics.outer.getWidth()-metrics.editor.getWidth()):16*metrics.scaleX;
@@ -305,10 +305,10 @@ struct WindowSizing::Impl final : private juce::Timer, private juce::ComponentLi
             // A host-owned caption still consumes space even when its frame is
             // outside the conservative movement whitelist. Keep the footer visible.
             area=area.withSizeKeepingCentre(juce::jmax(100.0f,area.getWidth()-16),juce::jmax(100.0f,area.getHeight()-40));
-            if(!large)area=area.withSizeKeepingCentre(area.getWidth()*float(mediumFraction),area.getHeight()*float(mediumFraction));
+            if(!large)area=area.withSizeKeepingCentre(area.getWidth()*float(fraction),area.getHeight()*float(fraction));
         }
 #else
-        if(!large)area=area.withSizeKeepingCentre(area.getWidth()*float(mediumFraction),area.getHeight()*float(mediumFraction));
+        if(!large)area=area.withSizeKeepingCentre(area.getWidth()*float(fraction),area.getHeight()*float(fraction));
 #endif
         if(!large) area=fitAspect(area,aspect);
         const int w=juce::jmax(100,int(std::floor(area.getWidth()))),h=juce::jmax(100,int(std::floor(area.getHeight())));
@@ -487,6 +487,7 @@ struct WindowSizing::Impl final : private juce::Timer, private juce::ComponentLi
 
 WindowSizing::WindowSizing(juce::AudioProcessorEditor& e,int w,int h):impl(std::make_unique<Impl>(*this,e,w,h)){}
 WindowSizing::~WindowSizing()=default;
+void WindowSizing::chooseSmall(){impl->request(Mode::compact);}
 void WindowSizing::chooseMedium(){impl->request(Mode::medium);}
 void WindowSizing::chooseLarge(){impl->request(Mode::large);}
 void WindowSizing::toggleMaximise(){if(isLarge())restore();else chooseLarge();}
@@ -500,6 +501,6 @@ bool WindowSizing::isLarge()const{return impl->large();}
 bool WindowSizing::canMoveWindow()const{return impl->movable();}
 bool WindowSizing::isSnapArmed()const{return impl->snapArmed;}
 WindowSizing::Mode WindowSizing::getMode()const{return impl->currentMode();}
-juce::String WindowSizing::placementStatus()const{return canMoveWindow()?"Drag the header to the screen top to maximise.":"This host controls window placement; M and L request editor sizes.";}
+juce::String WindowSizing::placementStatus()const{return canMoveWindow()?"Drag the header to the screen top to maximise.":"This host controls window placement; S, M and L request editor sizes.";}
 juce::Rectangle<float> WindowSizing::contentBounds(juce::Rectangle<float> area)const noexcept{return fitAspect(area,impl->aspect);}
 }

@@ -4,14 +4,20 @@ KB-09 draws its controls, text, scales and panel lines at the resolution of the 
 
 Windows scaling and rendering resolution are different. At 150% scaling, a 2560-logical-pixel window can cover 3840 physical pixels and still be sharp. A host can instead enlarge a lower-resolution plug-in bitmap, which makes the entire interface soft. Enlarging that bitmap further cannot recover detail.
 
-## Live 11 check
+## Human report — 2026-10-07
+
+The user confirmed that disabling **Auto-Scale Plug-in Window** fixed the display. The report did not specify the precise Live build, display resolution/scaling, mixed-DPI measurements or whether a fresh instance was created. This confirms the reported toggle result; it does not establish those additional checks. The numerical scaling example above is explanatory, not a measurement supplied by the user.
+
+## Suggested Live 11 check
 
 1. Save the current sound with KB-09's SAVE button before changing or replacing instances.
 2. In Live's Plug-ins browser, right-click Toyland KB-09. If **Auto-Scale Plug-in Window** is available and checked, disable it. The same option may be available on the plug-in window title bar. Keep Live's HiDPI mode enabled.
-3. Create a **fresh instance on a new MIDI track**, then LOAD your saved sound. An existing instance may retain its original scaling context; closing and reopening its editor alone may not refresh it.
+3. If the display has not updated or further verification is needed, try a **fresh instance on a new MIDI track**, then LOAD your saved sound. This is proposed follow-up advice, not an action confirmed in the user's report. JUCE's maintainer notes that removing/re-adding a plug-in may be needed; it is not a universal requirement for every instance.
 4. Select M or L within KB-09. Inspect the labels at normal display magnification, alongside the standalone application if helpful.
 
-This is supported by a [JUCE maintainer's direct Live 11/VST3 explanation](https://forum.juce.com/t/blurry-vst3-in-ableton-live-11-hidpi/61587). [Ableton's own HiDPI page](https://help.ableton.com/hc/en-us/articles/209775985-High-DPI-monitor-support) describes the setting but contains inconsistent VST3 wording, so its availability must be checked in the installed version. It was not possible to verify this workstation's menu: the desktop inspection tool repeatedly returned `foreground window did not report a process id`. No fresh Live sharpness result is claimed.
+This advice is supported by a [JUCE maintainer's direct Live 11/VST3 explanation](https://forum.juce.com/t/blurry-vst3-in-ableton-live-11-hidpi/61587). [Ableton's own HiDPI page](https://help.ableton.com/hc/en-us/articles/209775985-High-DPI-monitor-support) describes the setting but excludes VST3 in its wording, so its availability must be checked in the installed version. During the earlier automated 0.11 checkpoint, desktop inspection repeatedly returned `foreground window did not report a process id`; that run did not verify the Live menu or sharpness. The later human report above is separate evidence and does not retroactively turn the automated check into a pass. See [Live observations](LIVE_TEST.md).
+
+Host settings differ. [Manual DPI research](MANUAL_DPI_RESEARCH.md) records vendor instructions and verification limits for Cubase/Nuendo, Studio One/Fender Studio Pro, FL Studio, REAPER and Bitwig.
 
 ## What the plugin corrects
 
@@ -21,4 +27,4 @@ The GUI keeps labels and other native detail separate from photographic material
 
 ## Artwork detail limit
 
-The clean chassis photograph is 1774x887. Native 4K GUI output does not make that source a native 4K photograph. Key and knob close-ups have substantially more source detail per displayed control; each of the 37 wear decals has its own source crop. The smooth case's broad shading tolerates enlargement, while finite raster detail remains a limit. A physical 4K display and the current Live auto-scale setting have not been verified. See [artwork inventory](../Assets/Photoreal/README.md) and [validation scope](VALIDATION.md).
+The clean chassis photograph is 1774x887. Native 4K GUI output does not make that source a native 4K photograph. Key and knob close-ups have substantially more source detail per displayed control; wear decals use their own source crops. The smooth case's broad shading tolerates enlargement, while finite raster detail remains a limit. A physical 4K display has not been verified; the user's toggle-success report does not establish a display-resolution or mixed-DPI test. See [artwork inventory](../Assets/Photoreal/README.md) and [validation scope](VALIDATION.md).
