@@ -158,6 +158,9 @@ float Engine::process(float externalMono) noexcept {
  inputHistory[inputPos]=input;
  double result=0;
  const bool modern=choice(smooth.modern,1)!=0;
+ // Optional extended depth. Authentic retains its previous engineering mapping;
+ // neither maximum is claimed as a measured hardware modulation calibration.
+ const double vcoModSemitones=modern?36.0:12.0,vcfModOctaves=modern?8.0:5.0;
  const double trim=modern?std::pow(10.0,(smooth.extGain-.5)*48/20):1;
  const double lfoHz=modern&&choice(smooth.lfoSync,1)!=0?tempo/60:expRange(smooth.lfoRate,.2,25);
  const double pole=1-std::exp(-2*pi*8000/internalFs),dc=1-std::exp(-2*pi*12/internalFs);
@@ -185,7 +188,7 @@ float Engine::process(float externalMono) noexcept {
    if(glide<1e-5)pitch=selected;else pitch+=(selected-pitch)*(1-std::exp(-std::log(1000.0)/(glide*internalFs)));
   }
   const double conditionCents=smooth.age*(2.0+.08*(pitch-60));
-  const double semitone=pitch+12*(choice(smooth.range,4)-2)+smooth.tune/100.0+conditionCents/100.0+controlBend*smooth.bendVco*12+lfo*smooth.vcoMod*12;
+  const double semitone=pitch+12*(choice(smooth.range,4)-2)+smooth.tune/100.0+conditionCents/100.0+controlBend*smooth.bendVco*12+lfo*smooth.vcoMod*vcoModSemitones;
   const double hz=clamp(440*std::exp2((semitone-69)/12),.01,internalFs*.2),dt=hz/internalFs;
   const double rawNoise=random();noiseLP+=pole*(rawNoise*noiseScale-noiseLP);noiseDC+=dc*(noiseLP-noiseDC);const double noise=noiseLP-noiseDC;
   double width=.5+.45*smooth.pulseWidth;
@@ -202,7 +205,7 @@ float Engine::process(float externalMono) noexcept {
   const double envMod=choice(smooth.vcfEnvMode,2)==1?-env:env;
   const double modernPressure=modern?pressure*smooth.aftertouch*3:0;
   const double tracking=(pitch-60)/12.0;
-  const double cutoffOctaves=tracking+lfo*smooth.vcfMod*5+(choice(smooth.vcfEnvMode,2)==2?0:envMod*smooth.vcfEnv*8)+controlBend*smooth.bendVcf*5+modernPressure;
+  const double cutoffOctaves=tracking+lfo*smooth.vcfMod*vcfModOctaves+(choice(smooth.vcfEnvMode,2)==2?0:envMod*smooth.vcfEnv*8)+controlBend*smooth.bendVcf*5+modernPressure;
   const double cutoff=clamp(expRange(smooth.cutoff,10,20000)*std::exp2(cutoffOctaves+.05*smooth.age),5,22000);
   const double velocityGain=modern?1-smooth.velocity*(1-selectedVelocity):1;
   double amplitude=env;if(choice(smooth.vcaMode,2)==0)amplitude=1;else if(choice(smooth.vcaMode,2)==2)amplitude=gateGain;

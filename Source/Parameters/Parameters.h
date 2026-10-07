@@ -1,6 +1,7 @@
 #pragma once
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <array>
+#include <string_view>
 namespace sh09 {
 struct ParameterSpec { const char* id; const char* name; float min,max,initial; const char* choices; };
 inline constexpr auto specs=std::to_array<ParameterSpec>({
@@ -23,12 +24,19 @@ inline constexpr auto specs=std::to_array<ParameterSpec>({
  {"age","Condition / Age",0,1,0,""}, {"modern","Modern Mode",0,1,0,"Authentic|Modern"},
  {"velocity","Modern Velocity",0,1,0,""}, {"aftertouch","Modern Aftertouch",0,1,0,""},
  {"lfoSync","Modern LFO Sync",0,1,0,"Free|Tempo"},
- {"extGain","Modern Input Trim",0,1,.5f,""}, {"branding","Panel Branding",0,1,0,"Roland SH-09|Private Mono 09"}
+ {"extGain","Modern Input Trim",0,1,.5f,""},
+ // Preserve the legacy ID, index and range for existing state/automation data.
+ // Both values are inert and refer to the single current instrument identity.
+ {"branding","Legacy Compatibility",0,1,0,"Toyland KB-09|Toyland KB-09"}
 });
 inline juce::AudioProcessorValueTreeState::ParameterLayout makeParameters(){
  juce::AudioProcessorValueTreeState::ParameterLayout layout;
  for(const auto& p:specs){
-   if(p.choices[0]!=0)layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{p.id,1},p.name,juce::StringArray::fromTokens(p.choices,"|",""),int(p.initial)));
+   if(p.choices[0]!=0){
+     const bool legacy=std::string_view(p.id)=="branding";
+     const auto attributes=juce::AudioParameterChoiceAttributes{}.withAutomatable(!legacy);
+     layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{p.id,1},p.name,juce::StringArray::fromTokens(p.choices,"|",""),int(p.initial),attributes));
+   }
    else layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{p.id,1},p.name,juce::NormalisableRange<float>{p.min,p.max},p.initial));
  }
  return layout;

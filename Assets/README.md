@@ -1,9 +1,11 @@
-# Panel assets
+# Toyland KB-09 panel assets
 
-The interactive control panel is drawn by `Source/GUI/Editor.cpp` using scalable native vectors, gradients and deterministic condition marks. It embeds no downloaded photographs or external runtime font/image files. Real-unit photographs were inspected as design references in Research, not repackaged as product textures.
+The 0.11.0 editor combines generated photographic materials with native JUCE controls, text, scales, switches and indicators. The supplied corrected marks retain KEVINBERG 09 / KB-09 on the left and Toyland on the right. Research photographs informed proportions; they are not repackaged as runtime textures. No Universal Audio artwork is used.
 
-`Authentic/Branding.h` and `AlternativeBranding/Branding.h` isolate displayed identity strings from panel geometry and DSP. The automatable Branding parameter swaps these identities. The alternative uses **Private / Mono 09**. This is a prepared neutral naming option, not a trademark clearance conclusion.
+The current CMake target embeds nine PNG files. [Photoreal/README.md](Photoreal/README.md) is the authoritative inventory of actual dimensions and runtime crops; [Photoreal/PROMPTS.md](Photoreal/PROMPTS.md) records saved production prompts and built-in imagegen provenance. Historical generated images remain for provenance and are not all compiled into the plugin.
 
-The dark metal case, white section rules, ordering of modules, silver rotary caps, black fader caps and 32-key F-to-C keyboard follow the inspected real-unit references. The controls remain conventional interactive sliders/menus for usability. This is a dimensional vector interpretation, not a claim of a pixel-identical or photographic reproduction. The Roland symbol itself is not traced; the wordmark is rendered text.
+The 37-decal wear atlas assigns a separate stain to each of 32 keys, two independent key cracks and three independent rotary corrosion patches. Six other case marks are each used once on the case. Stains appear at fixed size and opacity; yellowing/rust develop gradually. All fader caps remain fitted and their solid bodies have opaque registered backing beneath the photographic surface/shadow.
 
-Condition/Age changes panel scratches, screw coloration and key yellowing. There are no remote textures, generative raster assets or sample data dependencies.
+Artwork is loaded from compiled memory. No external texture, font file, sample library or network service is needed at runtime. Arial uses the system font API with fallback. `Branding.h` defines the single product identity; historical branding headers and the inert legacy parameter remain for compatibility only.
+
+Native text and geometry render at the output scale, with high-quality sampling for photographic materials. The actual editor exports 3840x2160 and 2880x1620 previews. Finite rasters remain finite: the chassis is 1774x887, so its smooth shading is enlarged at 4K rather than becoming a native 4K photograph. [HIDPI guidance](../docs/HIDPI.md) separates host bitmap scaling from window size and source detail. [Validation](../docs/VALIDATION.md) records 280 passing GUI/asset checks and the exact installed module.

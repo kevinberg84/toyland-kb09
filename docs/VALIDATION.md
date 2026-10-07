@@ -1,5 +1,33 @@
 # Validation record
 
+## Current release — Toyland KB-09 0.11.0, 2026-10-07
+
+Final VST3 module SHA-256: `46BE3DC797F48DCC1468AEF235CE2B1E40938E9ED885275F42397B443155DACC`.
+Final standalone SHA-256: `93F1660185E8C67781D0118DAED461598080580EB30976AB6D5C11D227E6216A`.
+
+The build, staged bundle and installed module hashes match. Staged artifacts are in `artifacts/Release/Toyland KB-09-0.11.0-Windows-x64`; installed bundle is `C:\Program Files\Common Files\VST3\Toyland KB-09.vst3`. Its moduleinfo reports Toyland KB-09 version 0.11.0. The prior 0.10.0 bundle is preserved in `artifacts/Backup/Toyland KB-09-0.10.0-before-0.11.0` with its original hash `FC552E9382A8B622B368CC673AC4C64B3A89CB23EEEA307131A84CC094EED48F`. The earlier SH-09 bundle remains outside scanned folders; there is one current identity.
+
+| Final check | Result | Log under artifacts/Validation-KB09 |
+|---|---|---|
+| Release build | Exit 0 | build-0.11-final.txt |
+| DSP | 92/0; engine unchanged by the later visual edits | dsp-0.11-materials-final.txt |
+| Processor | 20 PASS records, zero failures and tracked allocations | processor-0.11-aging-events-final.txt |
+| Preset files | 58/0, including imported factory-bank state | presets-0.11-aging-events-final.txt |
+| Real-editor GUI | 280/0 | gui-0.11-aging-events-final.txt |
+| Steinberg VST3 | 47/0, exit 0 | steinberg-0.11-final.txt |
+| Pluginval strictness 10, GUI enabled | SUCCESS, confirmed process exit 0 | pluginval-0.11-final-level10.txt and pluginval-0.11-final-exit.txt |
+| Actual compiled VST3 host | 75/0; 600-second render; 16 preset exports/round-trips | host-0.11-final.txt |
+
+Pluginval uses seed 9009, rates 44.1/48/88.2/96/192kHz and blocks 1/17/64/257/1024/8192. GUI lifecycle tests run; they do not establish visual fidelity. CPU-backed artwork and software rendering on the editor's own JUCE peer preserve the shutdown fix.
+
+The final host's 600-second offline render took 51.0971 seconds of callback time (8.51618% of realtime); maximum observed 128-sample callback was 1.006 ms against a 2.66667 ms deadline at 48 kHz. This single offline measurement includes scheduling outliers and is not a DAW CPU guarantee. It also verifies35 rate/buffer combinations, latency128, MIDI timing, state/automation, external-input/follower routing, stress, 10 editor lifecycles and eight additional instances.
+
+GUI exports are in `artifacts/GUI-0.11-final`. The expanded fixture tests six tiny Age-threshold crossings for abrupt stains and fixed subsequent appearance, two separate crack onsets, and distinct healthy/aged samples from all 19 white and 13 black keys. It also covers physical switches, keyboard feedback, configured value-bubble contrast and transformed footer geometry at 16:9, wide and tall sizes. Main outputs are 3840x2160 and 2880x1620; underlying raster resolutions remain finite. A physical 4K monitor and every native hover-popup placement have not been validated.
+
+The final standalone M/L windows were observed at 1051x642 and 1280x720 logical pixels on this workstation, including a complete footer in L and return to the enlarged M. Native Save produced a default .kb09 file in the earlier 0.11 checkpoint; custom-filename typing and native Load round-trip were not completed by UI automation. The 58 filesystem/preset regressions independently establish the implemented state/filename handling. Live-specific observations are separately scoped in LIVE_TEST.md; historical checks below apply to their named earlier binary.
+
+## Historical development records
+
 Status on 2026-09-27: **the clean Release build, 83 DSP assertions, 7 processor assertions, 75 VST3-host assertions, pluginval strictness 10 and 47 independent Steinberg tests passed**. Actual Ableton Live 11.0 loading, external routing, preset interaction and Set recall were observed as detailed below. These passes do not establish hardware equivalence or complete the explicitly unperformed host/UI checks.
 
 ## Clean build, binary identity and runtime dependencies

@@ -1,5 +1,15 @@
 # Validator tools
 
+## Current 0.11 validation scope
+
+Validate the exact rebuilt **Toyland KB-09.vst3** bundle, preserve each tool's exit code, and record the inner module SHA-256. Final October 7 module hash: `46BE3DC797F48DCC1468AEF235CE2B1E40938E9ED885275F42397B443155DACC`, identical in build, staging and installation. Results: **92 DSP, 20 processor, 58 preset-file, 280 GUI, 47 Steinberg and 75 actual-VST3 host checks passed**, all without failures. GUI-enabled pluginval strictness 10 reported SUCCESS and exited 0. [VALIDATION.md](../docs/VALIDATION.md) and [ACCEPTANCE.md](../docs/ACCEPTANCE.md) record the exact final scope. Revalidate after any source or asset change.
+
+Final logs under `artifacts/Validation-KB09` are `processor-0.11-aging-events-final.txt`, `presets-0.11-aging-events-final.txt`, `gui-0.11-aging-events-final.txt`, `steinberg-0.11-final.txt`, `host-0.11-final.txt`, `pluginval-0.11-final-level10.txt` and `pluginval-0.11-final-exit.txt`. DSP evidence remains `dsp-0.11-materials-final.txt`; the engine was unchanged by later visual revisions. The host's 600-second offline render took 51.0971 seconds of callback time, with a maximum observed 128-sample callback of 1.006 ms at 48 kHz. This is a bounded measurement, not a DAW CPU guarantee.
+
+The GUI fixture checks transformed footer bounds, held white/black notes, bender positions and configured value-popup contrast. Expanded damage checks cover six abrupt stain thresholds with fixed subsequent appearance, two separate crack events and distinct healthy/aged samples of all 32 keys. All fader caps remain fitted. Its `artifacts/GUI-0.11-final` previews are compiled-editor exports, not physical 4K display or DAW-window tests. Final standalone M/L were separately observed with the complete footer. No physical 4K display or actual native hover-popup placement was validated. Preset-file validation has a separate `SH09PresetFilesTests` target; neither pluginval nor Steinberg alone establishes every native file-dialog interaction. Live-specific 0.11 checks were not repeated after desktop automation failed to resolve its foreground process; see [LIVE_TEST.md](../docs/LIVE_TEST.md).
+
+Windows editors use CPU-backed persistent artwork and select software rendering for their own JUCE peer. This addressed an observed historical NVIDIA shutdown wait without altering the DAW renderer. Keep GUI-enabled pluginval testing and verify actual process exit; a log ending in SUCCESS without process completion is insufficient.
+
 ## Acquired: Tracktion pluginval 1.0.4 (Windows)
 
 Retrieved 2026-09-26 from the official Tracktion GitHub release. GitHub's release API returned `v1.0.4` as latest during acquisition.
@@ -18,7 +28,7 @@ Run from the project root in PowerShell, substituting the actual compiled bundle
 
 ```powershell
 New-Item -ItemType Directory -Path '.\artifacts\Validation' -Force | Out-Null
-& '.\tools\pluginval\pluginval.exe' --strictness-level 5 --sample-rates 44100,48000,88200,96000,192000 --block-sizes 1,17,64,257,1024,8192 --random-seed 9009 --output-dir '.\artifacts\Validation' --output-filename 'pluginval-level5.txt' --validate '.\artifacts\Release\SH-09.vst3'
+& '.\tools\pluginval\pluginval.exe' --strictness-level 5 --sample-rates 44100,48000,88200,96000,192000 --block-sizes 1,17,64,257,1024,8192 --random-seed 9009 --output-dir '.\artifacts\Validation' --output-filename 'pluginval-level5.txt' --validate '.\build-kb09\SH09_artefacts\Release\VST3\Toyland KB-09.vst3'
 $LASTEXITCODE
 ```
 
@@ -45,12 +55,12 @@ Configuration/build commands (use the installed CMake executable or a developer 
 ```powershell
 cmake -S '.\tools\vst3sdk' -B '.\tools\vst3sdk-build' -G 'Visual Studio 18 2026' -A x64 -DSMTG_ENABLE_VST3_PLUGIN_EXAMPLES=OFF -DSMTG_ENABLE_VST3_HOSTING_EXAMPLES=ON -DSMTG_ENABLE_VSTGUI_SUPPORT=OFF
 cmake --build '.\tools\vst3sdk-build' --config Release --target validator -j 4
-& '.\tools\vst3sdk-build\bin\Release\validator.exe' '.\artifacts\Release\SH-09.vst3' *> '.\artifacts\Validation\steinberg.txt'
+& '.\tools\vst3sdk-build\bin\Release\validator.exe' '.\build-kb09\SH09_artefacts\Release\VST3\Toyland KB-09.vst3' *> '.\artifacts\Validation\steinberg.txt'
 $LASTEXITCODE
 ```
 
-The actual executable's help lists `-e` for extensive tests, `-l` for a fresh local instance per test, and `-selftest` for validator self-tests. Basic validation was executed on the lab and initial main instrument: each reported **47 passed, 0 failed**, exit 0. Logs are `artifacts/Validation/lab-steinberg.txt` and `artifacts/Validation/sh09-steinberg.txt`. These results apply to the binaries and revisions named in those logs; final release validation must be rerun after code changes. An informational line says 64-bit *sample precision* is unsupported; this does not mean the x64 module is unsupported. These plugins process 32-bit float samples in an x64 process.
+The actual executable's help lists `-e` for extensive tests, `-l` for a fresh local instance per test, and `-selftest` for validator self-tests. Historical basic validation was executed on the lab and initial SH-09 instrument: each reported **47 passed, 0 failed**, exit 0. Logs are `artifacts/Validation/lab-steinberg.txt` and `artifacts/Validation/sh09-steinberg.txt`. These results apply to the binaries and revisions named in those logs; final release validation must be rerun after code changes. An informational line says 64-bit *sample precision* is unsupported; this does not mean the x64 module is unsupported. These plugins process 32-bit float samples in an x64 process.
 
 pluginval 1.0.4 accepts `--vst3validator <path>` to invoke this tool as part of a validation run. The independent runs above preserve distinct output. Neither tool establishes sonic equivalence to hardware or a completed Live routing test.
 
-Tool binaries and archives are development dependencies, not required runtime content of the distributed SH-09 bundle. Preserve applicable upstream licenses if redistributing them.
+Tool binaries and archives are development dependencies, not required runtime content of the distributed Toyland KB-09 bundle. Preserve applicable upstream licenses if redistributing them.

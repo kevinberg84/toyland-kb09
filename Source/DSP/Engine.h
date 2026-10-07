@@ -31,6 +31,7 @@ public:
  float followerLevel() const noexcept {return float(follower[2]);}
  double currentPitch() const noexcept {return pitch;}
  double modulatorLevel() const noexcept {return lastLfo;}
+ bool modulatorLampOn() const noexcept {return lfoPhase<.18;}
  int latencySamples() const noexcept {return 128;}
  std::uint64_t solverFailures() const noexcept {return failures;}
  static constexpr int oversamplingFactor=4;

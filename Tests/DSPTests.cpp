@@ -3,10 +3,20 @@
 #include <chrono>
 #include <cmath>
 #include <complex>
+#include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <new>
 #include <string>
 #include <vector>
+
+namespace {thread_local bool trackDspAllocations=false;thread_local unsigned dspAllocations=0;}
+void* operator new(std::size_t n){if(trackDspAllocations)++dspAllocations;if(void* p=std::malloc(n?n:1))return p;throw std::bad_alloc();}
+void* operator new[](std::size_t n){return ::operator new(n);}
+void operator delete(void* p) noexcept {std::free(p);}
+void operator delete[](void* p) noexcept {std::free(p);}
+void operator delete(void* p,std::size_t) noexcept {std::free(p);}
+void operator delete[](void* p,std::size_t) noexcept {std::free(p);}
 
 namespace {
 int failed=0,passed=0;
@@ -46,11 +56,38 @@ int main(){
   constexpr int n=8192,bin=1100;constexpr double sr=44100,hz=sr*bin/n;
   sh09::Engine e;e.prepare(sr);auto c=clean();c.tune=float(1200*std::log2(hz/(440*std::exp2((114.-69)/12))));e.setControls(c);e.noteOn(114,127);render(e,.15,sr);std::vector<double> signal(n),naive(n);for(int i=0;i<n;++i){signal[size_t(i)]=e.process(0);double phase=std::fmod(double(i)*hz/sr,1.0);naive[size_t(i)]=2*phase-1;}double actual=aliasDb(signal,bin),baseline=aliasDb(naive,bin);std::cout<<"MEASURE alias residual dB="<<actual<<" naive="<<baseline<<'\n';check(actual<-40&&actual<baseline-25,"coherent high saw alias suppression");
  }
- for(double sr:{44100.,48000.,88200.,96000.,192000.}){
-  sh09::Engine e;e.prepare(sr);auto c=clean();c.resonance=1;c.vcoLevel=c.subLevel=c.extLevel=1;c.vcfMod=c.vcoMod=c.vcfEnv=1;c.vcfEnvMode=2;c.age=1;c.modern=1;c.extGain=1;e.setControls(c);e.noteOn(127,127);bool finite=true;double peak=0;std::uint32_t random=17;
-  for(int i=0;i<int(sr*.55);++i){if(i%173==0){random=random*1664525u+1013904223u;c.cutoff=float(random&65535)/65535;c.pulseWidth=1-c.cutoff;c.wave=float((random>>16)&3);c.vcaMode=float((random>>20)%3);e.setControls(c);e.pitchBend(float((random&255)/127.5-1));e.noteOn(int(random%128),100);if(i%346==0)e.allNotesOff();}double v=e.process(i%127==0?std::numeric_limits<float>::infinity():float(8*std::sin(i*.57)));finite=finite&&std::isfinite(v);peak=std::max(peak,std::abs(v));}
-  check(finite&&peak<2,"bounded stress "+std::to_string(int(sr))+" peak="+std::to_string(peak));std::cout<<"MEASURE solver failures="<<e.solverFailures()<<'\n';check(e.solverFailures()==0,"stress solver convergence "+std::to_string(int(sr)));
+ // Measure audio, rather than copying the modulation expression into a getter test.
+ // At 2 Hz the square LFO provides stable positive and negative measurement windows.
+ for(double sr:{44100.,192000.}){
+  for(bool modern:{false,true}){
+   sh09::Engine e;e.prepare(sr);auto c=clean();c.modern=modern?1.f:0.f;c.vcoMod=1;c.lfoWave=1;c.lfoRate=float(std::log(10.)/std::log(125.));
+   e.setControls(c);e.noteOn(69,127);render(e,.08,sr);const auto upper=frequency(render(e,.12,sr),sr);
+   render(e,.13,sr);const auto lower=frequency(render(e,.14,sr),sr);const double factor=modern?8.:2.;
+   check(std::abs(upper/(440*factor)-1)<.003&&std::abs(lower/(440/factor)-1)<.003,
+         std::string(modern?"Modern +/-36 semitone":"Authentic +/-12 semitone")+" VCO MOD endpoints "+std::to_string(int(sr))+
+         " upperHz="+std::to_string(upper)+" lowerHz="+std::to_string(lower));
+  }
+  auto filterDepthRms=[&](bool modern,float depth){
+   sh09::Engine e;e.prepare(sr);auto c=clean();c.modern=modern?1.f:0.f;c.vcoLevel=0;c.extLevel=1;c.vcfMod=depth;
+   c.lfoWave=1;c.lfoRate=float(std::log(10.)/std::log(125.));e.setControls(c);e.noteOn(60,127);
+   double energy=0;int samples=0;
+   for(int i=0;i<int(.47*sr);++i){const auto value=e.process(float(.02*std::sin(2*3.14159265358979323846*220*i/sr)));
+    if(i>int(.38*sr)){energy+=value*value;++samples;}}
+   return std::sqrt(energy/samples);
+  };
+  const double authentic=filterDepthRms(false,1),modern=filterDepthRms(true,1),matched=filterDepthRms(true,.625f);
+  std::cout<<"MEASURE VCF negative MOD 220Hz output RMS "<<sr<<" Authentic="<<authentic<<" Modern="<<modern<<" ModernDepth0.625="<<matched<<'\n';
+  check(authentic>1e-5&&modern<authentic*.1,"Modern maximum VCF MOD extends below the old filter sweep "+std::to_string(int(sr)));
+  check(std::abs(matched/authentic-1)<1e-6,"Modern VCF depth 0.625 preserves the old maximum sweep "+std::to_string(int(sr)));
  }
+ for(double sr:{44100.,48000.,88200.,96000.,192000.}){
+  sh09::Engine e;e.prepare(sr);auto c=clean();c.resonance=1;c.vcoLevel=c.subLevel=c.extLevel=1;c.vcfMod=c.vcoMod=c.vcfEnv=1;c.vcfEnvMode=2;c.age=1;c.modern=1;c.extGain=1;c.lfoRate=1;e.setControls(c);e.noteOn(127,127);bool finite=true;double peak=0;std::uint32_t random=17;
+  trackDspAllocations=true;
+  for(int i=0;i<int(sr*.55);++i){if(i%173==0){random=random*1664525u+1013904223u;c.cutoff=float(random&65535)/65535;c.pulseWidth=1-c.cutoff;c.wave=float((random>>16)&3);c.vcaMode=float((random>>20)%3);e.setControls(c);e.pitchBend(float((random&255)/127.5-1));e.noteOn(int(random%128),100);if(i%346==0)e.allNotesOff();}double v=e.process(i%127==0?std::numeric_limits<float>::infinity():float(8*std::sin(i*.57)));finite=finite&&std::isfinite(v);peak=std::max(peak,std::abs(v));}
+  trackDspAllocations=false;
+  check(finite&&peak<2,"bounded full-depth Modern stress "+std::to_string(int(sr))+" peak="+std::to_string(peak));std::cout<<"MEASURE solver failures="<<e.solverFailures()<<'\n';check(e.solverFailures()==0,"stress solver convergence "+std::to_string(int(sr)));
+ }
+ check(dspAllocations==0,"full-depth Modern processing and control changes perform no C++ new allocations");
  {
   for(double sr:{44100.,96000.}){sh09::Engine e;e.prepare(sr);auto c=clean();c.portamento=.1f;c.lfoRate=1;e.setControls(c);e.noteOn(48,100);e.noteOn(36,100);render(e,.01,sr);e.allNotesOff();double frozen=e.currentPitch();render(e,.1,sr);check(e.currentPitch()==frozen,"portamento freezes with no held key "+std::to_string(int(sr)));e.noteOn(60,100);render(e,.5,sr);check(std::abs(e.currentPitch()-60)<.03,"portamento reaches new note "+std::to_string(int(sr)));}
   sh09::Engine e;e.prepare(48000);auto c=clean();c.lfoRate=1;c.lfoDelay=1;e.setControls(c);e.noteOn(60,100);render(e,.2,48000);check(e.modulatorLevel()==0,"sine LFO initial delay");e.noteOn(72,100);render(e,1.405,48000);check(std::abs(e.modulatorLevel())>.001,"ignored higher note does not restart sine delay");c.lfoWave=1;e.setControls(c);render(e,.01,48000);check(std::abs(e.modulatorLevel())==1,"square LFO bypasses sine delay");

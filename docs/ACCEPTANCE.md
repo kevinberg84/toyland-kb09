@@ -1,27 +1,20 @@
-# Final acceptance checklist — 0.9.0 candidate
+# Acceptance — Toyland KB-09 0.11.0
 
-This records the requested checklist against observed evidence. PASS means the bounded test below passed; it does not imply a measured hardware match. PARTIAL items remain limitations.
+Reviewed 2026-10-07. The usable Windows x64 VST3 and standalone are built, validated and staged. The VST3 is installed at `C:\Program Files\Common Files\VST3\Toyland KB-09.vst3`. Its module SHA-256 is `46BE3DC797F48DCC1468AEF235CE2B1E40938E9ED885275F42397B443155DACC`. The preceding 0.10.0 bundle was hash-verified and backed up outside scanned VST3 folders. [VALIDATION.md](VALIDATION.md) identifies the exact final artifacts and logs.
 
-| Requirement | Status and evidence |
+| Requirement | Final evidence and scope |
 |---|---|
-| Clean x64 Release build; no critical warnings; VST3 artifact exists | PASS: fresh configure/build, no warning/error lines, preserved build log |
-| Runtime independent of project sources | PASS for inspected dependencies and installed Live loading: compiled panel, no external DSP/UI asset files, release CRT imports |
-| MIDI sound; monophony; low-note priority; oscillator range; sub oscillator | PASS numerical/actual-module tests; hardware timbre equivalence remains unverified |
-| LFO; ADSR; portamento; VCA | PASS scoped DSP and host tests |
-| Filter stability; resonance; self-oscillation | PASS finite/bounded stress, zero solver failures in tested rates and sustained render; all possible inputs are not proven |
-| External audio and envelope follower | PASS core/actual-module assertions plus Live auxiliary audio route, detector meter, Hold output and mute recovery |
-| VST3 validator; test-host instantiation | PASS Steinberg 47/0, pluginval strictness 10, actual-module host 75/0 |
-| State/presets save and restore | PASS all parameters and 16 exported program states; Live Set reopened with patch and routing restored |
-| Automation; multiple sample rates/block sizes | PASS automated host/pluginval matrices, including parameter stress and GUI lifecycle; Live automation-lane testing remains unperformed |
-| Every GUI control; keyboard; MIDI keyboard display; Age appearance | PARTIAL: attachments/source reviewed and event/count regressions passed; visual all-control, held-key display and Age-sweep acceptance not completed |
-| Labels and mouse interaction | PASS scoped Live inspection, factory menu and cutoff drag; not an exhaustive layout/input matrix |
-| Resizing and high DPI | PARTIAL: automated editor resize/lifecycle tests and local Live display worked; no full DPI/monitor matrix |
-| No known crash or hang | PASS in recorded tests; no unresolved crash/hang identified |
-| No NaNs, infinities or uncontrolled filter runaway | PASS recorded finite-output, stress and endurance assertions; bounded test conditions only |
-| No normal render-path heap allocation | PASS tracked C++ new/new[] path regression; broader allocator instrumentation not performed |
-| No blocking audio-thread locks | PASS source review of owned callback path; no universal host/library real-time claim |
-| Presets load; state restoration; clean build; final validation rerun | PASS for frozen plug-in binary identified by SHA-256 in VALIDATION.md |
-| Documentation matches behavior | PASS final independent documentation audit; retained/bypassed Modern settings and observed Live scope corrected |
-| Photorealistic skin; measured high-fidelity hardware emulation | NOT COMPLETE: vector interpretation and circuit-informed model with the explicit gaps in KNOWN_LIMITATIONS.md |
+| Working monophonic synth, external input/follower, Modern extensions | 92 DSP, 20 processor and 75 actual-module host assertions pass; no measured physical-unit equivalence is claimed. Modern MOD depth increases while Authentic retains its existing limits. |
+| Real-time processor work | Zero tracked C++ new/new[] allocations in the covered processor callbacks, including power transitions; bounded coverage, not every host/framework allocator. |
+| VST3 compatibility and shutdown | Steinberg 47/0; Pluginval strictness 10 with GUI tests reports SUCCESS and exits 0. |
+| Stability/endurance | Actual final VST3 renders 600 seconds of finite, audible output; repeated editor and additional-instance lifecycle tests pass. |
+| Patches and state | 58 preset-file checks pass; actual module exports/restores all 16 factory presets. Save/Load supports .kb09 and compatible .sh09state files. Same-index factory replacement refreshes a previously custom filename. All 35 parameter IDs/order and schema1 remain compatible. |
+| GUI and high-resolution export | 280 real-editor checks pass, with eight main 3840x2160/2880x1620 PNGs and three bender-position crops. Includes transformed footer bounds at wide/tall sizes, physical selectors, white/black held-note feedback and configured value-popup contrast. |
+| Materials and condition | Neutral black smooth-metal base; gradual yellow printing/key tint, knob/screw corrosion and dulling; exact supplied-brand coverage constrains chipped ink. Case/key stains appear as individual fixed-size/opacity events. Two different cracks begin separately and extend slightly. Fresh and aged samples of all 19 white and 13 black keys differ; all 37 new source-alpha shapes are distinct under the bounded mirror/quarter-turn comparisons. Solid cap pixels are independent of contrasting backgrounds. |
+| Hardware geometry | Original-unit research informs proportions, switches and hidden-axle PB-4 bender. Exact travel/dimensions remain inferred. Every fader cap is retained because the exposed assembled main-panel actuator shape has not been verified. Screw heads overlay the bay outline; LED aligns with power-button center. |
+| Native sizing | Final standalone M and L observed on this workstation (1051x642 and 1280x720 logical pixels); L fills available work area and shows the complete footer. Earlier restore/snap observations are scoped in GUI_WINDOW_BEHAVIOR.md. Physical 4K, mixed-DPI/multi-monitor and every DAW frame are not validated. |
+| Ableton | Earlier renamed-build upgrade recall, two instances and follower routing are recorded separately in LIVE_TEST.md. Actual-module validation of the final build does not substitute for every Live-specific workflow. |
 
-The project is delivered as a tested release candidate. The unchecked fidelity and broad GUI cases are not silently marked complete.
+The 3840-pixel preview is native editor output. The chassis rasters remain 1774x887 and other bitmaps also have finite source resolution; they are not native 4K photographs. Generated photographic-style composites do not prove material chemistry, exact hardware geometry, or equivalence to a commercial reference plugin.
+
+AAX, older-format decisions, the lay user manual and the final download/install package remain subsequent project phases. The current deliverable is the Windows VST3/standalone build, with technical build and validation documentation.
