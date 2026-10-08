@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(SH09 VERSION 0.13.5 LANGUAGES C CXX)
+project(SH09 VERSION 0.13.6 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(JUCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../JUCE" CACHE PATH "JUCE source directory")
@@ -41,6 +41,7 @@ target_compile_definitions(SH09Host PRIVATE JUCE_PLUGINHOST_VST3=1 JUCE_WEB_BROW
 target_link_libraries(SH09Host PRIVATE juce::juce_audio_utils juce::juce_recommended_config_flags)
 juce_add_plugin(SH09
     COMPANY_NAME "Toyland" BUNDLE_ID "local.privateinstruments.sh09"
+    ICON_BIG "Assets/Icons/KB-09.png" ICON_SMALL "Assets/Icons/KB-09.png"
     PLUGIN_MANUFACTURER_CODE PrIv PLUGIN_CODE Sh09 PRODUCT_NAME "Toyland KB-09"
     FORMATS ${KB09_PLUGIN_FORMATS} IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE VST3_CATEGORIES Instrument Synth

@@ -1073,7 +1073,11 @@ private:sh09::WindowSizing& sizing;
 void module(juce::Graphics& g,float x,float w,const char* title,float age=0) {
     const auto ink=agedInk(age);
     g.setColour(ink.withAlpha(.84f));g.drawRect(x,57.0f,w,182.0f,.85f);
-    g.drawLine(x+1,83,x+w-1,83,.85f);caption(g,title,{x+3,59,w-6,22},13,juce::Justification::centred,true,ink);
+    if(juce::String(title)=="VCO") {
+        // The original legend interrupts the rule on its axis, beside TUNE.
+        g.drawLine(x+1,83,313,83,.85f);g.drawLine(369,83,x+w-1,83,.85f);
+    } else g.drawLine(x+1,83,x+w-1,83,.85f);
+    caption(g,title,{x+3,59,w-6,22},13,juce::Justification::centred,true,ink);
 }
 void arcLabels(juce::Graphics& g,juce::Point<float> centre,
                const std::vector<std::pair<juce::String,float>>& labels,float radius,float age=0) {
@@ -1261,8 +1265,7 @@ public:
             caption(g,"DELAY\nTIME",{218,92,29,22},7.6f,juce::Justification::centred,true,ink);
             caption(g,"RANGE",{319,96,74,12},9,juce::Justification::centred,true,ink);
             caption(g,"WAVEFORM",{408,91,84,17},9,juce::Justification::centred,true,ink);
-            caption(g,"TUNE",{315,79,30,15},8.4f,juce::Justification::centred,true,ink);
-            g.setColour(ink);g.drawLine(294,86,313,86,.8f);
+            caption(g,"TUNE",{315,75.5f,30,15},8.4f,juce::Justification::centred,true,ink);
             arcLabels(g,{356,163},{{"32'",-1.134464f},{"16'",-.567232f},{"8'",0.0f},{"4'",.567232f},{"2'",1.134464f}},43,age);
             arcLabels(g,{450,163},{{"NOISE",-1.047198f},{"SAW",-.349066f},{"SQR",.349066f},{"PULSE",1.047198f}},43,age);
             caption(g,"PULSE WIDTH MOD",{522,90,87,12},7.6f,juce::Justification::centred,true,ink);
