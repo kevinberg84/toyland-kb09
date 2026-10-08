@@ -86,5 +86,14 @@ int main(){
          &&presets.getProgramRevision()!=factoryRevision,
          "custom state restore at the same index advances revision after restoring its sound");
  }
+ p.setCurrentProgram(0);p.setPowerEnabled(false);p.setPowerEnabled(true);process();
+ p.queueKeyboard(60,true,false);p.queueKeyboard(64,true,false);process();
+ expect(p.keyDisplay[60].load()==1&&p.keyDisplay[64].load()==1&&p.displayedKeyboardNote.load()==-1,
+        "computer keyboard chord tracks both notes without impersonating mouse key");
+ p.queueKeyboard(60,false,false);process();
+ expect(p.keyDisplay[60].load()==0&&p.keyDisplay[64].load()==1,
+        "computer keyboard release preserves another held note");
+ p.queueKeyboard(64,false,false);process();
+ expect(p.keyDisplay[64].load()==0,"computer keyboard release clears its last held note");
  p.releaseResources();std::cout<<"RESULT failures="<<failed<<" allocations="<<allocations<<'\n';return failed?1:0;
 }

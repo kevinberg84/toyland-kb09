@@ -337,6 +337,21 @@ void checkFineGestures(SH09Processor& processor,juce::Component& editor,Checks& 
                       "AGE track click immediately moves thumb and parameter before release");
         age->mouseUp(click);age->setValue(saved,juce::sendNotificationSync);settleEditor();
     }
+    setParameter(processor,"modern",1);settleEditor();
+    for(const auto* id:{"velocity","aftertouch","extGain"}) {
+        auto* control=dynamic_cast<juce::Slider*>(findComponent(editor,id));
+        checks.expect(control&&control->isEnabled(),juce::String(id)+" utility enabled in Modern mode");
+        if(!control)continue;
+        const double saved=control->getValue();control->setValue(control->getMinimum(),juce::sendNotificationSync);
+        const juce::Point<float> point(control->getWidth()*.8f,control->getHeight()*.5f);
+        const auto now=juce::Time::getCurrentTime();
+        const juce::MouseEvent click(juce::Desktop::getInstance().getMainMouseSource(),point,
+            juce::ModifierKeys(juce::ModifierKeys::leftButtonModifier),1,0,0,0,0,control,control,now,point,now,1,false);
+        control->mouseDown(click);
+        checks.expect(control->valueToProportionOfLength(control->getValue())>.65,
+                      juce::String(id)+" track click immediately moves thumb before release");
+        control->mouseUp(click);control->setValue(saved,juce::sendNotificationSync);
+    }
     setParameter(processor,"modern",1);setParameter(processor,"lfoSync",1);settleEditor();
     auto* rate=dynamic_cast<juce::Slider*>(findComponent(editor,"lfoRate"));
     checks.expect(rate&&rate->getTextFromValue(0)=="4 bars"&&rate->getTextFromValue(1)=="1/64 T","RATE value box presents SYNC divisions");
