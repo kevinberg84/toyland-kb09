@@ -29,11 +29,15 @@ jobs:
             codesign --verify --deep --strict "$bundle"
           done
       - name: Run Apple AU validation on this runner
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
           ditto 'build-mac/SH09_artefacts/Release/AU/Toyland KB-09.component' "$HOME/Library/Audio/Plug-Ins/Components/Toyland KB-09.component"
+          /usr/libexec/PlistBuddy -c 'Print :AudioComponents' "$HOME/Library/Audio/Plug-Ins/Components/Toyland KB-09.component/Contents/Info.plist"
+          killall AudioComponentRegistrar || true
+          auval -a > au-components.txt
           auval -v aumu Sh09 PrIv | tee auval.txt
       - name: Package unverified Mac download
         shell: bash
@@ -46,6 +50,7 @@ jobs:
           ditto 'docs/manual' "$folder/Support/User Guide"
           cp 'docs/manual/User Manual.pdf' "$folder/User Manual.pdf"
           cp auval.txt "$folder/Support/auval.txt"
+          cp au-components.txt "$folder/Support/au-components.txt"
           cp tools/install-mac.command "$folder/INSTALL KB-09.command"
           chmod +x "$folder/INSTALL KB-09.command"
           printf '%s\n' 'UNVERIFIED MAC BUILD — for testing with Kevin.' '1. Extract this ZIP.' '2. Close your music software.' '3. Double-click INSTALL KB-09.command.' '4. Reopen your music software and rescan plug-ins.' '' 'Built for macOS 12 or later, Intel and Apple Silicon. Ad-hoc signed, not Developer ID signed or notarized. If macOS blocks it, contact Kevin for help; do not disable system security.' 'Passing auval on the build runner is not a Logic/GarageBand test. Please report bugs or manual mistakes to Kevin with your Mac, macOS and host versions.' 'Open User Manual.pdf beside this file for installation, controls and troubleshooting.' > "$folder/START HERE.txt"

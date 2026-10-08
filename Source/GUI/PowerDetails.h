@@ -123,14 +123,14 @@ struct ScrewMaterial {
             const float pale = smoothRange(lower ? .33f : .57f,
                                           lower ? .66f : .76f, s.patch);
             const float dark = 1.0f - smoothRange(.27f, .47f, s.patch);
-            const float base = lower ? .76f + .25f * wear : .68f - .305f * wear;
+            const float base = lower ? .76f + .07f * wear : .68f - .305f * wear;
             float light = base + wear * (lower ? .035f * pale - .31f * dark
                                                 : .39f * pale - .12f * dark);
             light += s.grain * (.045f + .13f * wear);
             light -= smoothRange(.69f, .88f, s.pore) * (.025f + .085f * wear);
             // Broad chalky deposits diffuse the lower head's reflections;
-            // its worn surface stays pale across the dome, as in the photo.
-            const float dome = lower ? s.dome + .78f * wear * (.98f - s.dome) : s.dome;
+            // retain grey metal shading instead of bleaching the entire dome.
+            const float dome = lower ? s.dome + .40f * wear * (.98f - s.dome) : s.dome;
             light *= dome;
             float red = light, green = light + .013f, blue = light - .017f;
 
@@ -280,3 +280,4 @@ inline void drawPowerScrew(juce::Graphics& g, juce::Point<float> centre,
 }
 
 } // namespace kb09_gui
+
