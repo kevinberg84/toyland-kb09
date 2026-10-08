@@ -1086,7 +1086,7 @@ public:
     void paint(juce::Graphics& g) override {
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xff25292b),0,0,juce::Colour(0xff111517),0,float(getHeight()),false));g.fillAll();
         caption(g,"TOYLAND / KB-09",{20,0,208,float(getHeight())},11,juce::Justification::centredLeft);
-        caption(g,"MONOPHONIC",{241,0,140,float(getHeight())},9,juce::Justification::centredLeft,false);
+        if(!bool(getProperties().getWithDefault("standalone",false)))caption(g,"MONOPHONIC",{241,0,140,float(getHeight())},9,juce::Justification::centredLeft,false);
         if(sizing.isSnapArmed()){g.setColour(amber);g.drawRect(getLocalBounds(),2);}
     }
     void mouseDown(const juce::MouseEvent& e) override {sizing.beginHeaderDrag(e);}
@@ -1175,6 +1175,7 @@ public:
         addAndMakeVisible(large);large.setButtonText("L");large.setBounds(1373,5,35,24);large.setComponentID("sizeL");
         large.setTooltip("Large: fill this screen's available work area. For sharpness in Live, disable Auto-Scale Plug-in Window if available, then create a fresh instance.");large.onClick=[this]{sizing.chooseLarge();};
         if(processor.wrapperType==juce::AudioProcessor::wrapperType_Standalone) {
+            header.getProperties().set("standalone",true);
             addAndMakeVisible(audioMidi);audioMidi.setComponentID("audioMidiSettings");
             audioMidi.setButtonText("AUDIO / MIDI");audioMidi.setBounds(268,5,115,24);
             setWantsKeyboardFocus(true);addKeyListener(this);
