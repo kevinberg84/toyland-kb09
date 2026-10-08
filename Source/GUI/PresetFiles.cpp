@@ -7,6 +7,10 @@
 #include <cmath>
 #include <cstring>
 #include <string_view>
+#if defined(__APPLE__)
+#include <locale>
+#include <sstream>
+#endif
 
 namespace sh09 {
 namespace {
@@ -20,8 +24,18 @@ bool number(const juce::String& text, double& value)
 {
     const auto utf8 = text.trim().toStdString();
     if (utf8.empty()) return false;
+#if defined(__APPLE__)
+    // Xcode 16 libc++ does not provide floating-point from_chars. Preset
+    // numbers still use the C locale and must consume the complete string.
+    if (utf8.front() == '+') return false;
+    std::istringstream input(utf8);
+    input.imbue(std::locale::classic());
+    input >> std::noskipws >> value;
+    return !input.fail() && input.peek() == std::char_traits<char>::eof() && std::isfinite(value);
+#else
     const auto parsed = std::from_chars(utf8.data(), utf8.data() + utf8.size(), value);
     return parsed.ec == std::errc{} && parsed.ptr == utf8.data() + utf8.size() && std::isfinite(value);
+#endif
 }
 
 // JUCE getXmlFromBinary tolerates truncation. Check its complete envelope first.
