@@ -14,7 +14,7 @@
     <a class="brand" href="#top" aria-label="Toyland KB-09 home">
       <svg viewBox="85 308 722 158" role="img" aria-labelledby="toyland-title"><title id="toyland-title">Toyland</title><image href="assets/marks.png" width="2172" height="724" /></svg>
     </a>
-    <span class="edition">User guide · Windows 0.13.2 · 7 October 2026</span>
+    <span class="edition">User Manual · Version 0.13.2 · 8 October 2026</span>
     <button class="print-button" type="button" onclick="window.print()">Print / Save PDF</button>
   </div>
 </header>
@@ -45,7 +45,7 @@
   <div class="quick-links"><a href="#start">Play your first sound <span aria-hidden="true">↗</span></a><a href="#age">Explore AGE <span aria-hidden="true">↗</span></a><a href="#daws">Choose your DAW <span aria-hidden="true">↗</span></a></div>
   <p class="project-mark">UNOFFICIAL PERSONAL PROJECT — NOT AFFILIATED WITH ROLAND CORPORATION — NOT FOR SALE</p>
 </section>
-<aside class="notice"><strong>Windows 0.13.2.</strong> Use the VST3 instrument in your DAW or play the standalone app. AU and a signed AAX release are unavailable; see <a href="#install">Which file do I need?</a>.</aside>
+<aside class="notice"><strong>Windows 0.13.2.</strong> Use the VST3 instrument in your DAW or play the standalone app. A separate unverified Mac AU/VST3 test download is being prepared; signed AAX is unavailable; see <a href="#install">Which file do I need?</a>.</aside>
 
 <section id="features">
   <p class="section-number">01 / DISCOVER KB-09</p><h2>A personal synth, ready to explore</h2>
@@ -60,9 +60,9 @@
   <p>Use a 64-bit Windows DAW with VST3 support. The installer places KB-09 in the standard Windows VST3 location and keeps any previous copy outside the plug-in scan folder.</p>
   <h3>Standalone</h3>
   <p>After installing, open the Windows Start menu, search for <strong>Play KB-09</strong>, and open it. Its panel and factory sounds are embedded; no separate graphics installation is needed. Select the correct audio device and MIDI keyboard in the standalone settings. If another app is using an exclusive audio driver, close that app or choose a shared device.</p>
-  <h3>Which file do I need?</h3>
-  <div class="table-wrap"><table><thead><tr><th>Format</th><th>Use it for</th><th>Availability</th></tr></thead><tbody><tr><td>VST3</td><td>A compatible Windows DAW, including Live</td><td>Included; ready to install</td></tr><tr><td>Standalone EXE</td><td>Playing without a DAW</td><td>Included; ready to open</td></tr><tr><td>AU — Audio Unit</td><td>Mac hosts such as Logic Pro and GarageBand</td><td>Not built; a Mac build and testing are required</td></tr><tr><td>AAX Native</td><td>Pro Tools</td><td>Included separately as an unsigned Windows development build; not ready for ordinary Pro Tools</td></tr></tbody></table></div>
-  <p>Use the Windows VST3 for a compatible DAW, or the EXE to play on its own. AU is Apple's Mac plug-in format; the Mac build kit supplies source, not an installable AU. The separate AAX development build is unsigned and has not been tested in Pro Tools. It is for development testing only. Changing a file's extension does not change its format.</p>
+  <h3>Mac AU / VST3 — unverified test build</h3><p>Download the separate Mac ZIP and extract it. Close your music software, then double-click <strong>INSTALL KB-09.command</strong> and press Return when prompted. Reopen your music software and rescan its plug-ins. Logic Pro and GarageBand use the AU; other compatible hosts can use the VST3. This installs for your Mac account, on macOS 12 or later, Intel or Apple Silicon.</p><p>The Mac test build is ad-hoc signed, not Developer ID signed or notarized. If macOS blocks it, contact Kevin for help; do not disable system security. Build-runner validation does not establish compatibility with your particular host. Please report your Mac, macOS and host versions when testing.</p><h3>Which file do I need?</h3>
+  <div class="table-wrap"><table><thead><tr><th>Format</th><th>Use it for</th><th>Availability</th></tr></thead><tbody><tr><td>VST3</td><td>A compatible Windows DAW, including Live</td><td>Included; ready to install</td></tr><tr><td>Standalone EXE</td><td>Playing without a DAW</td><td>Included; ready to open</td></tr><tr><td>AU — Audio Unit</td><td>Mac hosts such as Logic Pro and GarageBand</td><td>Separate unverified Mac test download</td></tr><tr><td>AAX Native</td><td>Pro Tools</td><td>Included separately as an unsigned Windows development build; not ready for ordinary Pro Tools</td></tr></tbody></table></div>
+  <p>Use the Windows VST3 for a compatible DAW, or the EXE to play on its own. AU is Apple's Mac plug-in format. The separate Mac test download contains AU and VST3 versions, marked unverified until tested in everyday Mac hosts. The separate AAX development build is unsigned and has not been tested in Pro Tools. It is for development testing only. Changing a file's extension does not change its format.</p>
 </section>
 
 <section id="start">
@@ -154,7 +154,7 @@
     <p>The menu label can differ between versions. If the option is available, reopen the editor after changing it and try a fresh instance if needed.</p>
     <p class="source-note"><a href="https://downloads.bitwig.com/stable/2.5.1/Release-Notes-2.5.1.html">Bitwig's Windows stretching option</a> · <a href="https://soniccharge.com/forum/topic/1856-hidpi-display">The option in Bitwig 3.3.7</a> · <a href="https://www.bitwig.com/userguide/latest/vst_plug-in_handling_and_options/">Current plug-in guide</a>.</p>
   </article>
-  <article id="future-hosts" class="host"><h3>Logic Pro / GarageBand / Pro Tools <span class="badge planned">Release unavailable</span></h3><p>Logic Pro and GarageBand use Apple's <strong>Audio Unit (AU)</strong> format on Mac. KB-09's AU source is prepared for a Mac build, but no installable <code>.component</code> file is supplied. Pro Tools uses <strong>AAX</strong>; KB-09 has no signed, host-tested AAX release. An unsigned development build cannot be treated as a plug-in ready for ordinary Pro Tools. Use the Windows VST3 in a compatible DAW, or the standalone app, for this release.</p><p class="source-note"><a href="https://support.apple.com/en-gb/102082">Apple Audio Unit compatibility</a> · <a href="https://developer.avid.com/aax/">Avid AAX overview</a>.</p></article>
+  <article id="future-hosts" class="host"><h3>Logic Pro / GarageBand / Pro Tools <span class="badge planned">Mac testing / AAX unavailable</span></h3><p>Logic Pro and GarageBand use Apple's <strong>Audio Unit (AU)</strong> format on Mac. Use the separate unverified Mac test download for AU installation. It has not been tested in Logic Pro or GarageBand. Pro Tools uses <strong>AAX</strong>; KB-09 has no signed, host-tested AAX release. An unsigned development build cannot be treated as a plug-in ready for ordinary Pro Tools. Use the Windows VST3 in a compatible DAW, or the standalone app, for this release.</p><p class="source-note"><a href="https://support.apple.com/en-gb/102082">Apple Audio Unit compatibility</a> · <a href="https://developer.avid.com/aax/">Avid AAX overview</a>.</p></article>
 </section>
 
 <section id="external">
@@ -169,7 +169,7 @@
 
 <section id="troubleshooting">
   <p class="section-number">10 / QUICK FIXES</p><h2>Solve a problem</h2>
-  <details open><summary>I cannot find KB-09 in my DAW</summary><p>Extract the download, run INSTALL KB-09.cmd, and rescan VST3 plug-ins in your music software. Look under instruments. Use a 64-bit VST3 host. Logic requires a built AU, and ordinary Pro Tools requires a signed AAX release; those versions are unavailable in this package.</p></details>
+  <details open><summary>I cannot find KB-09 in my DAW</summary><p>Extract the download, run INSTALL KB-09.cmd, and rescan VST3 plug-ins in your music software. Look under instruments. Use a 64-bit VST3 host. Logic requires a built AU, and ordinary Pro Tools requires a signed AAX release; use the separate unverified Mac download for AU. Signed AAX is unavailable.</p></details>
   <details><summary>I hear nothing</summary><p>Load Calibrated Init, switch POWER on and play a fresh note. Check track monitoring, MIDI input, VOLUME and the DAW output. Close the EXT AUDIO overlay if it covers the keyboard. External presets need an audio source. In standalone, check audio/MIDI settings.</p></details>
   <details><summary>A sound keeps playing</summary><p>VCA HOLD deliberately passes audio without a key. Try ENV or GATE, or load Calibrated Init. POWER mutes and clears note history; play a new note after turning it back on.</p></details>
   <details><summary>The window is large but blurry</summary><p>Use the <a href="#daws">DAW-specific scaling setting</a>. In Live, disabling Auto-Scale Plug-in Window fixed this for the owner. Then choose KB-09's own size. Do not lower the screen resolution to make the plug-in bigger.</p></details>
@@ -187,8 +187,8 @@
   <div class="notes-box"><h3>Session notes</h3><p>Date: ____________________ &nbsp; DAW / version: ____________________</p><p>Preset: ____________________ &nbsp; Favourite AGE: ____________________</p><p>Sounds, settings and ideas to return to:</p><div class="writing-lines" aria-hidden="true"></div></div>
 </section>
 
-<section id="feedback"><h2>Help make KB-09 better</h2><p>Please report bugs or mistakes in this guide to Kevin, the person who shared KB-09 with you. Include your operating system, music software and versions, what happened, steps to reproduce it, and a screenshot or exact error message. Any future AU download labeled <strong>unverified</strong> has not yet been confirmed in everyday Mac hosts; please report your Mac and host version when testing it.</p></section>
-<section id="about"><p class="section-number">PROJECT NOTES</p><h2>Made for curiosity &amp; playing</h2><p>KB-09 is an unofficial personal recreation of Kevin's Roland SH-09, using a circuit-informed digital model and artwork modeled after his own aged instrument. “Authentic” names the original-style routing mode; individual hardware instruments can differ. This project is not affiliated with Roland Corporation and is not for sale.</p><p>The instrument has one voice, no onboard effects, no sequencer and no MIDI Learn. It reports 128 samples of processing latency. Hardware Gate/CV sockets, alternate tunings and per-note expressive protocols are not provided. Use your DAW for recording, effects and arrangement.</p><p>This guide is offline HTML: keep the complete <code>User Guide</code> folder together. Contents links and pictures work without internet; vendor documentation links need a connection. Use <strong>Print / Save PDF</strong> for a printable copy.</p></section>
+<section id="feedback"><h2>Help make KB-09 better</h2><p>Please report bugs or mistakes in this guide to Kevin, the person who shared KB-09 with you. Include your operating system, music software and versions, what happened, steps to reproduce it, and a screenshot or exact error message. An AU download labeled <strong>unverified</strong> has not yet been confirmed in everyday Mac hosts; please report your Mac and host version when testing it.</p></section>
+<section id="about"><p class="section-number">PROJECT NOTES</p><h2>Made for curiosity &amp; playing</h2><p>KB-09 is an unofficial personal recreation of Kevin's Roland SH-09, using a circuit-informed digital model and artwork modeled after his own aged instrument. “Authentic” names the original-style routing mode; individual hardware instruments can differ. This project is not affiliated with Roland Corporation and is not for sale.</p><p>The instrument has one voice, no onboard effects, no sequencer and no MIDI Learn. It reports 128 samples of processing latency. Hardware Gate/CV sockets, alternate tunings and per-note expressive protocols are not provided. Use your DAW for recording, effects and arrangement.</p><p>Open <strong>User Manual.pdf</strong> in the main download folder to read or print this guide. An HTML copy is retained in Support. Vendor documentation links need an internet connection.</p></section>
 
 <footer class="guide-footer"><svg viewBox="85 308 722 158" aria-hidden="true"><image href="assets/marks.png" width="2172" height="724" /></svg><p>KEVINBERG 09 · KB-09<br>UNOFFICIAL PERSONAL PROJECT — NOT FOR SALE</p><a href="#top">Back to top ↑</a></footer>
 </main>
@@ -208,3 +208,4 @@
 </script>
 </body>
 </html>
+

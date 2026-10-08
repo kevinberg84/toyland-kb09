@@ -24,7 +24,7 @@ jobs:
           for kind in AU VST3; do
             if [ "$kind" = AU ]; then ext=component; else ext=vst3; fi
             bundle="build-mac/SH09_artefacts/Release/$kind/Toyland KB-09.$ext"
-            lipo -verify_arch arm64 x86_64 "$bundle/Contents/MacOS/Toyland KB-09"
+            lipo "$bundle/Contents/MacOS/Toyland KB-09" -verify_arch arm64 x86_64
             codesign --force --deep --sign - "$bundle"
             codesign --verify --deep --strict "$bundle"
           done
@@ -44,13 +44,16 @@ jobs:
           ditto 'build-mac/SH09_artefacts/Release/AU/Toyland KB-09.component' "$folder/Support/Toyland KB-09.component"
           ditto 'build-mac/SH09_artefacts/Release/VST3/Toyland KB-09.vst3' "$folder/Support/Toyland KB-09.vst3"
           ditto 'docs/manual' "$folder/Support/User Guide"
+          cp 'docs/manual/User Manual.pdf' "$folder/User Manual.pdf"
           cp auval.txt "$folder/Support/auval.txt"
           cp tools/install-mac.command "$folder/INSTALL KB-09.command"
           chmod +x "$folder/INSTALL KB-09.command"
-          printf '%s\n' 'UNVERIFIED MAC BUILD — for testing with Kevin.' '1. Extract this ZIP.' '2. Close your music software.' '3. Double-click INSTALL KB-09.command.' '4. Reopen your music software and rescan plug-ins.' '' 'Built for macOS 12 or later, Intel and Apple Silicon. Ad-hoc signed, not Developer ID signed or notarized. If macOS blocks it, contact Kevin for help; do not disable system security.' 'Passing auval on the build runner is not a Logic/GarageBand test. Please report bugs or manual mistakes to Kevin with your Mac, macOS and host versions.' 'The included guide describes the Windows release; its synth controls also apply on Mac. Follow this file for Mac installation.' > "$folder/START HERE.txt"
+          printf '%s\n' 'UNVERIFIED MAC BUILD — for testing with Kevin.' '1. Extract this ZIP.' '2. Close your music software.' '3. Double-click INSTALL KB-09.command.' '4. Reopen your music software and rescan plug-ins.' '' 'Built for macOS 12 or later, Intel and Apple Silicon. Ad-hoc signed, not Developer ID signed or notarized. If macOS blocks it, contact Kevin for help; do not disable system security.' 'Passing auval on the build runner is not a Logic/GarageBand test. Please report bugs or manual mistakes to Kevin with your Mac, macOS and host versions.' 'Open User Manual.pdf beside this file for installation, controls and troubleshooting.' > "$folder/START HERE.txt"
           ditto -c -k --sequesterRsrc --keepParent "$folder" 'Toyland KB-09 for Mac - UNVERIFIED.zip'
       - uses: actions/upload-artifact@v4
         with:
           name: KB-09-Mac-UNVERIFIED
           path: Toyland KB-09 for Mac - UNVERIFIED.zip
           retention-days: 30
+
+

@@ -328,7 +328,7 @@ void cap(juce::Graphics& g,juce::Rectangle<float> r,bool small=false,bool indexe
 void projectedKnob(juce::Graphics& g,juce::Rectangle<float> area,float angle,float age,uint32_t seed) {
     // Final small inset correction retains the approved body height/camera.
     juce::Graphics::ScopedSaveState save(g);
-    const float d=juce::jmin(area.getWidth(),area.getHeight());
+    const float d=juce::jmin(area.getWidth(),area.getHeight())*.95f;
     const auto sprite=area.withSizeKeepingCentre(d,d);
     const auto top=juce::Point<float>(sprite.getX()+d*.497f,sprite.getY()+d*.410f);
     g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
@@ -354,6 +354,9 @@ void projectedKnob(juce::Graphics& g,juce::Rectangle<float> area,float angle,flo
     g.setColour(juce::Colour(0xff141718));
     // One third of the metal top's diameter, with a clear square-ended mark.
     g.drawLine({top+direction*d*.079f,top+direction*d*.245f},d*.028f);
+    // Matching radial index on the flared metal collar; body lighting stays fixed.
+    const auto collar=juce::Point<float>(top.x,sprite.getY()+d*.505f);
+    g.drawLine({collar+direction*d*.390f,collar+direction*d*.455f},d*.014f);
 }
 void screwOxidation(juce::Graphics& g,juce::Point<float> c,float age,uint32_t seed) {
     if(age<=0)return;
@@ -1380,3 +1383,4 @@ void SH09Editor::resized() {
         panel->setTopLeftPosition(0,0);
     }
 }
+

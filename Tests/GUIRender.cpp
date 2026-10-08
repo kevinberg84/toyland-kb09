@@ -367,13 +367,18 @@ void checkRotaryTicks(SH09Processor& processor,juce::Component& editor,Checks& c
                     const float dx=((float(x)+.5f)/controlRenderScale-centreX)/maskRadius;
                     const float dy=((float(y)+.5f)/controlRenderScale-centreY)/(maskRadius*projectedCos);
                     if(dx*dx+dy*dy<=1.0f)continue;
+                    // The newly restored collar index also rotates, inside its narrow annulus.
+                    const float cx=((float(x)+.5f)/controlRenderScale-(origin+diameter*.497f))/(diameter);
+                    const float cy=((float(y)+.5f)/controlRenderScale-(origin+diameter*.505f))/(diameter*projectedCos);
+                    const float collarRadius=std::sqrt(cx*cx+cy*cy);
+                    if(collarRadius>.35f&&collarRadius<.49f)continue;
                     const auto p=a.getPixelColour(x,y),q=b.getPixelColour(x,y);
                     const int delta=std::max({std::abs(int(p.getRed())-int(q.getRed())),std::abs(int(p.getGreen())-int(q.getGreen())),
                                               std::abs(int(p.getBlue())-int(q.getBlue()))});
                     if(delta>2)fixedLighting=false;
                 }
             }
-            checks.expect(fixedLighting,context+" rotation leaves body, skirt, shadow and lighting outside the top-disc mask fixed");
+            checks.expect(fixedLighting,context+" rotation leaves body, skirt, shadow and lighting outside the top and collar indicator masks fixed");
             const std::array<juce::Image,3> staticTick{{images[0],images[0],images[0]}};
             checks.expect(!movingTicks(staticTick,angles),context+" tick detector rejects a static or absent moving indicator");
         }
@@ -1076,3 +1081,4 @@ int main(int argc, char** argv) {
     }
     return checks.failures == 0 ? 0 : 1;
 }
+
