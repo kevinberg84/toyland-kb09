@@ -133,9 +133,9 @@ const juce::Image& panelDust() {
         for(const auto& b:banks) {
             juce::Graphics::ScopedSaveState save(g);
             g.addTransform(juce::AffineTransform::scale(b.rx,b.ry).translated(b.x,b.y));
-            juce::ColourGradient haze(juce::Colour(0xffb7b3a4).withAlpha(b.strength),0,0,
+            juce::ColourGradient haze(juce::Colour(0xffb7b3a4).withAlpha(b.strength*1.8f),0,0,
                                      juce::Colours::transparentBlack,1,0,true);
-            haze.addColour(.48,juce::Colour(0xffa8a79b).withAlpha(b.strength*.30f));
+            haze.addColour(.48,juce::Colour(0xffa8a79b).withAlpha(b.strength*.55f));
             g.setGradientFill(haze);g.fillEllipse(-1.0f,-1.0f,2.0f,2.0f);
         }
         for(uint32_t i=0;i<19000;++i) {
@@ -151,7 +151,7 @@ const juce::Image& panelDust() {
             const float size=.16f+.43f*std::pow(surfaceNoise(seed+89),2.0f);
             const float tone=surfaceNoise(seed+101);
             g.setColour(juce::Colour(0xffbcb8a9).interpolatedWith(juce::Colour(0xff777b76),tone)
-                        .withAlpha(.12f+.28f*surfaceNoise(seed+113)));
+                        .withAlpha(.20f+.42f*surfaceNoise(seed+113)));
             g.fillEllipse(x,y,size*(i%79==0?2.7f:1.0f),size);
         }
         return result;
