@@ -1105,6 +1105,8 @@ public:
         bender.setRange(-1,1,.001);bender.setValue(0);bender.setSliderStyle(juce::Slider::LinearHorizontal);
         bender.setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);bender.setScrollWheelEnabled(false);bender.setWantsKeyboardFocus(false);
         bender.setTooltip("Spring-return bender. VCO / VCF sliders set the depth.");
+        bender.setTitle("Pitch bender");bender.setPopupDisplayEnabled(true,true,this);
+        bender.textFromValueFunction=[](double v){return (v>0?juce::String("+"):juce::String())+juce::String(v*100,1)+"%";};
         bender.onValueChange=[this]{bendActive=std::abs(bender.getValue())>.0001;processor.queuePitchBend(float(bender.getValue()));};
         bender.onDragEnd=[this]{bender.setValue(0,juce::sendNotificationSync);};
         addSwitch("modern",22,designH-headerH-44,131,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
@@ -1383,4 +1385,5 @@ void SH09Editor::resized() {
         panel->setTopLeftPosition(0,0);
     }
 }
+
 
