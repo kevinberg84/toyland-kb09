@@ -892,6 +892,24 @@ void checkSwitchAttachment(SH09Processor& processor, juce::Component& editor, Ch
                 changed = before.getPixelAt(x, y) != after.getPixelAt(x, y);
     checks.expect(changed && parameter->convertFrom0to1(parameter->getValue()) == 0.0f,
                   "worker-thread automation visibly redraws the physical PWM switch");
+    component->keyPressed(juce::KeyPress(juce::KeyPress::homeKey));
+    juce::BubbleMessageComponent* bubble=nullptr;
+    for(auto* child:component->getParentComponent()->getChildren())
+        if(auto* candidate=dynamic_cast<juce::BubbleMessageComponent*>(child))bubble=candidate;
+    checks.expect(bubble!=nullptr && bubble->isVisible() && bubble->getName()=="LFO",
+                  "switch value bubble shows the selected LFO mode");
+    if(bubble!=nullptr) {
+        const auto image=bubble->createComponentSnapshot(bubble->getLocalBounds(),true,2.0f);
+        int darkPixels=0;
+        // Inspect the centre, away from the border and pointer: text must render.
+        for(int y=image.getHeight()/3;y<image.getHeight()*2/3;++y)
+            for(int x=image.getWidth()/4;x<image.getWidth()*3/4;++x)
+                if(image.getPixelAt(x,y).getAlpha()>128 && image.getPixelAt(x,y).getBrightness()<.35f)++darkPixels;
+        checks.expect(darkPixels>15,"switch bubble contains readable dark text on its pale background");
+        component->keyPressed(juce::KeyPress(juce::KeyPress::endKey));
+        checks.expect(bubble->getName()=="ENV","switch value bubble updates to the selected ENV mode");
+        bubble->setVisible(false);
+    }
     setParameter(processor, "pwmMode", original);
     settleEditor();
 }

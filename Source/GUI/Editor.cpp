@@ -740,7 +740,7 @@ public:
     void mouseUp(const juce::MouseEvent&) override {if(dragging){attachment.endGesture();dragging=false;showValue(800);}}
     void mouseDoubleClick(const juce::MouseEvent&) override {
         if(dragging){attachment.endGesture();dragging=false;}
-        attachment.setValueAsCompleteGesture(float(initial));
+        attachment.setValueAsCompleteGesture(float(initial));showValue(800);
     }
     bool keyPressed(const juce::KeyPress& key) override {
         auto it=std::find(order.begin(),order.end(),value);int i=int(std::distance(order.begin(),it));
@@ -749,7 +749,7 @@ public:
         else if(key==juce::KeyPress::homeKey)i=0;
         else if(key==juce::KeyPress::endKey)i=int(order.size())-1;
         else return false;
-        attachment.setValueAsCompleteGesture(float(order[size_t(juce::jlimit(0,int(order.size())-1,i))]));return true;
+        attachment.setValueAsCompleteGesture(float(order[size_t(juce::jlimit(0,int(order.size())-1,i))]));showValue(800);return true;
     }
 private:
     std::vector<int> order;juce::StringArray labels;bool labelsLeft=false,dragging=false,draggingSlot=false;int value=0,initial=0;
@@ -760,8 +760,11 @@ private:
             popup.setAlwaysOnTop(true);
             auto it=std::find(order.begin(),order.end(),value);
             const int index=int(std::distance(order.begin(),it));
+            const auto label=labels[juce::jlimit(0,labels.size()-1,index)].replace("\n"," ");
+            popup.setName(label);
             juce::AttributedString text; text.setJustification(juce::Justification::centred);
-            text.append(labels[juce::jlimit(0,labels.size()-1,index)].replace("\n"," "),font(13),ink);
+            // The bubble is pale; panel ink is pale too and would hide its text.
+            text.append(label,font(13),juce::Colour(0xff22262a));
             popup.showAt(this,text,duration,true,false);
         }
     }
@@ -1082,7 +1085,7 @@ void arcLabels(juce::Graphics& g,juce::Point<float> centre,
 class SH09Editor::Panel final : public juce::Component, private juce::Timer {
 public:
     Panel(SH09Processor& p,sh09::WindowSizing& s)
-        :processor(p),sizing(s),presetFiles(p,*this),keyboard(p),header(s),maximise(s),power(p),tooltip(this,650) {
+        :processor(p),sizing(s),presetFiles(p,*this),keyboard(p),header(s),maximise(s),power(p) {
         setLookAndFeel(&look);setSize(designW,designH);
         addAndMakeVisible(header);header.setBounds(0,0,designW,headerH);
         addAndMakeVisible(keyboard);keyboard.setBounds(286,headerH+370,1142,325);
@@ -1290,7 +1293,7 @@ private:
         std::unique_ptr<SliderAttachment> attachment;
     };
     SH09Processor& processor;sh09::WindowSizing& sizing;sh09::PresetFiles presetFiles;HardwareLook look;
-    Keyboard keyboard;Header header;MaximiseButton maximise;PowerButton power;juce::TooltipWindow tooltip;
+    Keyboard keyboard;Header header;MaximiseButton maximise;PowerButton power;
     juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset;
     FineSlider bender;juce::Label externalHelp;Meter meter;RateLamp rateLamp;
     std::vector<std::unique_ptr<Control>> controls;
