@@ -1176,10 +1176,10 @@ public:
         large.setTooltip("Large: fill this screen's available work area. For sharpness in Live, disable Auto-Scale Plug-in Window if available, then create a fresh instance.");large.onClick=[this]{sizing.chooseLarge();};
         if(processor.wrapperType==juce::AudioProcessor::wrapperType_Standalone) {
             addAndMakeVisible(audioMidi);audioMidi.setComponentID("audioMidiSettings");
-            audioMidi.setButtonText("AUDIO / MIDI");audioMidi.setBounds(232,5,151,24);
+            audioMidi.setButtonText("AUDIO / MIDI");audioMidi.setBounds(268,5,115,24);
             setWantsKeyboardFocus(true);addKeyListener(this);
             addAndMakeVisible(computerKeyboard);computerKeyboard.setComponentID("computerKeyboard");
-            computerKeyboard.setBounds(104,5,122,24);computerKeyboard.setClickingTogglesState(true);
+            computerKeyboard.setBounds(140,5,122,24);computerKeyboard.setClickingTogglesState(true);
             computerKeyboard.setWantsKeyboardFocus(false);
             computerKeyboard.setColour(juce::TextButton::buttonOnColourId,amber);
             computerKeyboard.setColour(juce::TextButton::textColourOnId,juce::Colour(0xff151a1d));
