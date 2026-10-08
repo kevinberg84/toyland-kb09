@@ -382,7 +382,7 @@ void screwOxidation(juce::Graphics& g,juce::Point<float> c,float age,uint32_t se
 }
 class HardwareLook final : public juce::LookAndFeel_V4 {
 public:
-    float age=0;
+    float age=0;bool conditionDragging=false;
     HardwareLook() {
         setColour(juce::ComboBox::backgroundColourId,juce::Colour(0xff202326));
         setColour(juce::ComboBox::textColourId,ink);
@@ -494,7 +494,7 @@ public:
                     const float lightShape=.70f+.30f*std::exp(-((axial-1.2f)*(axial-1.2f))/1.8f);
                     return .023f+.024f*diffuse+1.10f*(1-age*.68f)*specular*lightShape+age*.008f;
                 };
-                constexpr int samples=4;
+                const int samples=conditionDragging?1:4;
                 const juce::Rectangle<float> rimBounds(centre-radius-1,12,2*radius+2,
                                                        wheelBaseline+depth*panelViewCos-11);
                 juce::Image rim(juce::Image::ARGB,juce::roundToInt(rimBounds.getWidth()*samples),
@@ -989,7 +989,9 @@ private:
         // A rounded moulded bevel, rather than a thin outlined inset. Surface
         // normals blend into the flat centre and give the front corner a soft
         // diffuse highlight. Dimensions are photo-informed visual estimates.
-        constexpr float scale=6,bevel=1.8f,radius=2.0f;
+        const auto* look=dynamic_cast<const HardwareLook*>(&getLookAndFeel());
+        const float scale=look!=nullptr&&look->conditionDragging?2.0f:6.0f;
+        constexpr float bevel=1.8f,radius=2.0f;
         const int w=juce::roundToInt(width*scale),h=juce::roundToInt(height*scale);
         if(cap.isValid()&&cap.getWidth()==w&&cap.getHeight()==h&&capAge==age&&capOver==over)return cap;
         cap=juce::Image(juce::Image::ARGB,w,h,true,juce::SoftwareImageType());capAge=age;capOver=over;
@@ -1150,9 +1152,18 @@ public:
         bender.onDragEnd=[this]{bender.setValue(0,juce::sendNotificationSync);};
         addSwitch("modern",22,designH-headerH-44,131,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
         addUtility("age","CONDITION / AGE",257,154);
+        controls.back()->slider->onDragStart=[this]{look.conditionDragging=true;};
+        controls.back()->slider->onDragEnd=[this]{look.conditionDragging=false;repaint();keyboard.repaint();};
         addUtility("velocity","VELOCITY",493,113);addUtility("aftertouch","AFTERTOUCH",692,113);
         addSwitch("lfoSync",811,designH-headerH-44,104,42,{0,1},{"FREE","SYNC"},"Modern mode: SYNC makes RATE select straight, dotted and triplet grid divisions.");
         addUtility("extGain","INPUT TRIM",1070,127);
+        addAndMakeVisible(descriptions);descriptions.setComponentID("descriptions");
+        descriptions.setButtonText("DESCRIPTION");descriptions.setClickingTogglesState(true);
+        descriptions.setBounds(1170,designH-35,139,24);
+        descriptions.onClick=[this]{
+            if(descriptions.getToggleState())tooltip=std::make_unique<juce::TooltipWindow>(this,650);
+            else tooltip.reset();
+        };
         addAndMakeVisible(help);help.setButtonText("EXT AUDIO");help.setBounds(1323,designH-35,120,24);
         help.onClick=[this]{externalHelp.setVisible(!externalHelp.isVisible());};
         addChildComponent(externalHelp);externalHelp.setBounds(390,headerH+418,900,225);
@@ -1294,10 +1305,11 @@ private:
     };
     SH09Processor& processor;sh09::WindowSizing& sizing;sh09::PresetFiles presetFiles;HardwareLook look;
     Keyboard keyboard;Header header;MaximiseButton maximise;PowerButton power;
-    juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset;
+    juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions;
+    std::unique_ptr<juce::TooltipWindow> tooltip;
     FineSlider bender;juce::Label externalHelp;Meter meter;RateLamp rateLamp;
     std::vector<std::unique_ptr<Control>> controls;
-    std::array<int,128> lastKeys{};float lastAge=-1;bool lastModern=false,bendActive=false,userPreset=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1;unsigned lastProgramRevision=0;
+    std::array<int,128> lastKeys{};float lastAge=-1;bool lastModern=false,bendActive=false,userPreset=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1;unsigned lastProgramRevision=0;double lastConditionPaint=0;
     void timerCallback() override {
         const auto programRevision=processor.getProgramRevision();
         const int program=processor.getCurrentProgram();
@@ -1318,8 +1330,10 @@ private:
         if(displayedKeyboardNote!=lastDisplayedKeyboardNote){lastDisplayedKeyboardNote=displayedKeyboardNote;keysChanged=true;}
         if(keysChanged)keyboard.repaint();
         const float age=processor.state.getRawParameterValue("age")->load();
-        if(age!=lastAge){
-            lastAge=age;look.age=age;
+        // Coalesce full-instrument wear redraws while the AGE thumb remains live.
+        const auto now=juce::Time::getMillisecondCounterHiRes();
+        if(age!=lastAge && (!look.conditionDragging||now-lastConditionPaint>=50.0)){
+            lastConditionPaint=now;lastAge=age;look.age=age;
             for(auto& c:controls)if(c->label&&bool(c->label->getProperties().getWithDefault("hardwarePrint",false)))
                 c->label->setColour(juce::Label::textColourId,agedInk(age));
             repaint();keyboard.repaint();

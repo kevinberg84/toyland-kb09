@@ -866,6 +866,30 @@ void checkBenderAudioCallbacks(SH09Processor& processor,juce::Component& editor,
     processor.reset();bender->setValue(originalValue,juce::sendNotificationSync);settleEditor();
 }
 
+void checkOptionalDescriptions(juce::Component& editor,Checks& checks) {
+    auto* button=dynamic_cast<juce::TextButton*>(findComponent(editor,"descriptions"));
+    checks.expect(button!=nullptr&&!button->getToggleState(),"DESCRIPTION is available and starts off");
+    if(button==nullptr)return;
+    button->setToggleState(true,juce::sendNotificationSync);
+    checks.expect(button->getToggleState(),"DESCRIPTION can enable optional hover help");
+    button->setToggleState(false,juce::sendNotificationSync);
+    checks.expect(!button->getToggleState(),"DESCRIPTION can disable hover help again");
+    auto* age=dynamic_cast<juce::Slider*>(findComponent(editor,"age"));
+    auto* bender=dynamic_cast<juce::Slider*>(findComponent(editor,"bender"));
+    if(age==nullptr||bender==nullptr)return;
+    const auto render=[&]{return bender->createComponentSnapshot(bender->getLocalBounds(),true,1.0f);};
+    double start=juce::Time::getMillisecondCounterHiRes();
+    auto before=render();const auto fullMs=juce::Time::getMillisecondCounterHiRes()-start;
+    age->onDragStart();start=juce::Time::getMillisecondCounterHiRes();auto preview=render();
+    const auto previewMs=juce::Time::getMillisecondCounterHiRes()-start;
+    age->onDragEnd();auto after=render();
+    bool same=before.getBounds()==after.getBounds();
+    for(int y=0;y<before.getHeight()&&same;++y)for(int x=0;x<before.getWidth()&&same;++x)
+        same=before.getPixelAt(x,y)==after.getPixelAt(x,y);
+    checks.expect(same,"AGE drag restores the exact full-detail material after release");
+    std::cout<<"AGE bender material full_ms="<<fullMs<<" live_preview_ms="<<previewMs<<"\n";
+}
+
 void checkSwitchAttachment(SH09Processor& processor, juce::Component& editor, Checks& checks) {
     auto* component = findComponent(editor, "pwmMode");
     checks.expect(component != nullptr, "PWM physical switch is available for interaction");
@@ -1036,6 +1060,7 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
     if (fixture.program == 0) {
         checkSizeChoices(*editor,directory,checks);
         checkSwitchAttachment(processor, *editor, checks);
+        checkOptionalDescriptions(*editor,checks);
         checkKeyboardFeedback(processor, *editor, directory, checks);
         checkOpaqueCaps(*editor, checks);
         checkFineGestures(processor,*editor,checks);
