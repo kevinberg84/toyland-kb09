@@ -1141,7 +1141,7 @@ void arcLabels(juce::Graphics& g,juce::Point<float> centre,
 }
 }
 
-class SH09Editor::Panel final : public juce::Component, private juce::Timer {
+class SH09Editor::Panel final : public juce::Component, private juce::Timer, private juce::KeyListener {
 public:
     Panel(SH09Processor& p,sh09::WindowSizing& s)
         :processor(p),sizing(s),presetFiles(p,*this),keyboard(p),header(s),maximise(s),power(p) {
@@ -1177,6 +1177,15 @@ public:
         if(processor.wrapperType==juce::AudioProcessor::wrapperType_Standalone) {
             addAndMakeVisible(audioMidi);audioMidi.setComponentID("audioMidiSettings");
             audioMidi.setButtonText("AUDIO / MIDI");audioMidi.setBounds(232,5,151,24);
+            setWantsKeyboardFocus(true);addKeyListener(this);
+            addAndMakeVisible(computerKeyboard);computerKeyboard.setComponentID("computerKeyboard");
+            computerKeyboard.setBounds(104,5,122,24);computerKeyboard.setClickingTogglesState(true);
+            computerKeyboard.setWantsKeyboardFocus(false);
+            computerKeyboard.setColour(juce::TextButton::buttonOnColourId,amber);
+            computerKeyboard.setColour(juce::TextButton::textColourOnId,juce::Colour(0xff151a1d));
+            computerKeyboard.setTooltip("Computer keyboard: A W S E D F T G Y H U J K play C to C. Z / X shift octave. Standalone only.");
+            computerKeyboard.onClick=[this]{releaseComputerNotes();updateComputerLabel();if(computerKeyboard.getToggleState())grabKeyboardFocus();};
+            updateComputerLabel();
             audioMidi.setTooltip("Choose your audio output device and enable your MIDI controller.");
             audioMidi.onClick=[] {
                 if(auto* holder=juce::StandalonePluginHolder::getInstance())holder->showAudioSettingsDialog();
@@ -1253,7 +1262,7 @@ public:
         updateModern();startTimerHz(60);
     }
     ~Panel() override {
-        stopTimer();sizing.onChange=nullptr;if(bendActive)processor.queuePitchBend(0);setLookAndFeel(nullptr);
+        stopTimer();releaseComputerNotes();removeKeyListener(this);sizing.onChange=nullptr;if(bendActive)processor.queuePitchBend(0);setLookAndFeel(nullptr);
     }
     void paint(juce::Graphics& g) override {
         if(look.conditionDragging&&conditionBackdrop.isValid()) {g.drawImageAt(conditionBackdrop,0,0);return;}
@@ -1384,12 +1393,47 @@ private:
     };
     SH09Processor& processor;sh09::WindowSizing& sizing;sh09::PresetFiles presetFiles;HardwareLook look;
     Keyboard keyboard;Header header;MaximiseButton maximise;PowerButton power;
-    juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions,audioMidi;
+    juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions,audioMidi,computerKeyboard;
     std::unique_ptr<juce::TooltipWindow> tooltip;juce::Image conditionBackdrop;
     FineSlider bender;juce::Label externalHelp;Meter meter;RateLamp rateLamp;
     std::vector<std::unique_ptr<Control>> controls;
     std::array<int,128> lastKeys{};float lastAge=-1;bool lastModern=false,bendActive=false,userPreset=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1;unsigned lastProgramRevision=0;double lastConditionPaint=0;
+    std::array<bool,13> computerHeld{};
+    int computerOctave=4;
+    static constexpr const char* computerKeys="AWSEDFTGYHUJK";
+    void updateComputerLabel() {computerKeyboard.setButtonText(computerKeyboard.getToggleState()?"KEYBOARD C"+juce::String(computerOctave):"KEYBOARD");}
+    void releaseComputerNotes() {
+        for(size_t i=0;i<computerHeld.size();++i)if(computerHeld[i]) {
+            processor.queueKeyboard((computerOctave+1)*12+int(i),false,false);computerHeld[i]=false;
+        }
+    }
+    bool computerReady() const {
+        if(!computerKeyboard.getToggleState()||!hasKeyboardFocus(true)||!isShowing())return false;
+        for(auto* c=juce::Component::getCurrentlyFocusedComponent();c&&c!=this;c=c->getParentComponent())
+            if(dynamic_cast<juce::TextEditor*>(c)||dynamic_cast<juce::ComboBox*>(c))return false;
+        return !juce::ModifierKeys::getCurrentModifiersRealtime().isAnyModifierKeyDown();
+    }
+    bool keyStateChanged(bool,juce::Component*) override {
+        if(!computerReady()){releaseComputerNotes();return false;}
+        bool consumed=false;
+        for(size_t i=0;i<computerHeld.size();++i) {
+            const bool down=juce::KeyPress::isKeyCurrentlyDown(computerKeys[i]);
+            consumed|=down||computerHeld[i];
+            if(down!=computerHeld[i]){computerHeld[i]=down;processor.queueKeyboard((computerOctave+1)*12+int(i),down,false);}
+        }
+        return consumed;
+    }
+    bool keyPressed(const juce::KeyPress& key,juce::Component*) override {
+        if(!computerReady())return false;
+        const auto c=juce::CharacterFunctions::toUpperCase(key.getTextCharacter());
+        if(c=='Z'||c=='X') {releaseComputerNotes();computerOctave=juce::jlimit(1,6,computerOctave+(c=='X'?1:-1));updateComputerLabel();return true;}
+        return juce::String(computerKeys).containsChar(c);
+    }
     void timerCallback() override {
+        if(!computerReady())releaseComputerNotes();
+        else for(size_t i=0;i<computerHeld.size();++i)if(computerHeld[i]&&!juce::KeyPress::isKeyCurrentlyDown(computerKeys[i])) {
+            computerHeld[i]=false;processor.queueKeyboard((computerOctave+1)*12+int(i),false,false);
+        }
         const auto programRevision=processor.getProgramRevision();
         const int program=processor.getCurrentProgram();
         if(!userPreset||program!=lastProgram||programRevision!=lastProgramRevision){presets.setSelectedId(program+1,juce::dontSendNotification);userPreset=false;}
@@ -1443,7 +1487,7 @@ private:
         slider.setComponentID(id);slider.setTitle(name);slider.setBounds(x,headerH+y,w,h);slider.setSliderStyle(style);
         slider.setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);slider.setPopupDisplayEnabled(true,true,this);
         slider.setScrollWheelEnabled(false);slider.setMouseDragSensitivity(190);
-        if(juce::String(id)=="age")slider.setSliderSnapsToMousePosition(true);
+        if(juce::String(id)=="age"||juce::String(id)=="velocity"||juce::String(id)=="aftertouch"||juce::String(id)=="extGain")slider.setSliderSnapsToMousePosition(true);
         const float twoPi=juce::MathConstants<float>::twoPi;
         if(juce::String(id)=="range")slider.setRotaryParameters(twoPi-1.134464f,twoPi+1.134464f,true);
         else if(juce::String(id)=="wave")slider.setRotaryParameters(twoPi-1.047198f,twoPi+1.047198f,true);

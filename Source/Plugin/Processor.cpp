@@ -66,12 +66,12 @@ void SH09Processor::setPowerEnabled(bool enabled) noexcept {
  if(powerEnabled.exchange(enabled,std::memory_order_acq_rel)!=enabled)
    powerGeneration.fetch_add(1,std::memory_order_release);
 }
-void SH09Processor::queueKeyboard(int note,bool down) noexcept {
+void SH09Processor::queueKeyboard(int note,bool down,bool mouse) noexcept {
  if(note<0||note>127||!isPowerEnabled())return;
  auto w=queueWrite.load(std::memory_order_relaxed);
  auto next=(w+1u)%unsigned(keyboardQueue.size());
  if(next==queueRead.load(std::memory_order_acquire)){queueOverflow.store(true);return;}
- keyboardQueue[w]={note,down,powerGeneration.load(std::memory_order_acquire)};queueWrite.store(next,std::memory_order_release);
+ keyboardQueue[w]={note,down,powerGeneration.load(std::memory_order_acquire),mouse};queueWrite.store(next,std::memory_order_release);
 }
 void SH09Processor::handleMidi(const juce::uint8* bytes,int n) noexcept {
  if(n<1)return; int status=bytes[0]&0xf0;
@@ -113,8 +113,8 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  if(queueDidOverflow){engine.allSoundOff();clearKeyDisplay();r=w;}
  while(r!=w){const auto event=keyboardQueue[r];
    if(event.generation==generation){if(event.down)engine.noteOn(event.note,100);else engine.noteOff(event.note);updateKeyDisplay(event.note,event.down);
-     if(event.down)displayedKeyboardNote.store(event.note,std::memory_order_relaxed);
-     else if(displayedKeyboardNote.load(std::memory_order_relaxed)==event.note)displayedKeyboardNote.store(-1,std::memory_order_relaxed);}
+     if(event.mouse&&event.down)displayedKeyboardNote.store(event.note,std::memory_order_relaxed);
+     else if(event.mouse&&displayedKeyboardNote.load(std::memory_order_relaxed)==event.note)displayedKeyboardNote.store(-1,std::memory_order_relaxed);}
    r=(r+1u)%unsigned(keyboardQueue.size());}
  queueRead.store(r,std::memory_order_release);
  auto input=getBusBuffer(buffer,true,0);auto output=getBusBuffer(buffer,false,0);

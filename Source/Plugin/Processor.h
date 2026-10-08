@@ -33,7 +33,7 @@ public:
  bool getPluginHasMainInput() const override {return false;}
  bool isPowerEnabled() const noexcept {return powerEnabled.load(std::memory_order_acquire);}
  void setPowerEnabled(bool enabled) noexcept;
- void queueKeyboard(int,bool) noexcept;
+ void queueKeyboard(int,bool,bool mouse=true) noexcept;
  void queuePitchBend(float value) noexcept { guiBend.store(juce::jlimit(-1.0f,1.0f,value),std::memory_order_relaxed); guiBendDirty.store(true,std::memory_order_release); }
  juce::AudioProcessorValueTreeState state;
  std::atomic<int> displayedNote{-1};
@@ -63,7 +63,7 @@ private:
  std::atomic<unsigned> powerGeneration{0};
  unsigned processedPowerGeneration=0;
  bool processedPowerEnabled=true;
- struct KeyboardEvent {int note;bool down;unsigned generation;};
+ struct KeyboardEvent {int note;bool down;unsigned generation;bool mouse;};
  std::array<KeyboardEvent,256> keyboardQueue{};
  std::atomic<unsigned> queueRead{0},queueWrite{0};
  std::atomic<bool> queueOverflow{false};
