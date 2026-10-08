@@ -315,6 +315,28 @@ void checkFineGestures(SH09Processor& processor,juce::Component& editor,Checks& 
         const double normal=delta(false),fine=delta(true);
         checks.expect(normal>0&&fine>0&&fine<normal*.15,juce::String(id)+" SHIFT drag is ten times finer");
     }
+    auto* age=dynamic_cast<juce::Slider*>(findComponent(editor,"age"));
+    checks.expect(age!=nullptr,"AGE click-to-position control exists");
+    if(age) {
+        const double saved=age->getValue();
+        const std::array<const char*,10> phrases{{"Nice 'n' New","Barely Broken In","Like New-ish",
+            "Lightly Loved","Seen Some Shit","Vintage, Baby!","Sold As-Is","Smells Like 1983",
+            "Fire Hazard","Who Let You Have This?"}};
+        for(int i=0;i<10;++i)for(double fraction:{0.0,.05,.099})
+            checks.expect(age->getTextFromValue(i*.1+fraction)==phrases[size_t(i)],
+                          "AGE phrase band "+juce::String(i)+" at "+juce::String(fraction,3));
+        checks.expect(age->getTextFromValue(1)==phrases.back(),"AGE maximum uses final phrase");
+        age->setValue(0,juce::sendNotificationSync);
+        const juce::Point<float> point(age->getWidth()*.8f,age->getHeight()*.5f);
+        const auto now=juce::Time::getCurrentTime();
+        const juce::MouseEvent click(juce::Desktop::getInstance().getMainMouseSource(),point,
+            juce::ModifierKeys(juce::ModifierKeys::leftButtonModifier),1,0,0,0,0,
+            age,age,now,point,now,1,false);
+        age->mouseDown(click);
+        checks.expect(age->getValue()>.65&&processor.state.getRawParameterValue("age")->load()>.65f,
+                      "AGE track click immediately moves thumb and parameter before release");
+        age->mouseUp(click);age->setValue(saved,juce::sendNotificationSync);settleEditor();
+    }
     setParameter(processor,"modern",1);setParameter(processor,"lfoSync",1);settleEditor();
     auto* rate=dynamic_cast<juce::Slider*>(findComponent(editor,"lfoRate"));
     checks.expect(rate&&rate->getTextFromValue(0)=="4 bars"&&rate->getTextFromValue(1)=="1/64 T","RATE value box presents SYNC divisions");

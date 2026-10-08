@@ -130,7 +130,7 @@ const juce::Image& panelDust() {
             {194,598,24,36},{222,653,13,23},{118,651,24,18},
             {82,711,19,8},{231,710,12,10},{602,284,14,19},
             {830,282,16,18},{1090,285,13,18},{1381,286,16,19}}};
-        for(uint32_t i=0;i<14500;++i) {
+        for(uint32_t i=0;i<17000;++i) {
             const uint32_t seed=surfaceHash(880301u+i*7919u);
             float x=65+1370*surfaceNoise(seed),y=70+315*surfaceNoise(seed+17);
             if(i%3==0) {
@@ -1434,6 +1434,7 @@ private:
         slider.setComponentID(id);slider.setTitle(name);slider.setBounds(x,headerH+y,w,h);slider.setSliderStyle(style);
         slider.setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);slider.setPopupDisplayEnabled(true,true,this);
         slider.setScrollWheelEnabled(false);slider.setMouseDragSensitivity(190);
+        if(juce::String(id)=="age")slider.setSliderSnapsToMousePosition(true);
         const float twoPi=juce::MathConstants<float>::twoPi;
         if(juce::String(id)=="range")slider.setRotaryParameters(twoPi-1.134464f,twoPi+1.134464f,true);
         else if(juce::String(id)=="wave")slider.setRotaryParameters(twoPi-1.047198f,twoPi+1.047198f,true);
@@ -1461,14 +1462,20 @@ private:
         if(juce::String(id)=="bendVco")slider.setTooltip("Set how much the spring-return bender changes oscillator pitch.");
         if(juce::String(id)=="bendVcf")slider.setTooltip("Set how much the bender changes filter cutoff.");
         if(juce::String(id)=="volume")slider.setTooltip("Set instrument output volume, from silence to full level.");
-        if(juce::String(id)=="age")slider.setTooltip("Age the circuitry and appearance. Sound and value update while dragging; detailed visual wear refreshes on release. SHIFT gives fine adjustment.");
+        if(juce::String(id)=="age")slider.setTooltip("Age the circuitry and appearance. Click anywhere on the track to jump there, or drag; SHIFT gives fine adjustment. Detailed visual wear refreshes on release.");
         if(juce::String(id)=="velocity")slider.setTooltip("In Modern mode, set how strongly playing velocity affects the sound.");
         if(juce::String(id)=="aftertouch")slider.setTooltip("In Modern mode, set the amount of pressure-controlled expression.");
         if(juce::String(id)=="extGain")slider.setTooltip("In Modern mode, adjust external input gain before the follower and mixer.");
 slider.setDoubleClickReturnValue(true,spec.initial);}
         addAndMakeVisible(slider);c->attachment=std::make_unique<SliderAttachment>(processor.state,id,slider);
         for(const auto& spec:sh09::specs)if(juce::String(spec.id)==id&&spec.choices[0]==0) {
-            if(juce::String(id)=="tune")slider.textFromValueFunction=[](double v){return juce::String(v,1)+" ct";};
+            if(juce::String(id)=="age")slider.textFromValueFunction=[](double v){
+                constexpr std::array<const char*,10> phrases{{"Nice 'n' New","Barely Broken In","Like New-ish",
+                    "Lightly Loved","Seen Some Shit","Vintage, Baby!","Sold As-Is","Smells Like 1983",
+                    "Fire Hazard","Who Let You Have This?"}};
+                return juce::String(phrases[size_t(juce::jlimit(0,9,int(std::floor(v*10+1.0e-6))))]);
+            };
+            else if(juce::String(id)=="tune")slider.textFromValueFunction=[](double v){return juce::String(v,1)+" ct";};
             else if(juce::String(id)=="lfoRate")slider.textFromValueFunction=[this](double v){
                 return processor.state.getRawParameterValue("modern")->load()>.5f&&processor.state.getRawParameterValue("lfoSync")->load()>.5f
                     ?juce::String(sh09::rateDivision(v).label):juce::String(v*10,2);
