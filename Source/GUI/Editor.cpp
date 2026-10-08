@@ -481,15 +481,16 @@ public:
                 const float amount=float(slider.getValue());
                 const float centre=float(slider.getWidth())*.5f;
                 auto well=juce::Rectangle<float>(8,13,float(slider.getWidth())-16,22);
-                g.setColour(juce::Colour(0xff596064));g.fillRect(well.expanded(1));
+                g.setColour(juce::Colour(0xff080909));g.fillRoundedRectangle(well.expanded(1.3f),1.1f);
+                g.setColour(juce::Colour(0xff393b38).withAlpha(.55f));g.drawLine(well.getX(),well.getBottom()+.6f,well.getRight(),well.getBottom()+.6f,.65f);
                 g.setGradientFill(juce::ColourGradient(juce::Colour(0xff030303),well.getX(),well.getY(),
                                                      juce::Colour(0xff202020),well.getX(),well.getBottom(),false));
-                g.fillRect(well);g.setColour(juce::Colours::black);g.drawRect(well,.9f);
+                g.fillRoundedRectangle(well,.7f);
                 // One rigid PB-4-like disk and finger tab, extruded along its
                 // hidden axle. Rotate object vertices first; the shared 9-degree
                 // camera then projects every face without screen-space reshaping.
                 const float angle=amount*.610865f,sa=std::sin(angle),ca=std::cos(angle);
-                constexpr float radius=60.0f,depth=7.5f,rootWidth=5.7f;
+                constexpr float radius=60.0f,depth=10.5f,rootWidth=6.5f;
                 const float wheelBaseline=13.0f+radius*panelViewSin;
                 const bool broken=age>=.92f;
                 const auto project=[centre,wheelBaseline,sa,ca](juce::Point<float> p,float axleDepth) {
@@ -511,8 +512,8 @@ public:
                                                                {1.1f,63.8f},{3.0f,62.4f},{4.7f,63.0f}}};
                     for(const auto p:tab)outline[size_t(count++)]=p;
                 } else {
-                    const std::array<juce::Point<float>,6> tab{{{-5.55f,rootHeight+1.2f},{-4.9f,82.8f},{-4.5f,85.0f},
-                                                               {4.5f,85.0f},{4.9f,82.8f},{5.55f,rootHeight+1.2f}}};
+                    const std::array<juce::Point<float>,6> tab{{{-6.4f,rootHeight+1.2f},{-5.7f,82.8f},{-5.3f,85.0f},
+                                                               {5.3f,85.0f},{5.7f,82.8f},{6.4f,rootHeight+1.2f}}};
                     for(const auto p:tab)outline[size_t(count++)]=p;
                 }
                 const auto section=[&](float z) {
@@ -732,7 +733,7 @@ public:
         g.setColour(juce::Colour(0xff030608));g.fillRoundedRectangle(xx-4,top-9,8,bottom-top+18,1.2f);
         for(size_t i=0;i<order.size();++i) {
             const float yy=top+throwStep*float(i),labelY=middle+(float(i)-float(order.size()-1)*.5f)*labelStep;
-            g.setColour(ink);g.drawLine(xx+(middleOnLeft?-9:6),yy,xx+(middleOnLeft?-6:9),yy,.7f);
+            // Original slide-switch legends have no detent tick marks.
             auto textBox=middleOnLeft?juce::Rectangle<float>(0,labelY-13,xx-9,26):
                                    juce::Rectangle<float>(xx+11,labelY-13,float(getWidth())-xx-11,26);
             // Top and bottom legends sit near the short actuator's axis;
@@ -1132,7 +1133,9 @@ void arcLabels(juce::Graphics& g,juce::Point<float> centre,
         auto label=centre+juce::Point<float>(std::sin(angle),-std::cos(angle))*(radius+10);
         // The neighbouring 2-foot and NOISE detents share the space between
         // selectors. Place NOISE above its knob while preserving the tick.
-        if(text=="NOISE")label+=juce::Point<float>(3,-17.0f);
+        if(text=="NOISE")label+=juce::Point<float>(6,-11.0f);
+        if(text=="2'")label+=juce::Point<float>(-7,5);
+        if(text=="32'")label+=juce::Point<float>(5,2);
         if(text=="SAW"||text=="SQR"||text=="PULSE")
             panelGlyph(g,text=="SAW"?PanelGlyph::saw:text=="SQR"?PanelGlyph::square:PanelGlyph::pulse,
                        {label.x-8,label.y-4,16,8},ink);
@@ -1327,7 +1330,7 @@ public:
             panelGlyph(g,PanelGlyph::sine,{205,99,12,7},ink,.85f);
             caption(g,"DELAY\nTIME",{218,92,29,22},7.6f,juce::Justification::centred,true,ink);
             caption(g,"RANGE",{319,96,74,12},9,juce::Justification::centred,true,ink);
-            caption(g,"WAVEFORM",{408,91,84,17},9,juce::Justification::centred,true,ink);
+            caption(g,"WAVEFORM",{408,88,84,17},9,juce::Justification::centred,true,ink);
             caption(g,"TUNE",{315,75.5f,30,15},8.4f,juce::Justification::centred,true,ink);
             arcLabels(g,{356,163},{{"32'",-1.134464f},{"16'",-.567232f},{"8'",0.0f},{"4'",.567232f},{"2'",1.134464f}},43,age);
             arcLabels(g,{450,163},{{"NOISE",-1.047198f},{"SAW",-.349066f},{"SQR",.349066f},{"PULSE",1.047198f}},43,age);
@@ -1343,10 +1346,11 @@ public:
             }
             g.setColour(ink.withAlpha(.94f));g.fillRect(60,312,1381,2);
             g.setColour(ink.withAlpha(.82f));g.drawRect(69,370,176,323,1);
-            caption(g,"VOLUME",{80,393,75,19},11,juce::Justification::centred,true,ink);
+            caption(g,"VOLUME",{80,386,75,16},10,juce::Justification::centred,true,ink);
             for(int i=0;i<=10;++i) {
                 const float a=juce::MathConstants<float>::pi*(1.25f+1.5f*float(i)/10);
                 const juce::Point<float> c(117,436),direction(std::sin(a),-std::cos(a));
+                if(i>=4&&i<=6)continue; // Leave the original gap beneath the VOLUME legend.
                 g.setColour(ink);g.drawLine({c+direction*42,c+direction*(i%5==0?47.0f:45.0f)},.7f);
                 if(i==0||i==10) {const auto p=c+direction*53;caption(g,juce::String(i),{p.x-10,p.y-5,20,10},7.5f,juce::Justification::centred,true,ink);}
             }
@@ -1573,6 +1577,7 @@ SH09Editor::SH09Editor(SH09Processor& p)
             if(editor==nullptr)return;
             if(auto* window=editor->findParentComponentOfClass<juce::DocumentWindow>()) {
                 if(!window->isOnDesktop())return;
+                window->setName("Toyland KB-09 Standalone");
                 window->setUsingNativeTitleBar(true);
                 window->setTitleBarButtonsRequired(juce::DocumentWindow::allButtons,false);
                 editor->sizing.peerAttached();

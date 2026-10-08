@@ -8,9 +8,9 @@ dest=release/f'{name}.zip'
 prefix=name+'/'
 updates={prefix+'User Manual.html':(root/'docs/manual/User Manual.html').read_bytes(),
          prefix+'Support/User Guide/index.html':(root/'docs/manual/index.html').read_bytes(),
-         prefix+'Support/User Guide/assets/panel-0.13.10.png':(root/'docs/manual/assets/panel-0.13.10.png').read_bytes(),
+         prefix+'Support/User Guide/assets/panel-0.13.13.png':(root/'docs/manual/assets/panel-0.13.13.png').read_bytes(),
          prefix+'INSTALL KB-09.command':(root/'tools/install-mac.command').read_bytes().replace(b'\r\n',b'\n'),
-         prefix+'START HERE.txt':'''Toyland KB-09 -- UNVERIFIED MAC TEST BUILD
+         prefix+'OPEN ME FIRST!.txt':'''Toyland KB-09 -- UNVERIFIED MAC TEST BUILD
 
 1. Extract this ZIP. Keep the extracted folder together.
 2. Close your music software.
@@ -43,7 +43,7 @@ Windows download. Support contains installer files and validation evidence.
 '''.encode('utf-8')}
 with zipfile.ZipFile(source) as old,zipfile.ZipFile(dest,'w',zipfile.ZIP_DEFLATED) as new:
     for entry in old.infolist():
-        if entry.filename.endswith('User Manual.pdf'): continue
+        if entry.filename.endswith(('User Manual.pdf','START HERE.txt')): continue
         if entry.filename not in updates: new.writestr(entry,old.read(entry))
         elif entry.filename.endswith('/INSTALL KB-09.command'):
             new.writestr(entry,updates.pop(entry.filename))

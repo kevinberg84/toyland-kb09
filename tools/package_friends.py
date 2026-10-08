@@ -18,7 +18,7 @@ build = Path('C:/Dev/SH-09/build-kb09/SH09_artefacts/Release')
 for folder in ('VST3', 'Standalone', 'AAX'):
     if (support / folder).exists(): shutil.rmtree(support / folder)
     shutil.copytree(build / folder, support / folder)
-shutil.move(support/'Standalone/Toyland KB-09.exe', package/'Toyland KB-09.exe')
+shutil.move(support/'Standalone/Toyland KB-09.exe', package/'Toyland KB-09 Standalone.exe')
 shutil.rmtree(support/'Standalone')
 shutil.copy2(root / 'docs/manual/User Manual.html', package / 'User Manual.html')
 shutil.copy2(root / 'docs/manual/index.html', support / 'User Guide/index.html')
@@ -35,7 +35,7 @@ updates = {
     'KB-09-source/SH-09/Source/GUI/Editor.cpp': root / 'Source/GUI/Editor.cpp',
     'KB-09-source/SH-09/Source/GUI/PowerDetails.h': root / 'Source/GUI/PowerDetails.h',
     'KB-09-source/SH-09/Tests/GUIRender.cpp': root / 'Tests/GUIRender.cpp',
-    'KB-09-source/SH-09/docs/manual/assets/panel-0.13.12.png': root / 'docs/manual/assets/panel-0.13.12.png',
+    'KB-09-source/SH-09/docs/manual/assets/panel-0.13.13.png': root / 'docs/manual/assets/panel-0.13.13.png',
 }
 # Ship the complete current source changes, including new headers and DSP tests.
 for folder in ('Source','Tests','Assets/Icons'):
@@ -55,7 +55,7 @@ with zipfile.ZipFile(kit) as old, zipfile.ZipFile(temporary, 'w', zipfile.ZIP_DE
             new.writestr(entry,data)
     for name, path in updates.items(): new.writestr(name.replace('KB-09-source/SH-09/','KB-09-source/KB-09/'), path.read_bytes())
 temporary.replace(kit)
-kit.rename(kit.with_name('KB-09-0.13.12-source.zip'))
+kit.rename(kit.with_name('KB-09-0.13.13-source.zip'))
 for note in (support/'Development').rglob('Read me.txt'):
     text=note.read_text(encoding='utf-8').replace('SH-09/','KB-09/').replace('-S SH-09 ','-S KB-09 ').replace('.sh09state','.kb09')
     note.write_text(text,encoding='utf-8')
@@ -63,31 +63,17 @@ dev_aax = support / 'Development/AAX unsigned Windows'
 for p in dev_aax.glob('*.aaxplugin'):
     shutil.rmtree(p)
 shutil.copytree(build / 'AAX/Toyland KB-09.aaxplugin', dev_aax / 'Toyland KB-09.aaxplugin')
-(support / 'Validation Summary.txt').write_text('KB-09 0.13.12 control and display fixes � 8 October 2026\nWindows VST3, standalone and unsigned AAX rebuilt.\nValidation results are recorded in the accompanying release record. Earlier Steinberg/actual-host evidence belongs to 0.13.2.\nMac AU/VST3 supplied separately as unverified test builds. AAX unsigned; Pro Tools untested.\n', encoding='utf-8')
-(support / 'Release Notes.txt').write_text('KB-09 0.13.12 � 8 October 2026\nStandalone-only KEYBOARD mode plays computer keys A W S E D F T G Y H U J K, with Z/X octave changes and automatic note release on focus loss. VELOCITY, AFTERTOUCH and INPUT TRIM now support immediate track clicks. Standalone has a visible AUDIO / MIDI button that opens device settings directly. AGE supports immediate track clicks and humorous condition phrases. Standalone MIDI setup is documented. Slightly denser fine dust grains, without blurred haze, build gradually between knob collars, around PORTAMENTO and the bender, and along protected panel edges. TUNE follows the original horizontal rule. Shared KB-09 standalone, folder and manual-shortcut icons.\nOptional DESCRIPTION button (off by default); switch value boxes use readable dark text.\nResponsive AGE drag with cached visual wear until release; larger utility sliders. Switch readouts match bold knob readouts. DESCRIPTION lights when enabled and provides actual explanations.\nUseful audio-taper VOLUME; existing intermediate volume settings now sound quieter.\nModern FREE/SYNC with 21 straight, dotted and triplet RATE divisions.\nReliable RATE display: half-cycle flashes below 8Hz, steady increasing glow above.\nSHIFT enables fine dragging; temporary switch value boxes replace focus outlines.\nAdded IN audio meter; removed OPTIONAL; refined aged fader strips and black-key sheen.\nHeld keys depress/darken; only the active key has an amber bar.\nRevised TUNE/NOISE labels and removed the PWM bracket.\nWindows floating title bars can request L by dragging to the top, with pull-down restore; host placement restrictions may require the internal header.\nHTML-only User Manual includes all changes and GarageBand setup instructions.\nPlease report bugs and manual corrections to Kevin.\n', encoding='utf-8')
+(support / 'Validation Summary.txt').write_text('KB-09 0.13.13 control and display fixes - 8 October 2026\nWindows VST3, standalone and unsigned AAX rebuilt.\nValidation results are recorded in the accompanying release record. Earlier Steinberg/actual-host evidence belongs to 0.13.2.\nMac AU/VST3 supplied separately as unverified test builds. AAX unsigned; Pro Tools untested.\n', encoding='utf-8')
+(support / 'Release Notes.txt').write_text('KB-09 0.13.13 - 8 October 2026\nStandalone-only KEYBOARD mode plays computer keys A W S E D F T G Y H U J K, with Z/X octave changes and automatic note release on focus loss. VELOCITY, AFTERTOUCH and INPUT TRIM now support immediate track clicks. Standalone has a visible AUDIO / MIDI button that opens device settings directly. AGE supports immediate track clicks and humorous condition phrases. Standalone MIDI setup is documented. Slightly denser fine dust grains, without blurred haze, build gradually between knob collars, around PORTAMENTO and the bender, and along protected panel edges. TUNE follows the original horizontal rule. Shared KB-09 standalone, folder and manual-shortcut icons.\nOptional DESCRIPTION button (off by default); switch value boxes use readable dark text.\nResponsive AGE drag with cached visual wear until release; larger utility sliders. Switch readouts match bold knob readouts. DESCRIPTION lights when enabled and provides actual explanations.\nUseful audio-taper VOLUME; existing intermediate volume settings now sound quieter.\nModern FREE/SYNC with 21 straight, dotted and triplet RATE divisions.\nReliable RATE display: half-cycle flashes below 8Hz, steady increasing glow above.\nSHIFT enables fine dragging; temporary switch value boxes replace focus outlines.\nAdded IN audio meter; removed OPTIONAL; refined aged fader strips and black-key sheen.\nHeld keys depress/darken; only the active key has an amber bar.\nRevised TUNE/NOISE labels and removed the PWM bracket.\nWindows floating title bars can request L by dragging to the top, with pull-down restore; host placement restrictions may require the internal header.\nHTML-only User Manual includes all changes and GarageBand setup instructions.\nPlease report bugs and manual corrections to Kevin.\n', encoding='utf-8')
 files = []
 for folder in ('VST3', 'User Guide', 'Licenses', 'Factory Presets'):
     for path in sorted((support / folder).rglob('*')):
         if path.is_file():
             files.append({'path': path.relative_to(support).as_posix(), 'sha256': sha256(path.read_bytes()).hexdigest()})
-files.append({'path':'../Toyland KB-09.exe','sha256':sha256((package/'Toyland KB-09.exe').read_bytes()).hexdigest()})
+files.append({'path':'../Toyland KB-09 Standalone.exe','sha256':sha256((package/'Toyland KB-09 Standalone.exe').read_bytes()).hexdigest()})
 (support / 'install-files.json').write_text(json.dumps(files, indent=2), encoding='utf-8')
 (package / 'INSTALL KB-09.cmd').write_text('@echo off\r\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Support\\Install.ps1"\r\nif errorlevel 1 pause\r\n', encoding='ascii')
-(package / 'START HERE.html').write_text('''<!doctype html>
-<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Start here � Toyland KB-09</title><style>body{background:#f4f0e7;color:#252620;font:19px/1.65 system-ui;margin:auto;padding:32px;max-width:800px}h1{line-height:1.2}li{margin:20px 0}a{color:#695019}strong{font-weight:750}.box{padding:20px;background:#e6dfd1;border-radius:10px}code{overflow-wrap:anywhere}</style>
-<h1>Let's play KB-09.</h1><p>A recreation of Kevin's Roland SH-09. Windows 64-bit � Version 0.13.12.</p>
-<div class="box"><strong>Received a ZIP file?</strong> Right-click it, choose <strong>Extract All�</strong>, then <strong>Extract</strong>. Open the newly extracted folder before installing.</div>
-<ol><li><strong>Close your music software.</strong></li>
-<li>Go back to the folder beside this page. Double-click <strong>INSTALL KB-09</strong> (the file ending in <strong>.cmd</strong>). If Windows asks whether to allow changes, choose <strong>Yes</strong>. In the installation window, press <strong>Enter</strong> when prompted.<br>The installer puts everything in the correct place. You do not need to copy or choose any files.</li>
-<li><strong>Open your music software.</strong> Find <strong>Toyland KB-09</strong> in its instrument list and add it to an instrument/MIDI track. If it is missing, rescan VST3 plug-ins in your music software's settings, then reopen the software.</li></ol>
-<h2>No music software? You can still play.</h2><p>Double-click <strong>Toyland KB-09.exe</strong> beside this page. No plug-in installation is needed to use the standalone app. Click <strong>AUDIO / MIDI</strong> in its top bar to select your speakers/headphones and enable your MIDI controller under <strong>Active MIDI inputs</strong>. Or enable <strong>KEYBOARD</strong> to play with your computer keyboard. After installing, you can also use Start menu > Play KB-09.</p>
-<p><a href="User Manual.html">Open the illustrated User Manual</a> � <a href="User Manual.html#daws">Help with your music software</a></p>
-<h2>Need help?</h2><p>Send Kevin any bugs or mistakes you find. Include what you were doing, your Windows and music software versions, and a screenshot or the exact error message.</p>
-<p>If Windows reports a missing VCRUNTIME or MSVCP file, install the <a href="https://aka.ms/vc14/vc_redist.x64.exe">Microsoft Visual C++ runtime for Windows x64</a> and try again. If your computer blocks the installer, ask Kevin for help; do not disable your security software.</p>
-<p>The <strong>Support</strong> folder holds the files the installer needs, the manual, licenses and advanced development material. Leave it together with the installer. You don't need to open it to install or play.</p>
-<p>This download is for Windows VST3 and standalone use. AAX files inside Support are unsigned development files. The separate Mac AU/VST3 test download is labeled <strong>unverified</strong>.</p>
-<p>To share with a friend, send the complete <strong>Toyland KB-09 for Windows.zip</strong>, not just the installer file.</p></html>''', encoding='utf-8')
+(package / 'OPEN ME FIRST!.html').write_text((root/'docs/open-me-first.html').read_text(encoding='utf-8'),encoding='utf-8')
 # Recalculate technical checksums after updating the included guide.
 checks = [f'{sha256(p.read_bytes()).hexdigest()}  {p.relative_to(support).as_posix()}' for p in sorted(support.rglob('*')) if p.is_file() and p.name != 'SHA256SUMS.txt']
 (support / 'SHA256SUMS.txt').write_text('\n'.join(checks)+'\n', encoding='utf-8')

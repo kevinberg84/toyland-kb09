@@ -1,4 +1,4 @@
-param([switch]$Elevated, [string]$TestRoot)
+﻿param([switch]$Elevated, [string]$TestRoot)
 $ErrorActionPreference = 'Stop'
 try {
   $support = $PSScriptRoot
@@ -23,7 +23,7 @@ try {
     $appBase = Join-Path ${env:ProgramFiles} 'Toyland/KB-09'
   }
   $backup = Join-Path $appBase ('Backups/' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
-  $targets = @(@{source='VST3/Toyland KB-09.vst3'; dest=(Join-Path $vstBase 'Toyland KB-09.vst3')}, @{source='../Toyland KB-09.exe';backup='Standalone/Toyland KB-09.exe';dest=(Join-Path $appBase 'Standalone/Toyland KB-09.exe')}, @{source='User Guide';dest=(Join-Path $appBase 'User Guide')}, @{source='Licenses';dest=(Join-Path $appBase 'Licenses')}, @{source='Factory Presets';dest=(Join-Path $appBase 'Factory Presets')})
+  $targets = @(@{source='VST3/Toyland KB-09.vst3'; dest=(Join-Path $vstBase 'Toyland KB-09.vst3')}, @{source='../Toyland KB-09 Standalone.exe';backup='Standalone/Toyland KB-09 Standalone.exe';dest=(Join-Path $appBase 'Standalone/Toyland KB-09 Standalone.exe')}, @{source='User Guide';dest=(Join-Path $appBase 'User Guide')}, @{source='Licenses';dest=(Join-Path $appBase 'Licenses')}, @{source='Factory Presets';dest=(Join-Path $appBase 'Factory Presets')})
   $changed = @()
   try {
     foreach ($target in $targets) {
@@ -57,10 +57,10 @@ try {
     $menu = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'Toyland KB-09'
     New-Item -ItemType Directory -Path $menu -Force | Out-Null
     $shell = New-Object -ComObject WScript.Shell
-    foreach ($link in @(@{name='Play KB-09';file='Standalone/Toyland KB-09.exe'}, @{name='KB-09 User Manual';file='User Guide/index.html'})) {
+    foreach ($link in @(@{name='Play KB-09';file='Standalone/Toyland KB-09 Standalone.exe'}, @{name='KB-09 User Manual';file='User Guide/index.html'})) {
       $shortcut = $shell.CreateShortcut((Join-Path $menu ($link.name + '.lnk')))
       $shortcut.TargetPath = Join-Path $appBase $link.file
-      $shortcut.IconLocation = (Join-Path $appBase 'Standalone/Toyland KB-09.exe') + ',0'
+      $shortcut.IconLocation = (Join-Path $appBase 'Standalone/Toyland KB-09 Standalone.exe') + ',0'
       $shortcut.Save()
     }
   }
