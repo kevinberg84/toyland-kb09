@@ -72,7 +72,8 @@ int main(int argc, char** argv)
            && values(processor) == intended && processor.getCurrentProgram() == 9,
            "load restores all 35 custom parameter values and program reference exactly");
     expect(!processor.isPowerEnabled(), "loading a preset does not change transient Power");
-    expect(sh09::PresetFiles::saveToFile(processor, legacy.getFile()).wasOk(), "save legacy .sh09state extension");
+    expect(sh09::PresetFiles::saveToFile(processor, legacy.getFile()).failed(), "new exports require the KB-09 extension");
+    expect(saved.getFile().copyFileTo(legacy.getFile()), "prepare an earlier-extension compatibility fixture");
     processor.setCurrentProgram(0);
     expect(sh09::PresetFiles::loadFromFile(processor, legacy.getFile()).wasOk() && values(processor) == intended,
            "load processor state with .sh09state extension");

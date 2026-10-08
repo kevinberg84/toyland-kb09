@@ -1117,7 +1117,7 @@ public:
         addAndMakeVisible(savePreset);savePreset.setButtonText("SAVE");savePreset.setBounds(817,5,56,24);savePreset.setComponentID("savePreset");
         savePreset.setTooltip("Save the complete sound as a reusable .kb09 preset.");savePreset.onClick=[this]{presetFiles.savePreset();};
         addAndMakeVisible(loadPreset);loadPreset.setButtonText("LOAD");loadPreset.setBounds(879,5,56,24);loadPreset.setComponentID("loadPreset");
-        loadPreset.setTooltip("Load a saved .kb09 or .sh09state preset.");loadPreset.onClick=[this]{presetFiles.loadPreset();};
+        loadPreset.setTooltip("Load a saved .kb09 preset.");loadPreset.onClick=[this]{presetFiles.loadPreset();};
         presetFiles.onCompleted=[this](const juce::Result& result,const juce::File& file,bool wasLoad) {
             if(result.wasOk()) {
                 if(!wasLoad)savePreset.setTooltip("Saved preset: "+file.getFileName());

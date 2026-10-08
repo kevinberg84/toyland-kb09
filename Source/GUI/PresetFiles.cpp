@@ -178,7 +178,7 @@ juce::Result PresetFiles::decodePresetData(const void* data, std::size_t size, j
 juce::Result PresetFiles::saveToFile(SH09Processor& processor, const juce::File& file)
 {
     JUCE_ASSERT_MESSAGE_THREAD
-    if (!supportedFile(file)) return juce::Result::fail("Choose a file ending in .kb09 or .sh09state.");
+    if (!file.hasFileExtension("kb09")) return juce::Result::fail("Choose a file ending in .kb09.");
     if (file.isDirectory() || !file.getParentDirectory().isDirectory())
         return juce::Result::fail("Choose an existing folder and a preset filename.");
     juce::MemoryBlock state, validated;
@@ -205,7 +205,7 @@ juce::Result PresetFiles::saveToFile(SH09Processor& processor, const juce::File&
 juce::Result PresetFiles::loadFromFile(SH09Processor& processor, const juce::File& file)
 {
     JUCE_ASSERT_MESSAGE_THREAD
-    if (!supportedFile(file)) return juce::Result::fail("Choose a .kb09 or .sh09state preset.");
+    if (!supportedFile(file)) return juce::Result::fail("Choose a .kb09 preset.");
     juce::FileInputStream stream(file);
     if (stream.failedToOpen()) return juce::Result::fail("The preset could not be opened. It may have been moved or deleted.");
     const auto size = stream.getTotalLength();
@@ -258,9 +258,9 @@ struct PresetFiles::Impl : std::enable_shared_from_this<Impl>
         if (loading) { completed(loadFromFile(processor, file), file, true); return; }
         const auto selectedFile = file;
         if (file.getFileExtension().isEmpty()) file = file.withFileExtension(".kb09");
-        if (!supportedFile(file))
+        if (!file.hasFileExtension("kb09"))
         {
-            completed(juce::Result::fail("Use .kb09 or .sh09state as the filename extension."), file, false);
+            completed(juce::Result::fail("Use .kb09 as the filename extension."), file, false);
             return;
         }
         // Native save dialogs confirm replacement. If adding a missing extension
@@ -305,7 +305,7 @@ struct PresetFiles::Impl : std::enable_shared_from_this<Impl>
             initial = directory.getChildFile(name + ".kb09");
         }
         chooser = std::make_unique<juce::FileChooser>(loading ? "Load a KB-09 preset" : "Save your KB-09 preset",
-                    initial, "*.kb09;*.sh09state", true, false, owner.getComponent());
+                    initial, "*.kb09", true, false, owner.getComponent());
         const auto weak = weak_from_this();
         const auto flags = juce::FileBrowserComponent::canSelectFiles
             | (loading ? juce::FileBrowserComponent::openMode
