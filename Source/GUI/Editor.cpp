@@ -47,7 +47,7 @@ void panelGlyph(juce::Graphics& g,PanelGlyph shape,juce::Rectangle<float> box,
         start(0,envelopeY(.9f));line(.10f,envelopeY(.9f));line(.25f,envelopeY(.1f));
         path.cubicTo(point(.38f,envelopeY(.62f)),point(.57f,envelopeY(.83f)),point(1,envelopeY(.9f)));
     } else {
-        const float end=shape==PanelGlyph::pulse?.36f:shape==PanelGlyph::gate?.74f:.65f;
+        const float end=shape==PanelGlyph::pulse?.36f:shape==PanelGlyph::gate?.74f:.46f;
         start(0,.9f);line(0,.1f);line(end,.1f);line(end,.9f);line(1,.9f);if(shape!=PanelGlyph::gate)line(1,.1f);
     }
     g.setColour(colour);g.strokePath(path,juce::PathStrokeType(stroke,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
