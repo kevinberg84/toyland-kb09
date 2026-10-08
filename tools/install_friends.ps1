@@ -49,12 +49,17 @@ try {
     throw
   }
   if (!$TestRoot) {
+    $standaloneFolder = Join-Path $appBase 'Standalone'
+    (Get-Item -LiteralPath $standaloneFolder).Attributes = (Get-Item -LiteralPath $standaloneFolder).Attributes -bor [IO.FileAttributes]::ReadOnly
+    $folderIcon = Join-Path $standaloneFolder 'desktop.ini'
+    if (Test-Path -LiteralPath $folderIcon) { (Get-Item -LiteralPath $folderIcon).Attributes = [IO.FileAttributes]::Hidden -bor [IO.FileAttributes]::System }
     $menu = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'Toyland KB-09'
     New-Item -ItemType Directory -Path $menu -Force | Out-Null
     $shell = New-Object -ComObject WScript.Shell
-    foreach ($link in @(@{name='Play KB-09';file='Standalone/Toyland KB-09.exe'}, @{name='KB-09 User Guide';file='User Guide/index.html'})) {
+    foreach ($link in @(@{name='Play KB-09';file='Standalone/Toyland KB-09.exe'}, @{name='KB-09 User Manual';file='User Guide/index.html'})) {
       $shortcut = $shell.CreateShortcut((Join-Path $menu ($link.name + '.lnk')))
       $shortcut.TargetPath = Join-Path $appBase $link.file
+      $shortcut.IconLocation = (Join-Path $appBase 'Standalone/Toyland KB-09.exe') + ',0'
       $shortcut.Save()
     }
   }
@@ -68,3 +73,4 @@ try {
   if (!$TestRoot) { Read-Host 'Press Enter to close' | Out-Null }
   exit 1
 }
+

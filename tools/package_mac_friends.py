@@ -8,7 +8,7 @@ dest=release/f'{name}.zip'
 prefix=name+'/'
 updates={prefix+'User Manual.html':(root/'docs/manual/User Manual.html').read_bytes(),
          prefix+'Support/User Guide/index.html':(root/'docs/manual/index.html').read_bytes(),
-         prefix+'Support/User Guide/assets/panel-0.13.5.png':(root/'docs/manual/assets/panel-0.13.5.png').read_bytes(),
+         prefix+'Support/User Guide/assets/panel-0.13.6.png':(root/'docs/manual/assets/panel-0.13.6.png').read_bytes(),
          prefix+'INSTALL KB-09.command':(root/'tools/install-mac.command').read_bytes().replace(b'\r\n',b'\n'),
          prefix+'START HERE.txt':'''Toyland KB-09 -- UNVERIFIED MAC TEST BUILD
 
