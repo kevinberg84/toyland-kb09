@@ -1,5 +1,6 @@
 #include "Editor.h"
 #include "PresetFiles.h"
+#include "PowerDetails.h"
 #include "../Plugin/Processor.h"
 #include "BinaryData.h"
 #include <cmath>
@@ -935,44 +936,52 @@ public:
         g.setColour(juce::Colours::black.withAlpha(pressed?.35f:.47f));
         g.fillRoundedRectangle(footprint.translated(.45f,.25f+wallHeight*.34f),1.1f);
         const auto grey=juce::Colour(0xffa5a6a0).interpolatedWith(juce::Colour(0xff959487),age*.76f);
-        const auto wall=juce::Rectangle<float>(top.getX(),top.getBottom()-1,top.getWidth(),wallHeight+1);
-        g.setGradientFill(juce::ColourGradient(grey.darker(.18f),0,wall.getY(),grey.darker(.32f),0,wall.getBottom(),false));
-        g.fillRoundedRectangle(wall,1.0f);
-        g.setColour(grey.darker(.39f));
-        g.drawLine(wall.getX()+.35f,top.getBottom(),wall.getX()+.35f,wall.getBottom()-.55f,.45f);
-        g.drawLine(wall.getRight()-.35f,top.getBottom(),wall.getRight()-.35f,wall.getBottom()-.55f,.45f);
-        g.setColour(grey.darker(.10f));g.fillRoundedRectangle(top,1.15f);
-        const auto face=top.reduced(.75f,.65f);
-        juce::ColourGradient enamel(grey.brighter(over?.035f:.020f),0,face.getY(),grey.darker(.045f),0,face.getBottom(),false);
-        enamel.addColour(.22,grey);g.setGradientFill(enamel);g.fillRoundedRectangle(face,.65f);
-        g.setColour(juce::Colours::white.withAlpha(.26f-age*.12f));
-        g.drawLine(top.getX()+1.1f,top.getY()+.45f,top.getRight()-1.1f,top.getY()+.45f,.55f);
-        g.setColour(juce::Colours::white.withAlpha(.12f-age*.05f));
-        g.drawLine(top.getX()+.5f,top.getY()+1,top.getX()+.5f,top.getBottom()-1,.45f);
-        g.setColour(juce::Colour(0xff565851).withAlpha(.29f));
-        g.drawLine(top.getRight()-.45f,top.getY()+1,top.getRight()-.45f,top.getBottom()-1,.55f);
-        g.drawLine(top.getX()+1,top.getBottom()-.45f,top.getRight()-1,top.getBottom()-.45f,.45f);
-        {
-            juce::Graphics::ScopedSaveState save(g);
-            juce::Path surface;surface.addRoundedRectangle(face,.65f);g.reduceClipRegion(surface);
-            // Stable subpixel moulding grain and protected-edge dirt; no
-            // animation or coarse stippling when the button is operated.
-            for(uint32_t i=0;i<140;++i) {
-                const float x=face.getX()+surfaceNoise(0x9457u+i*37u)*face.getWidth();
-                const float y=face.getY()+surfaceNoise(0x3319u+i*61u)*face.getHeight();
-                const float size=.12f+.12f*surfaceNoise(0x71d3u+i*13u);
-                g.setColour((i%3?juce::Colour(0xff62635e):juce::Colours::white).withAlpha(i%3?.025f+age*.025f:.035f));
-                g.fillEllipse(x,y,size,size*.75f);
-            }
-            for(uint32_t i=0;i<24;++i) {
-                const float x=face.getX()+(.03f+.94f*surfaceNoise(0x4a9bu+i*23u))*face.getWidth();
-                const float y=face.getY()+(i%2?.035f:.955f)*face.getHeight();
-                const float size=.18f+.23f*surfaceNoise(0x782du+i*17u);
-                g.setColour(juce::Colour(0xff766950).withAlpha(age*.25f));g.fillEllipse(x,y,size,size*.65f);
-            }
-        }
+        const auto wall=juce::Rectangle<float>(top.getX(),top.getBottom()-2,top.getWidth(),wallHeight+2);
+        g.setGradientFill(juce::ColourGradient(grey.darker(.13f),0,wall.getY(),grey.darker(.23f),0,wall.getBottom(),false));
+        g.fillRoundedRectangle(wall,1.8f);
+        g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+        g.drawImage(capSurface(top.getWidth(),top.getHeight(),age,over),top,juce::RectanglePlacement::stretchToFit);
     }
-private:SH09Processor& processor;
+private:
+    const juce::Image& capSurface(float width,float height,float age,bool over) {
+        // A rounded moulded bevel, rather than a thin outlined inset. Surface
+        // normals blend into the flat centre and give the front corner a soft
+        // diffuse highlight. Dimensions are photo-informed visual estimates.
+        constexpr float scale=6,bevel=1.8f,radius=2.0f;
+        const int w=juce::roundToInt(width*scale),h=juce::roundToInt(height*scale);
+        if(cap.isValid()&&cap.getWidth()==w&&cap.getHeight()==h&&capAge==age&&capOver==over)return cap;
+        cap=juce::Image(juce::Image::ARGB,w,h,true,juce::SoftwareImageType());capAge=age;capOver=over;
+        const auto base=juce::Colour(0xffa5a6a0).interpolatedWith(juce::Colour(0xff959487),age*.76f);
+        juce::Image::BitmapData pixels(cap,juce::Image::BitmapData::writeOnly);
+        for(int y=0;y<h;++y)for(int x=0;x<w;++x) {
+            const float px=(x+.5f)*width/w-width*.5f,py=(y+.5f)*height/h-height*.5f;
+            const float qx=std::abs(px)-(width*.5f-radius),qy=std::abs(py)-(height*.5f-radius);
+            const float dx=juce::jmax(qx,0.0f),dy=juce::jmax(qy,0.0f),length=std::sqrt(dx*dx+dy*dy);
+            const float distance=length+juce::jmin(juce::jmax(qx,qy),0.0f)-radius;
+            const float alpha=juce::jlimit(0.0f,1.0f,.5f-distance*scale);
+            if(alpha<=0)continue;
+            float gx=0,gy=0;
+            if(length>0){gx=dx/length;gy=dy/length;}else if(qx>qy)gx=1;else gy=1;
+            gx*=px<0?-1.0f:1.0f;gy*=py<0?-1.0f:1.0f;
+            const float t=juce::jlimit(0.0f,1.0f,-distance/bevel);
+            const float angle=(1-t)*juce::MathConstants<float>::halfPi;
+            const float nx=gx*std::sin(angle),ny=gy*std::sin(angle),nz=std::cos(angle);
+            const float diffuse=juce::jmax(0.0f,nx*.35f+ny*.42f+nz*.84f);
+            const float specular=std::pow(juce::jmax(0.0f,nx*.19f+ny*.23f+nz*.953f),16)*(.075f-age*.035f);
+            const float grain=(surfaceNoise(uint32_t(x/2)*7919u+uint32_t(y/2)*104729u+9457u)-.5f)*.012f;
+            const float cloud=.008f*std::sin(px*.31f+std::sin(py*.47f))-.009f*age*(1-t);
+            const float shade=.73f+.28f*diffuse+specular+grain+cloud+(over?.009f:0);
+            pixels.setPixelColour(x,y,juce::Colour::fromFloatRGBA(
+                juce::jlimit(0.0f,1.0f,base.getFloatRed()*shade),
+                juce::jlimit(0.0f,1.0f,base.getFloatGreen()*shade),
+                juce::jlimit(0.0f,1.0f,base.getFloatBlue()*shade),alpha));
+        }
+        return cap;
+    }
+    SH09Processor& processor;
+    juce::Image cap;
+    float capAge=-1;
+    bool capOver=false;
 };
 class Header final : public juce::Component {
 public:
@@ -1136,6 +1145,21 @@ public:
                 g.reduceClipRegion(metal);g.setOpacity(.90f*std::pow(age,.85f));
                 g.drawImage(art.chassisAged,0,headerH,designW,bodyH,source.getX(),source.getY(),source.getWidth(),source.getHeight());
             }
+            // The close-up places the upper POWER screw on the cap axis.
+            // Cover its earlier baked corner location with nearby registered
+            // panel material before drawing the relocated head and panel ink.
+            const float mountX=(277.0f-2)*designW/1770,mountY=headerH+(457.0f-7)*bodyH/873;
+            const float materialShift=32.0f*designW/1770;
+            for(int edge=0;edge<6;++edge) {
+                juce::Graphics::ScopedSaveState patch(g);
+                const float radius=12.5f-edge*.3f,opacity=float(edge+1)/6;
+                juce::Path mask;mask.addEllipse(mountX-radius,mountY-radius,radius*2,radius*2);g.reduceClipRegion(mask);
+                g.setOpacity(opacity);g.drawImage(art.chassis,juce::roundToInt(materialShift),headerH,designW,bodyH,
+                    source.getX(),source.getY(),source.getWidth(),source.getHeight());
+                g.setOpacity(opacity*.90f*std::pow(age,.85f));
+                g.drawImage(art.chassisAged,juce::roundToInt(materialShift),headerH,designW,bodyH,
+                    source.getX(),source.getY(),source.getWidth(),source.getHeight());
+            }
         }
         caseStains(g,age);
         // The narrow rail below the keys has a fine pebble finish. It is a
@@ -1182,15 +1206,10 @@ public:
                 g.setColour(ink);g.drawLine({c+direction*42,c+direction*(i%5==0?47.0f:45.0f)},.7f);
                 if(i==0||i==10) {const auto p=c+direction*53;caption(g,juce::String(i),{p.x-10,p.y-5,20,10},7.5f,juce::Justification::centred,true,ink);}
             }
-            g.setColour(juce::Colour(0xff080b0e));g.fillEllipse(205,450,9,9);
-            g.setColour(juce::Colour(processor.isPowerEnabled()?0xffe54c35:0xff491c16));g.fillEllipse(207,452,5,5);
-            if(processor.isPowerEnabled()) {g.setColour(juce::Colour(0xffffaa6f).withAlpha(.65f));g.fillEllipse(207.5f,452.5f,1.8f,1.8f);}
-            caption(g,"POWER",{175,463,35,12},8.0f,juce::Justification::centred,true,ink);
-            caption(g,"ON",{225,460,16,9},6.7f,juce::Justification::centredLeft,true,ink);
-            caption(g,"OFF",{225,469,17,9},6.7f,juce::Justification::centredLeft,true,ink);
-            // Two side-view push-button diagrams: depressed above, raised below.
-            g.setColour(ink);g.drawRect(215.0f,463.0f,7.0f,2.0f,.7f);g.drawLine(214,466,223,466,.7f);
-            g.drawRect(215.0f,470.0f,7.0f,2.0f,.7f);g.drawLine(218.5f,472,218.5f,475,.7f);g.drawLine(214,475,223,475,.7f);
+            kb09_gui::drawPowerLegend(g,ink,age);
+            g.setColour(juce::Colour(0xff080b0e));g.fillEllipse(205,475,9,9);
+            g.setColour(juce::Colour(processor.isPowerEnabled()?0xffe54c35:0xff491c16));g.fillEllipse(207,477,5,5);
+            if(processor.isPowerEnabled()) {g.setColour(juce::Colour(0xffffaa6f).withAlpha(.65f));g.fillEllipse(207.5f,477.5f,1.8f,1.8f);}
             g.setColour(ink.withAlpha(.76f));g.drawRect(77.0f,489.0f,91.0f,134.0f,.8f);g.drawRect(174.0f,489.0f,61.0f,134.0f,.8f);
             caption(g,"BENDER",{81,623,151,16},10,juce::Justification::centred,true,ink);
             g.setColour(ink.withAlpha(.8f));g.drawLine(93,686,220,686,.7f);
@@ -1199,7 +1218,7 @@ public:
             caption(g,"+",{211,680,17,12},9,juce::Justification::centred,true,ink);
             // Screw heads and contact shadows are a foreground layer over ink.
             // Repaint tightly clipped registered photographic heads after rules.
-            for(const auto p: {juce::Point<float>(100,457),{277,457},{98,799},{277,799}}) {
+            for(const auto p: {juce::Point<float>(100,457),{98,799},{277,799}}) {
                 juce::Graphics::ScopedSaveState save(g);
                 const float xx=(p.x-2)*float(designW)/1770,yy=(p.y-7)*float(bodyH)/873;
                 juce::Path head;head.addEllipse(xx-11.5f,yy-11.5f,23,23);g.reduceClipRegion(head);
@@ -1209,10 +1228,12 @@ public:
             uint32_t screwSeed=5011;
             for(const auto p:{juce::Point<float>(88,37),{602,30},{1175,30},{1686,37},
                               {88,328},{1686,328},{83,399},{887,399},{1692,399},
-                              {100,457},{277,457},{98,799},{277,799}}) {
+                              {100,457},{98,799},{277,799}}) {
                 screwOxidation(g,{(p.x-2)*float(designW)/1770,(p.y-7)*float(bodyH)/873},age,screwSeed);
                 screwSeed+=7717;
             }
+            kb09_gui::drawPowerScrew(g,{209.5f,410},age,false);
+            kb09_gui::drawPowerScrew(g,{209.5f,445},age,true);
         }
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xff222729),0,float(headerH+bodyH),
                                             juce::Colour(0xff121618),0,float(designH),false));

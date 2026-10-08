@@ -760,7 +760,7 @@ void renderHardwareDetails(SH09Processor& processor,juce::Component& editor,
         for(const bool enabled:{true,false}) {
             if(processor.isPowerEnabled()!=enabled)power->onClick();
             settleEditor();
-            const auto detail=panel->createComponentSnapshot({175,425,65,75},true,4.0f);
+            const auto detail=panel->createComponentSnapshot({170,432,75,91},true,4.0f);
             checks.expect(processor.isPowerEnabled()==enabled&&writePNG(detail,directory.getChildFile(
                 "power_"+suffix+(enabled?"_on.png":"_off.png"))),"POWER "+suffix+(enabled?" ON":" OFF")+" actual-panel export and click state");
         }

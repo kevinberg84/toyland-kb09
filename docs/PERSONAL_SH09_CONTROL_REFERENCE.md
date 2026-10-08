@@ -4,6 +4,8 @@ Inspection date: 2026-10-07. The user supplied original-unit close-ups from `C:\
 
 Installed **0.13.1** uses the user's expressly selected photographic knob object with a near-overhead camera edit and separate native tick. The latest unreleased [v5 hardware preview](HARDWARE_PREVIEW_2026-10-07.md) follows the later overhead screenshot and feedback: a slightly smaller silver inset, thinner black top rim, longer top tick, and gradual micro-pitting and reflection dulling across both silver surfaces. The approved knob height, skirt and near-overhead camera are retained; the owner explicitly excluded a collar tick from this viewpoint. The thicker rigid bender remains as in v3. A subsequent [POWER correction](POWER_BUTTON_REFERENCE.md) retains the neutral grey material and restores a tall OFF position with a lower ON position, following the owner's clarification. The measurements and earlier rendering notes below remain historical where superseded by those previews. The 0.13 18° native-cylinder reconstruction is historical. This research document does not establish release validation.
 
+The owner's later [POWER close-up](../Research/SH09_power_owner_closeup.png) also resolves the broad moulded bevel, aligned upper/lower screws with different oxidation, solid side-profile ON/OFF symbols and lamp below the legend. The [POWER detail record](POWER_BUTTON_REFERENCE.md) supersedes earlier button-panel geometry notes.
+
 ## Photos actually displayed and inspected
 
 | Local source | Direct observation |
