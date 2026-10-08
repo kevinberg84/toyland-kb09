@@ -114,6 +114,56 @@ uint32_t surfaceHash(uint32_t value) {
     value^=value>>16;value*=0x7feb352du;value^=value>>15;value*=0x846ca68bu;return value^(value>>16);
 }
 float surfaceNoise(uint32_t seed) {return float(surfaceHash(seed)&0xffffu)/65535.0f;}
+// Photo-informed deposits stay registered to the panel as AGE changes.
+// Cache the grain once so aging never generates a moving random dust field.
+const juce::Image& panelDust() {
+    static const juce::Image image=[] {
+        juce::Image result(juce::Image::ARGB,designW*2,designH*2,true,juce::SoftwareImageType());
+        juce::Graphics g(result);g.addTransform(juce::AffineTransform::scale(2.0f));
+        juce::Path metal;metal.addRectangle(60.0f,65.0f,1380.0f,326.0f);
+        metal.addRectangle(69.0f,404.0f,176.0f,323.0f);g.reduceClipRegion(metal);
+        // Soft irregular banks: between collars, beside portamento, and in
+        // protected corners. Leave the hand-swept open areas less dusty.
+        struct Bank {float x,y,rx,ry,strength;};
+        const std::array<Bank,12> banks{{
+            {401,230,31,45,.19f},{321,241,29,28,.12f},{490,241,27,35,.13f},
+            {194,598,34,45,.19f},{222,653,18,30,.15f},{118,651,32,24,.13f},
+            {82,711,23,12,.14f},{231,710,18,15,.15f},{602,284,19,25,.11f},
+            {830,282,21,24,.10f},{1090,285,18,25,.11f},{1381,286,22,26,.12f}}};
+        for(const auto& b:banks) {
+            juce::Graphics::ScopedSaveState save(g);
+            g.addTransform(juce::AffineTransform::scale(b.rx,b.ry).translated(b.x,b.y));
+            juce::ColourGradient haze(juce::Colour(0xffb7b3a4).withAlpha(b.strength),0,0,
+                                     juce::Colours::transparentBlack,1,0,true);
+            haze.addColour(.48,juce::Colour(0xffa8a79b).withAlpha(b.strength*.30f));
+            g.setGradientFill(haze);g.fillEllipse(-1.0f,-1.0f,2.0f,2.0f);
+        }
+        for(uint32_t i=0;i<19000;++i) {
+            const uint32_t seed=surfaceHash(880301u+i*7919u);
+            float x=65+1370*surfaceNoise(seed),y=70+315*surfaceNoise(seed+17);
+            if(i%3==0) {
+                const auto& b=banks[(i/3)%banks.size()];
+                const float r=std::sqrt(-2*std::log(juce::jmax(.001f,surfaceNoise(seed+31))));
+                const float a=surfaceNoise(seed+53)*juce::MathConstants<float>::twoPi;
+                x=b.x+std::cos(a)*r*b.rx*.48f;y=b.y+std::sin(a)*r*b.ry*.48f;
+            } else if(i%7==0) {x=73+168*surfaceNoise(seed+61);y=410+310*surfaceNoise(seed+73);}
+            // A fine powder, occasional lint, and sparse brighter grains.
+            const float size=.16f+.43f*std::pow(surfaceNoise(seed+89),2.0f);
+            const float tone=surfaceNoise(seed+101);
+            g.setColour(juce::Colour(0xffbcb8a9).interpolatedWith(juce::Colour(0xff777b76),tone)
+                        .withAlpha(.12f+.28f*surfaceNoise(seed+113)));
+            g.fillEllipse(x,y,size*(i%79==0?2.7f:1.0f),size);
+        }
+        return result;
+    }();
+    return image;
+}
+void paintPanelDust(juce::Graphics& g,float age) {
+    if(age<=0)return;
+    juce::Graphics::ScopedSaveState save(g);
+    g.setOpacity(std::pow(juce::jlimit(0.0f,1.0f,age),1.35f));
+    g.drawImage(panelDust(),juce::Rectangle<float>(0,0,designW,designH));
+}
 struct KnobMetalWear {
     juce::Image matte;
     std::array<juce::Image,3> pits;
@@ -1245,6 +1295,7 @@ public:
             }
         }
         caseStains(g,age);
+        paintPanelDust(g,age);
         // The narrow rail below the keys has a fine pebble finish. It is a
         // different material from the smooth painted main panel.
         {
