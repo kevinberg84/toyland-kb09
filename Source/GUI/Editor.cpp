@@ -1226,7 +1226,8 @@ public:
         bender.onValueChange=[this]{bendActive=std::abs(bender.getValue())>.0001;processor.queuePitchBend(float(bender.getValue()));};
         bender.onDragEnd=[this]{bender.setValue(0,juce::sendNotificationSync);};
         addSwitch("modern",22,designH-headerH-44,131,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
-        addUtility("age","CONDITION / AGE",257,154);
+        // Keep a consistent 52-unit gap between bottom-row control groups.
+        addUtility("age","CONDITION / AGE",290,170);
         controls.back()->slider->onDragStart=[this]{
             // Cache the expensive material layer once. Mouse movement and DSP
             // remain live without repeatedly painting photographic wear.
@@ -1242,17 +1243,17 @@ public:
             for(auto& c:controls)if(c->slider)c->slider->setBufferedToImage(false);
             keyboard.setBufferedToImage(false);repaint();keyboard.repaint();
         };
-        addUtility("velocity","VELOCITY",493,113);addUtility("aftertouch","AFTERTOUCH",692,113);
-        addSwitch("lfoSync",811,designH-headerH-44,104,42,{0,1},{"FREE","SYNC"},"Modern mode: SYNC makes RATE select straight, dotted and triplet grid divisions.");
-        addUtility("extGain","INPUT TRIM",1070,127);
+        addUtility("velocity","VELOCITY",495,136);addUtility("aftertouch","AFTERTOUCH",683,136);
+        addSwitch("lfoSync",803,designH-headerH-44,104,42,{0,1},{"FREE","SYNC"},"Modern mode: SYNC makes RATE select straight, dotted and triplet grid divisions.");
+        addUtility("extGain","INPUT TRIM",1034,150);
         addAndMakeVisible(descriptions);descriptions.setComponentID("descriptions");
         descriptions.setButtonText("DESCRIPTION");descriptions.setClickingTogglesState(true);
-        descriptions.setBounds(1170,designH-35,139,24);
+        descriptions.setBounds(1161,designH-35,139,24);
         descriptions.setColour(juce::TextButton::buttonOnColourId,amber);
         descriptions.setColour(juce::TextButton::textColourOnId,juce::Colour(0xff151a1d));
         descriptions.onClick=[this]{descriptions.setButtonText(descriptions.getToggleState()?"DESCRIPTION ON":"DESCRIPTION");};
         tooltip=std::make_unique<DescriptionTips>(this,descriptions);
-        addAndMakeVisible(help);help.setButtonText("EXT AUDIO");help.setBounds(1323,designH-35,120,24);
+        addAndMakeVisible(help);help.setButtonText("EXT AUDIO");help.setBounds(1352,designH-35,120,24);
         help.onClick=[this]{externalHelp.setVisible(!externalHelp.isVisible());};
         addChildComponent(externalHelp);externalHelp.setBounds(390,headerH+418,900,225);
         externalHelp.setText("EXTERNAL AUDIO + ENVELOPE FOLLOWER\n\nRoute DAW audio to the instrument's External Input and raise EXT in the mixer.\nWithout MIDI, set VCA to HOLD and lower VCO / SUB.\nSelect ENV FOL'R in VCF, lower CUTOFF and raise ENV for touch-sensitive filtering.\nThe follower listens before the EXT fader. Click EXT AUDIO again to close.",juce::dontSendNotification);
