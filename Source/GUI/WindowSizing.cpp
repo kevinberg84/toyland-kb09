@@ -94,6 +94,9 @@ struct WindowSizing::Impl final : private juce::Timer, private juce::ComponentLi
                 const auto hit=SendMessageW(target.window,WM_NCHITTEST,0,MAKELPARAM(cursor->x,cursor->y));
                 captionTracking=hit==HTCAPTION;
                 captionStart=*cursor;captionWasLarge=large();
+                if(!captionWasLarge) {
+                    restoreSize={editor.getWidth(),editor.getHeight()};restoreMode=currentMode();hasRestore=true;restoreOuter=target.outer;
+                }
             }
         }
         if(down&&captionTracking&&target.window!=nullptr) {
@@ -319,7 +322,7 @@ struct WindowSizing::Impl final : private juce::Timer, private juce::ComponentLi
         if(initialFitTimer.active()||(editor.getPeer()!=nullptr&&editor.isShowing()))finishInitialFit();
         const juce::ScopedValueSetter<bool> guard(applying,true);
         stopTimer();settleTicks=0;
-        if(requested==Mode::large && !large()) {
+        if(requested==Mode::large && !large() && !captionTracking) {
             const auto precedingMode=currentMode();
             restoreSize={editor.getWidth(),editor.getHeight()};restoreMode=precedingMode;hasRestore=true;
 #if JUCE_WINDOWS
