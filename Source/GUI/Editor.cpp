@@ -1244,7 +1244,7 @@ public:
             keyboard.setBufferedToImage(false);repaint();keyboard.repaint();
         };
         addUtility("velocity","VELOCITY",495,136);addUtility("aftertouch","AFTERTOUCH",683,136);
-        addSwitch("lfoSync",803,designH-headerH-44,104,42,{0,1},{"FREE","SYNC"},"Modern mode: SYNC makes RATE select straight, dotted and triplet grid divisions.");
+        addSwitch("lfoSync",831,designH-headerH-44,52,42,{0,1},{"FREE","SYNC"},"Modern mode: SYNC makes RATE select straight, dotted and triplet grid divisions.");
         addUtility("extGain","INPUT TRIM",1034,150);
         addAndMakeVisible(descriptions);descriptions.setComponentID("descriptions");
         descriptions.setButtonText("DESCRIPTION");descriptions.setClickingTogglesState(true);
