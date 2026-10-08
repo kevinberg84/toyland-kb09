@@ -14,9 +14,9 @@ namespace sh09 {
       saveButton.onClick = [this] { presetFiles.savePreset(); };
       loadButton.onClick = [this] { presetFiles.loadPreset(); };
 
-    New files contain the processor's complete binary XML state. Both .kb09 and
-    .sh09state are accepted; the earlier JUCE-hosted .sh09state exports are also
-    supported. Power, held keys and window placement are intentionally not saved.
+    New .kb09 files contain the processor's complete binary XML state.
+    Earlier exports remain readable for compatibility. Power, held keys and
+    window placement are intentionally not saved.
     A load is validated before the processor is touched. File dialogs are async
     and are cancelled when this helper/editor is destroyed. No audio-thread I/O.
 */

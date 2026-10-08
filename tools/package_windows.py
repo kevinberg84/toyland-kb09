@@ -55,7 +55,7 @@ for relative in ("index.html", "styles.css", "assets/marks.png", f"assets/panel-
     shutil.copy2(root / "docs/manual" / relative, destination)
 (package / "Factory Presets").mkdir()
 for path in bank:
-    shutil.copy2(path, package / "Factory Presets" / path.name)
+    shutil.copy2(path, package / "Factory Presets" / path.with_suffix('.kb09').name)
 
 
 def write(relative, content):
@@ -78,7 +78,7 @@ write("START HERE.html", r"""<!doctype html>
 <p><a href="User Guide/index.html">Open the offline user guide →</a> · <a href="Release Notes.txt">Release notes</a></p><p>Keep the complete <code>User Guide</code> folder together. Vendor documentation links need internet.</p>
 <p><small>UNOFFICIAL PERSONAL PROJECT — NOT AFFILIATED WITH ROLAND CORPORATION — NOT FOR SALE</small></p></main></body></html>""")
 write("Factory Presets/Read me.txt", f"""The sixteen factory sounds are built into KB-09.
-These optional .sh09state copies were exported and tested from the {version} VST3.
+These optional .kb09 copies were exported and tested from the {version} VST3.
 Click LOAD to open a copy. Click SAVE to save your own sound as a .kb09 file.
 Loading a user sound does not remove the factory bank.""")
 notes = (root / "docs/RELEASE_NOTES.md").read_text(encoding="utf-8-sig").split("# Historical", 1)[0]
