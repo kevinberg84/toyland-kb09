@@ -21,7 +21,7 @@ updates={prefix+'User Manual.html':(root/'docs/manual/User Manual.html').read_by
 Logic Pro and GarageBand: choose Toyland KB-09 as an Audio Unit instrument.
 Other compatible music software can use its VST3 instrument.
 Open User Manual.html for the illustrated guide and working navigation links.
-Use the HTML manualâ€™s Print / Save PDF button for a printable copy.
+Use the HTML manual's Print / Save PDF button for a printable copy.
 
 macOS 12 or later; Intel and Apple Silicon. Ad-hoc signed, not Developer ID
 signed or notarized. macOS may warn that Apple cannot verify the developer.
