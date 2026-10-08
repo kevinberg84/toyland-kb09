@@ -1,6 +1,34 @@
 # Validation record
 
-## Current Windows build — Toyland KB-09 0.12.0, 2026-10-07
+## Current Windows build — Toyland KB-09 0.13.0, 2026-10-07
+
+The revised Windows VST3 and standalone are built. The tested VST3 is installed at `C:\Program Files\Common Files\VST3\Toyland KB-09.vst3`; its module hash and 0.13.0 moduleinfo match the build. The previous 0.12 bundle was verified and preserved outside DAW scan folders at `artifacts/Backup/Toyland KB-09-0.12.0-before-0.13.0/Toyland KB-09.vst3`.
+
+- VST3 inner module SHA-256: `732AB009624C0A3B33C324C8F4AD9F1E7CB6ED6FC20E1599C22963AAF58BB065`.
+- Standalone SHA-256: `1C894C7798EB4EE66A57BFEA3623B4C412D55B0C9CC75175968A3F501146E8F6`.
+- Package: `artifacts/Release/Toyland KB-09-0.13.0-Windows-x64` and sibling ZIP, 41,995,027 bytes.
+- ZIP SHA-256: `8FF8EAA0FE7AACAE38674580F937200371FCB06A2CD30B0EE061B674B33C39BD`. All 32 files and every ZIP entry/hash were verified against the tested module and executable. The offline guide, START HERE, factory bank and licenses are included; development evidence pages are excluded from the consumer package.
+
+| Current check | Result | Log under artifacts/Validation-KB09 |
+|---|---|---|
+| Final Release build | Exit 0 | build-0.13-final-grip.txt |
+| DSP | 92 passed, 0 failed; unchanged engine | dsp-0.13.txt |
+| Processor | 20 passed, 0 failed; zero tracked C++ new allocations | processor-0.13-final.txt |
+| Preset files | 58 passed, 0 failed; final actual-host bank | presets-0.13-final.txt |
+| Actual editor | 302 checks, 0 failures | gui-0.13-final.txt |
+| Steinberg validator | 47 passed, 0 failed, exit 0 | steinberg-0.13-final.txt |
+| Pluginval 1.0.4 strictness 10, GUI enabled | SUCCESS, process exit 0 | pluginval-0.13-final-level10.txt; pluginval-0.13-final-exit.txt |
+| Actual VST3 host | 75 assertions, 0 failures; 600-second render | host-0.13-final.txt |
+| Installation and previous-version backup | Matching tested module and verified old bundle | installation-0.13-final.txt |
+| Package identity and complete ZIP | 32 files verified | package-0.13-final.txt |
+
+Pluginval uses seed 9009, sample rates 44.1/48/88.2/96/192 kHz and blocks 1/17/64/257/1024/8192. The actual-module host covers MIDI timing, state/automation, external input and follower, 16 factory exports/disk round-trips, ten native editor lifecycles and eight additional instances. The 600-second render remained finite and audible: callback time 58.9363 seconds (9.82272% of realtime), maximum observed 128-sample callback 0.9209 ms against 2.66667 ms at 48 kHz. This is one offline workstation measurement, not a DAW CPU guarantee.
+
+The editor checks cover the common 18-degree projection, moving black top ticks with static-indicator negative controls, opaque overhead caps with displaced-cap negative controls, thin exposed blade geometry, S/M/L restoration, complete footers, held-key feedback, selector attachments, fixed/discrete wear events and bender spring return/damage. The actual compiled editor was visually inspected in its 3840 × 2160 export: tall knob barrels, overhead cap tops, white/gray screw oxidation, duller aged keys, fine textured lower rail, ivory POWER cap and the relocated coffee ring. ENV legends place GATE+TRIG above the actuator, GATE to its left and LFO below. The finite-resolution source textures and image-derived dimensions are not calibrated hardware CAD or physical-display equivalence.
+
+The feature-first consumer manual has the requested recreation subtitle, AGE GUI/circuit explanation, external filter and envelope-follower introduction. Its source and packaged dependencies/anchors pass the offline checker. The whole package check covers two HTML documents, 25 IDs, 44 fragment links, 18 local references and 14 external citations (`package-manual-0.13-final.txt`). The 0.13 browser layout review could not run because the browser runtime reported no available browser; no fresh desktop/mobile manual screenshots or PDF pagination are claimed. See `docs/manual/qa/consumer-review-0.13.md`. The earlier Live Auto-Scale confirmation is the owner's report, not a fresh 0.13 Live test. AU and AAX are not built or included.
+
+## Historical release — Toyland KB-09 0.12.0, 2026-10-07
 
 The photo-informed Windows VST3 and standalone are built and the VST3 is installed. The previous 0.11 bundle was verified and preserved outside DAW scan folders at `artifacts/Backup/Toyland KB-09-0.11.0-before-0.12.0/Toyland KB-09.vst3`.
 

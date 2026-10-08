@@ -38,7 +38,7 @@ void checkPersonalArtwork(Checks& checks) {
     const auto chassis=juce::ImageFileFormat::loadFrom(BinaryData::chassispersonalaged_png,BinaryData::chassispersonalaged_pngSize);
     checks.expect(chassis.isValid()&&chassis.getWidth()==1774&&chassis.getHeight()==887,
                   "personal wear endpoint keeps the clean chassis registration and dimensions");
-    const auto cap=juce::ImageFileFormat::loadFrom(BinaryData::faderpersonalv2_png,BinaryData::faderpersonalv2_pngSize);
+    const auto cap=juce::ImageFileFormat::loadFrom(BinaryData::faderpersonaloverhead_png,BinaryData::faderpersonaloverhead_pngSize);
     checks.expect(cap.isValid()&&cap.hasAlphaChannel(),"corrected top-and-side-stripe cap has a transparent surrounding canvas");
 
 }
@@ -125,6 +125,42 @@ int changedPixels(const juce::Image& before, const juce::Image& after, int thres
     return changed;
 }
 
+struct PixelChanges {
+    int count=0;
+    juce::Rectangle<int> bounds;
+};
+PixelChanges visibleChanges(const juce::Image& before,const juce::Image& after,int threshold=12) {
+    PixelChanges result;
+    if(!before.isValid()||!after.isValid()||before.getBounds()!=after.getBounds())return result;
+    const juce::Image::BitmapData a(before,juce::Image::BitmapData::readOnly),b(after,juce::Image::BitmapData::readOnly);
+    for(int y=0;y<before.getHeight();++y)for(int x=0;x<before.getWidth();++x) {
+        const auto p=a.getPixelColour(x,y),q=b.getPixelColour(x,y);
+        const auto channel=[](juce::uint8 c,juce::uint8 alpha){return int(c)*int(alpha)/255;};
+        const int delta=std::max({std::abs(channel(p.getRed(),p.getAlpha())-channel(q.getRed(),q.getAlpha())),
+            std::abs(channel(p.getGreen(),p.getAlpha())-channel(q.getGreen(),q.getAlpha())),
+            std::abs(channel(p.getBlue(),p.getAlpha())-channel(q.getBlue(),q.getAlpha())),
+            std::abs(int(p.getAlpha())-int(q.getAlpha()))});
+        if(delta>threshold) {
+            const juce::Rectangle<int> pixel(x,y,1,1);
+            result.bounds=result.count==0?pixel:result.bounds.getUnion(pixel);++result.count;
+        }
+    }
+    return result;
+}
+
+constexpr int controlRenderScale=4;
+juce::Image renderLinearControl(juce::Slider& slider,float position,juce::Colour background) {
+    juce::Image image(juce::Image::ARGB,120*controlRenderScale,160*controlRenderScale,true,juce::SoftwareImageType());
+    juce::Graphics g(image);g.fillAll(background);g.addTransform(juce::AffineTransform::scale(float(controlRenderScale)));
+    // Exercise the actual preceding scale/slot draw and the production cap/post.
+    slider.getLookAndFeel().drawLinearSlider(g,30,20,45,110,position,20,130,juce::Slider::LinearVertical,slider);
+    return image;
+}
+juce::Rectangle<int> controlPixels(juce::Rectangle<int> area) {
+    return {area.getX()*controlRenderScale,area.getY()*controlRenderScale,
+            area.getWidth()*controlRenderScale,area.getHeight()*controlRenderScale};
+}
+
 void processMidi(SH09Processor& processor, const juce::MidiMessage& message) {
     juce::AudioBuffer<float> buffer(2, blockSize);
     buffer.clear();
@@ -160,19 +196,89 @@ void checkOpaqueCaps(juce::Component& editor, Checks& checks) {
     auto* slider=dynamic_cast<juce::Slider*>(findComponent(editor,"cutoff"));
     checks.expect(slider!=nullptr,"cutoff available for actual cap-renderer opacity check");
     if(slider==nullptr)return;
-    std::array<juce::Image,2> images;
-    for(int i=0;i<2;++i) {
-        images[size_t(i)]=juce::Image(juce::Image::ARGB,120,160,true,juce::SoftwareImageType());
-        juce::Graphics g(images[size_t(i)]);
-        g.fillAll(i==0?juce::Colours::red:juce::Colours::blue);
-        // Exercise the production renderer including the preceding scale/slot
-        // draw, which formerly left the brush at 13% alpha before the cap.
-        slider->getLookAndFeel().drawLinearSlider(g,30,20,45,110,75,20,130,juce::Slider::LinearVertical,*slider);
+    const std::array<juce::Image,2> images{{renderLinearControl(*slider,75,juce::Colours::red),
+                                           renderLinearControl(*slider,75,juce::Colours::blue)}};
+    const std::array<juce::Image,2> moved{{renderLinearControl(*slider,105,juce::Colours::red),
+                                          renderLinearControl(*slider,105,juce::Colours::blue)}};
+    // These cores are on opposite sides OUTSIDE the opaque slot (x49.3..55.7).
+    // Comparing moved-cap renders proves the slot/scales cannot pass by themselves.
+    for(const auto area:{juce::Rectangle<int>(44,74,3,3),juce::Rectangle<int>(58,74,3,3)}) {
+        const auto roi=controlPixels(area);
+        const bool opaque=changedPixels(images[0].getClippedImage(roi),images[1].getClippedImage(roi),2)==0;
+        const bool exposed=changedPixels(moved[0].getClippedImage(roi),moved[1].getClippedImage(roi),20)>roi.getWidth()*roi.getHeight()/2;
+        checks.expect(opaque&&exposed,juce::String(area.getX()<52?"left":"right")
+                      +" cap core outside slot is opaque; moved-cap negative control exposes the background");
     }
-    checks.expect(changedPixels(images[0].getClippedImage({49,73,7,5}),images[1].getClippedImage({49,73,7,5}))==0,
-                  "solid cap core hides both contrasting backgrounds with identical pixels");
     checks.expect(changedPixels(images[0],images[1])>1000,
                   "cap-opacity check retains genuinely different surrounding backgrounds");
+}
+
+void checkRotaryTicks(SH09Processor& processor,juce::Component& editor,Checks& checks) {
+    const float initialAge=processor.state.getRawParameterValue("age")->load();
+    constexpr float origin=10,diameter=100,centreX=origin+diameter*.50f,centreY=origin+diameter*.40f;
+    // Independent visual contract: a predominantly round metal top and a short
+    // black radial mark. It is not a copy of the renderer's tick-drawing code.
+    constexpr float projectedCos=.951057f,maskRadius=diameter*.315f;
+    const auto movingTicks=[&](const std::array<juce::Image,3>& images,const std::array<float,3>& angles) {
+        for(size_t state=0;state<images.size();++state) {
+            int darkAndMoving=0;
+            for(const float radius:{.19f,.215f,.24f,.265f}) {
+                const int x=juce::roundToInt((centreX+std::sin(angles[state])*radius*diameter)*controlRenderScale);
+                const int y=juce::roundToInt((centreY-std::cos(angles[state])*radius*diameter*projectedCos)*controlRenderScale);
+                const auto own=images[state].getPixelAt(x,y),other=images[(state+1)%images.size()].getPixelAt(x,y);
+                const int ownLight=std::max({int(own.getRed()),int(own.getGreen()),int(own.getBlue())});
+                const int otherLight=std::max({int(other.getRed()),int(other.getGreen()),int(other.getBlue())});
+                if(ownLight<85&&otherLight-ownLight>35)++darkAndMoving;
+            }
+            if(darkAndMoving<3)return false;
+        }
+        return true;
+    };
+    for(const auto* id:{"range","wave","volume"}) {
+        auto* slider=dynamic_cast<juce::Slider*>(findComponent(editor,id));
+        checks.expect(slider!=nullptr,juce::String(id)+" is available for native top-tick checks");
+        if(slider==nullptr)continue;
+        const double original=slider->getValue();
+        const auto rotary=slider->getRotaryParameters();
+        for(const float age:{0.0f,.70f}) {
+            setParameter(processor,"age",age);settleEditor();
+            std::array<juce::Image,3> images;
+            std::array<float,3> angles{};
+            for(size_t state=0;state<images.size();++state) {
+                const double requested=slider->getMinimum()+(slider->getMaximum()-slider->getMinimum())*double(state)*.5;
+                slider->setValue(requested,juce::sendNotificationSync);settleEditor();
+                // Use the snapped live value: waveform's midpoint is a detent,
+                // not an invented continuous value between the two middle stops.
+                const float normalized=float(slider->valueToProportionOfLength(slider->getValue()));
+                angles[state]=rotary.startAngleRadians+(rotary.endAngleRadians-rotary.startAngleRadians)*normalized;
+                images[state]=juce::Image(juce::Image::ARGB,120*controlRenderScale,120*controlRenderScale,true,juce::SoftwareImageType());
+                juce::Graphics g(images[state]);g.fillAll(juce::Colour(0xff232927));
+                g.addTransform(juce::AffineTransform::scale(float(controlRenderScale)));
+                slider->getLookAndFeel().drawRotarySlider(g,int(origin),int(origin),int(diameter),int(diameter),
+                    normalized,rotary.startAngleRadians,rotary.endAngleRadians,*slider);
+            }
+            const auto context=juce::String(id)+" Age "+juce::String(age,2);
+            checks.expect(movingTicks(images,angles),context+" has a visible moving black top tick at minimum, midpoint and maximum");
+            bool fixedLighting=true;
+            for(size_t state=1;state<images.size();++state) {
+                const juce::Image::BitmapData a(images[0],juce::Image::BitmapData::readOnly),b(images[state],juce::Image::BitmapData::readOnly);
+                for(int y=0;y<images[0].getHeight();++y)for(int x=0;x<images[0].getWidth();++x) {
+                    const float dx=((float(x)+.5f)/controlRenderScale-centreX)/maskRadius;
+                    const float dy=((float(y)+.5f)/controlRenderScale-centreY)/(maskRadius*projectedCos);
+                    if(dx*dx+dy*dy<=1.0f)continue;
+                    const auto p=a.getPixelColour(x,y),q=b.getPixelColour(x,y);
+                    const int delta=std::max({std::abs(int(p.getRed())-int(q.getRed())),std::abs(int(p.getGreen())-int(q.getGreen())),
+                                              std::abs(int(p.getBlue())-int(q.getBlue()))});
+                    if(delta>2)fixedLighting=false;
+                }
+            }
+            checks.expect(fixedLighting,context+" rotation leaves body, skirt, shadow and lighting outside the top-disc mask fixed");
+            const std::array<juce::Image,3> staticTick{{images[0],images[0],images[0]}};
+            checks.expect(!movingTicks(staticTick,angles),context+" tick detector rejects a static or absent moving indicator");
+        }
+        slider->setValue(original,juce::sendNotificationSync);settleEditor();
+    }
+    setParameter(processor,"age",initialAge);settleEditor();
 }
 
 void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& checks) {
@@ -218,18 +324,27 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
     for(size_t i=0;i<expected.size();++i)if(juce::String(legacyParameterIDs[i])!="age")
         soundSame=soundSame&&std::abs(expected[i]-processor.state.getParameter(legacyParameterIDs[i])->getValue())<1.e-6f;
     checks.expect(metadataSame&&soundSame,"cap loss preserves every fader identity, hit area, enablement and sound parameter value");
-    // The post is opaque metal rather than a transparent outline over the slot.
+    // Compare two production positions at fixed Age: a slot alone must fail.
     setParameter(processor,"age",.95f);settleEditor();
     for(const auto* id:{"vcoLevel","release"}) {
         auto* slider=dynamic_cast<juce::Slider*>(findComponent(editor,id));
-        std::array<juce::Image,2> images;
-        for(int i=0;i<2;++i) {
-            images[size_t(i)]=juce::Image(juce::Image::ARGB,120,160,true,juce::SoftwareImageType());
-            juce::Graphics g(images[size_t(i)]);g.fillAll(i==0?juce::Colours::red:juce::Colours::blue);
-            slider->getLookAndFeel().drawLinearSlider(g,30,20,45,110,75,20,130,juce::Slider::LinearVertical,*slider);
+        const auto at75=renderLinearControl(*slider,75,juce::Colour(0xff232927));
+        const auto at100=renderLinearControl(*slider,100,juce::Colour(0xff232927));
+        const auto thinBlade=[](const PixelChanges& pixels) {
+            return pixels.count>=60&&pixels.bounds.getHeight()>=10*controlRenderScale
+                &&pixels.bounds.getHeight()<=23*controlRenderScale
+                &&pixels.bounds.getWidth()>0&&pixels.bounds.getWidth()<6*controlRenderScale
+                &&pixels.bounds.getWidth()*5<pixels.bounds.getHeight()*2;
+        };
+        bool visibleAtBoth=true;
+        for(const auto y:{64,89}) {
+            const auto roi=controlPixels({47,y,11,23});
+            visibleAtBoth=visibleAtBoth&&thinBlade(visibleChanges(at75.getClippedImage(roi),at100.getClippedImage(roi)));
         }
-        checks.expect(changedPixels(images[0].getClippedImage({51,69,3,8}),images[1].getClippedImage({51,69,3,8}))==0,
-                      juce::String(id)+" exposed metal blade fully hides contrasting backgrounds");
+        checks.expect(visibleAtBoth,juce::String(id)+" has a visible thin longitudinal blade at two actual 4x-rendered positions");
+        const auto roi=controlPixels({47,64,11,23});
+        checks.expect(!thinBlade(visibleChanges(at100.getClippedImage(roi),at100.getClippedImage(roi))),
+                      juce::String(id)+" blade-presence detector rejects an unchanged blank slot");
         const double original=slider->getValue();
         slider->setValue(.41,juce::sendNotificationSync);settleEditor();
         checks.expect(std::abs(processor.state.getRawParameterValue(id)->load()-.41f)<1.e-5f,
@@ -644,6 +759,7 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
         checkSwitchAttachment(processor, *editor, checks);
         checkKeyboardFeedback(processor, *editor, checks);
         checkOpaqueCaps(*editor, checks);
+        checkRotaryTicks(processor,*editor,checks);
         checkCapLoss(processor,*editor,checks);
         checkValueBubbleColours(*editor, checks);
         renderBenderPositions(processor, *editor, directory, checks);

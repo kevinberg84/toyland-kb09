@@ -1,33 +1,53 @@
-# Production artwork provenance
+# Production artwork provenance — 0.13.0
 
-The chassis, rotary knob, fader cap and white/black key-pair assets were created with the built-in image-generation tool for this project. They are original generated material reconstructions guided by the SH-09 reference research. The corrected `KB-09.png` supplied by the user is embedded as `marks.png`. No Universal Audio artwork or third-party instrument photograph is copied into the runtime interface.
+The raster material sources were produced with the built-in image-generation tool, guided by original-unit research and the user's personal photographs. The user's corrected `KB-09.png` supplies `marks.png`. Reference photographs and Universal Audio artwork are not embedded in the runtime. Current controls combine generated materials with native geometry; a generation prompt is production intent, not proof of exact hardware dimensions or final rendering quality.
 
-| Runtime file | Actual source pixels | Saved production prompt |
+## Current embedded sources
+
+| Runtime file | Actual source pixels | Production record / current use |
 |---|---:|---|
-| `chassis-black.png` | 1774 × 887 | `chassis-black-prompt.txt`, neutral black edit of the historical chassis |
-| `chassis-patina.png` | 1774 × 887 | `chassis-patina-prompt.txt`, gradual dulling and existing-screw rust without stains |
-| `chassis-stains.png` | 1774 × 887 | `chassis-stains-prompt.txt`, six case-only marks on a transparent atlas |
-| `knob.png` | 1254 × 1254 | `knob-prompt.txt` |
-| `fader.png` | 1536 × 1024 | `fader-prompt.txt` |
-| `keys.png` | 1254 × 1254 | `keys-prompt.txt` |
-| `wear-atlas.png` | 1448 × 1086, RGBA | `wear-atlas-prompt.txt`, 32 separate key stains, two independent cracks and three separate rotary corrosion patches |
+| `chassis-black.png` | 1774 × 887 | [chassis-black-prompt.txt](chassis-black-prompt.txt); neutral-black clean case |
+| `chassis-personal-aged.png` | 1774 × 887 | [chassis-personal-aged-prompt.txt](chassis-personal-aged-prompt.txt); registered personal-unit wear endpoint |
+| `chassis-stains.png` | 1774 × 887 | [chassis-stains-prompt.txt](chassis-stains-prompt.txt); only the existing coffee-ring crop is currently used |
+| `knob-personal.png` | 1254 × 1254 | [knob-personal-prompt.txt](knob-personal-prompt.txt); approved material source mapped onto native knob geometry |
+| `fader-personal-overhead.png` | **1484 × 1060** | [fader-personal-overhead-prompt.txt](fader-personal-overhead-prompt.txt); near-top cap with central top-and-side stripe |
+| `front-rail-grain.png` | 2172 × 724 | [front-rail-grain-prompt.txt](front-rail-grain-prompt.txt); selected fine matte lower-rail texture |
+| `keys.png` | 1254 × 1254 | [keys-prompt.txt](keys-prompt.txt); clean materials over individual native key surfaces |
 | `marks.png` | 2172 × 724 | User-supplied corrected artwork; no generation prompt |
-| `marks-aged.png` | 2172 × 724 | `marks-aged-prompt.txt`, aged ink edit of supplied marks |
+| `marks-aged.png` | 2172 × 724 | [marks-aged-prompt.txt](marks-aged-prompt.txt); worn coverage constrained to original letter masks |
 
-The prompts describe the requested output and production intent. Requested dimensions inside a prompt are not evidence that the image generator returned that resolution; the actual embedded dimensions are listed above.
+The current CMake `KB09Artwork` list embeds these **nine PNGs**. Header-checked dimensions above take precedence over requested dimensions inside prompts. In particular, the overhead cap is 1484 × 1060; 1536 × 1024 describes earlier cap files, not this selected file.
 
-The October 6 chassis revision changes the metal faces to **neutral black smooth satin painted steel**. Patina/rust crossfades gradually. Six separate case stains appear at distinct Age thresholds with fixed geometry and opacity; each case region is used once and never reused on keys or knobs. The front rail retains its original geometry with a subtle dark overlay to reduce sheen. This is cosmetic reconstruction, not a calibrated elapsed-year simulation. Historical `chassis.png`, `chassis-aged.png`, `knob-aged.png`, `keys-aged.png`, `keys-cracked.png`, `keys-crack-trace.png` and their prompts remain provenance and are no longer embedded. The chassis source resolution remains 1774 × 887.
+## Selected material mapping
 
-The renderer shares clean photographic key bases, with individual native tint and polish reflections. Each key owns a different stain from wear-atlas cells 0–31; notes 60 and 77 use separate fracture drawings from cells 32 and 33. Range, Wave and Volume own cells 34, 35 and 36 respectively. None of these 37 assigned decals is reused on another object. Stains appear individually at fixed appearance. The two cracks begin separately and extend slightly without fading in. The shared aged-key and aged-knob photographs are no longer drawn. These are common clean bases with separate wear decals, not 32 independently generated full-key photographs.
+The approved knob prompt describes an oblique original material image, with no baked black indicator. The current renderer does not use that oblique silhouette. It samples top material from `(283, 101, 674, 550)` and rib material from **x230–1010 / y715–945**. Native geometry supplies a `0.50d` barrel height, `0.34d` body radius, `0.425d` skirt radius and `0.30d` top radius, projected at **18° off normal**. The top centre is `(0.50d, 0.40d)`; the separate moving black tick uses radii `0.175d–0.287d` and width `0.026d`. The material lighting remains fixed. Later attempts to generate a revised camera flattened the barrel and were rejected; those new knob candidates are not runtime inputs.
 
-The exact saved prompt requested an eight-column/six-row atlas, preferably 3072 × 2304, but the returned file is **1448 × 1086**. Measured runtime crops are **177 × 181**, located at `x = (index % 8) * 181 + 2`, `y = floor(index / 8) * 181 + 36`. The offset and side gutters follow the returned image's actual transparent gaps; an unadjusted origin would cut across marks. Cells 37–47 are unused. These coordinates select existing image regions; the source image has not been resampled or rearranged to manufacture the requested resolution.
+The overhead cap prompt requests an almost direct top view, preserving the physical cap rather than squashing its walls. The current renderer takes source crop `(125, 242, 1240, 565)` and draws it at **28 × 18 body units** over an opaque solid core. The index crosses the centre of the top surface and descends the narrow sides; the small vertical front lip remains black. Prompt camera language and the native knob camera are separate production records, not calibrated estimates of the user's camera.
 
-All fader caps remain fitted; the earlier unverified missing-cap/metal-post treatment is removed. Compact switches and the spring-return bender use native geometry. The bender rotates around a hidden axle beneath its slot; exact dimensions and travel are inferred, not measured original-part CAD. Text and vectors render at the output's actual pixel scale, while artwork downscaling uses high-quality resampling.
+The selected lower-rail texture came from `exec-e284c8b1-b01a-45b5-bcc1-5bd7ee2a219c.png`. Its saved prompt names the owner's `20261007_131213.jpg` and the discarded coarse candidate `exec-f8f3f01a-d393-4c33-9eac-13e3d695a36b.png` as references. The final instruction calls for fine, low-contrast matte grain; its dimensional/grain counts are requested art direction, not measured texture dimensions. Runtime samples the top 70 source rows for the narrow rail and leaves the smoother main painted panel distinct.
 
-The supplied branding is cropped and placed as **KEVINBERG 09 / KB-09 on the left** and **Toyland on the right**. There is one current product identity, Toyland KB-09; there is no selectable alternate skin.
+The aged chassis blends at `0.90 × a^0.85` on metal regions. Four registered performance-bay screw patches are composited above the perimeter rules; their aged source blend is `0.94 × a`. Native white/grey deposits are then drawn on all 13 screw heads after the ink. Neither the generation prompts nor this pale-deposit treatment identifies their alloy or chemistry.
 
-All nine runtime PNGs are embedded by the `KB09Artwork` CMake target. Native masks constrain aged brand ink to the supplied original mark shapes. The built-in image-generation tool produced the raster material edits; no fallback CLI was used. No network connection, image-generation service or external image file is needed when using the instrument.
+Only source crop `(1420, 0, 300, 320)` from the old stain image is retained: the coffee ring, at fixed 22% opacity after `a = 0.60`. Its target moves +40 right and −45 up in body units to clear the envelope-mode control. GATE / + / TRIG is above the axis, GATE left of the middle, and LFO below.
 
-The compiled editor can export a 3840 × 2160 preview with text and vector details rendered at that output resolution. The chassis itself remains a 1774 × 887 raster source; enlargement cannot recover additional photographic detail. The same finite-resolution limitation applies to each bitmap layer. A 4K preview therefore demonstrates editor output dimensions, not a native 4K photograph, physical-display validation or measured visual equivalence to an original instrument.
+## Native work and rejected inputs
 
-The independent-wear revision passed 280 GUI/asset checks, including 80 atlas assertions and 3 cap-opacity assertions; the release validators and 600-second actual-module host render also passed. Prompts establish production intent, not independent proof of uniqueness or a passed final build. The GUI fixture now tests source-alpha shapes independently of colour, position and final key tint; the release evidence belongs in [VALIDATION.md](../../docs/VALIDATION.md).
+The following details are native drawing, not additional embedded bitmap assets:
+
+- Independent per-key tint, microdust and seven fixed flecks, with per-key onset `0.18 + (note − 53) × 0.023`. No old wear-atlas cell is sampled.
+- Reduced key gloss. At display AGE 7, the clean black and white bitmap layers contribute 0.412 and 0.552 respectively over opaque native surfaces; highlights also fade. This is surface compositing, not key transparency.
+- One curved key hairline on MIDI 60 from display AGE 5.6, width 0.32 body pixels and fixed 55% opacity. [key-hairline-personal.svg](key-hairline-personal.svg) records the path; its revealed length grows from 78% to 100%.
+- Native knob cylinder/skirt, the moving black tick, independent fine rim stipple and grip dust.
+- Raised ribbed slide switches, thin stepped exposed blades after cap-loss events at display AGE 6.4/8.8, and the bender's cosmetic broken tip at 9.2. Interactions and spring return remain active.
+- Pale ivory POWER-button bevels, stable molding grain, recess and state movement.
+- White/grey screw deposits, panel glyphs, scales and software controls.
+
+`wear-atlas.png` is entirely removed from runtime. Its old independent-cell checks belong to historical releases. The former six-stain case sequence and two-crack sequence are also historical. Both generated crack PNGs were rejected for broad shaded halos; no crack PNG is embedded. Older cap files (`fader.png`, `fader-personal.png`, `fader-personal-v2.png`) and earlier aged-key/knob/patina files remain provenance only. Retaining a file or prompt does not make it a runtime dependency.
+
+The former 0.12 eight-PNG inventory is superseded by the table above. Generated camera candidates that flattened the knob, and the coarse rail texture candidate, were not integrated. Original material files and prompts are retained to explain what was selected or rejected, not to silently substitute old artwork in a build.
+
+## Validation boundary
+
+The supplied branding remains KEVINBERG 09 / KB-09 on the left and Toyland on the right. Aged masks only remove coverage within the supplied letterforms. Playback needs no network, generation service or external image files.
+
+Native text, paths and geometry render at the output pixel scale, while the photographic materials retain their finite source detail. A 3840 × 2160 compiled export establishes that output size, not native 4K photography, physical 4K-display validation or measured equivalence to a real instrument. Prompts and source integration do not establish a passing final build; [VALIDATION.md](../../docs/VALIDATION.md) owns the release-specific test, hash and installation evidence.
