@@ -924,19 +924,23 @@ public:
         const float age=juce::jlimit(0.0f,1.0f,processor.state.getRawParameterValue("age")->load());
         const bool pressed=processor.isPowerEnabled()||down;
         const auto recess=getLocalBounds().toFloat().reduced(.7f);
-        // Grey moulded cap with a shallow front wall in the near-overhead view.
-        // Pressing it lowers the cap slightly without changing its hit target.
+        // The grey pushbutton stands tall when OFF. Project its estimated
+        // physical height through the same 9-degree view as the other hardware;
+        // ON lowers the same cap without shrinking its top or changing camera.
         g.setColour(juce::Colour(0xff050605));g.fillRoundedRectangle(recess,1.3f);
         g.setColour(juce::Colour(0xff43433b).withAlpha(.36f));g.drawRoundedRectangle(recess,1.3f,.45f);
-        auto cap=recess.reduced(1.35f,2.1f).translated(0,pressed?.45f:0);
+        const auto footprint=recess.reduced(1.35f,2.1f).withTrimmedTop(1.2f);
+        const float wallHeight=(pressed?7.0f:18.0f)*panelViewSin;
+        const auto top=footprint.translated(0,-wallHeight);
         g.setColour(juce::Colours::black.withAlpha(pressed?.35f:.47f));
-        g.fillRoundedRectangle(cap.translated(.35f,pressed?.35f:.60f),1.1f);
+        g.fillRoundedRectangle(footprint.translated(.45f,.25f+wallHeight*.34f),1.1f);
         const auto grey=juce::Colour(0xffa5a6a0).interpolatedWith(juce::Colour(0xff959487),age*.76f);
-        const float wallHeight=pressed?.45f:1.0f;
-        const auto top=cap.withTrimmedBottom(wallHeight);
-        const auto wall=cap.withTrimmedTop(cap.getHeight()-wallHeight-1);
+        const auto wall=juce::Rectangle<float>(top.getX(),top.getBottom()-1,top.getWidth(),wallHeight+1);
         g.setGradientFill(juce::ColourGradient(grey.darker(.18f),0,wall.getY(),grey.darker(.32f),0,wall.getBottom(),false));
         g.fillRoundedRectangle(wall,1.0f);
+        g.setColour(grey.darker(.39f));
+        g.drawLine(wall.getX()+.35f,top.getBottom(),wall.getX()+.35f,wall.getBottom()-.55f,.45f);
+        g.drawLine(wall.getRight()-.35f,top.getBottom(),wall.getRight()-.35f,wall.getBottom()-.55f,.45f);
         g.setColour(grey.darker(.10f));g.fillRoundedRectangle(top,1.15f);
         const auto face=top.reduced(.75f,.65f);
         juce::ColourGradient enamel(grey.brighter(over?.035f:.020f),0,face.getY(),grey.darker(.045f),0,face.getBottom(),false);
