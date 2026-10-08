@@ -16,7 +16,7 @@ juce_add_plugin(SH09
     FORMATS VST3 Standalone IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE VST3_CATEGORIES Instrument Synth
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE)
-juce_add_binary_data(KB09Artwork SOURCES Assets/Photoreal/chassis-black.png Assets/Photoreal/chassis-personal-aged.png Assets/Photoreal/chassis-stains.png Assets/Photoreal/knob-personal-overhead-v2.png Assets/Photoreal/fader-personal-overhead.png Assets/Photoreal/front-rail-grain.png Assets/Photoreal/keys.png Assets/Photoreal/marks.png Assets/Photoreal/marks-aged.png)
+juce_add_binary_data(KB09Artwork SOURCES Assets/Photoreal/chassis-black.png Assets/Photoreal/chassis-personal-aged.png Assets/Photoreal/chassis-stains.png Assets/Photoreal/knob-personal-overhead-v3.png Assets/Photoreal/fader-personal-overhead.png Assets/Photoreal/front-rail-grain.png Assets/Photoreal/keys.png Assets/Photoreal/marks.png Assets/Photoreal/marks-aged.png)
 target_sources(SH09 PRIVATE Source/Plugin/Processor.cpp Source/GUI/Editor.cpp Source/GUI/WindowSizing.cpp Source/GUI/PresetFiles.cpp Source/DSP/Engine.cpp)
 target_compile_definitions(SH09 PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
 target_link_libraries(SH09 PRIVATE KB09Artwork juce::juce_audio_utils juce::juce_recommended_config_flags)

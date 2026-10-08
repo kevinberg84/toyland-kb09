@@ -215,14 +215,14 @@ void checkOpaqueCaps(juce::Component& editor, Checks& checks) {
 
 void checkRotaryTicks(SH09Processor& processor,juce::Component& editor,Checks& checks) {
     const float initialAge=processor.state.getRawParameterValue("age")->load();
-    constexpr float origin=10,diameter=100,centreX=origin+diameter*.50f,centreY=origin+diameter*.435f;
+    constexpr float origin=10,diameter=100,centreX=origin+diameter*.50f,centreY=origin+diameter*.420f;
     // Independent visual contract: a predominantly round metal top and a short
     // black radial mark. It is not a copy of the renderer's tick-drawing code.
-    constexpr float projectedCos=.987688f,maskRadius=diameter*.35f;
+    constexpr float projectedCos=.987688f,maskRadius=diameter*.29f;
     const auto movingTicks=[&](const std::array<juce::Image,3>& images,const std::array<float,3>& angles) {
         for(size_t state=0;state<images.size();++state) {
             int darkAndMoving=0;
-            for(const float radius:{.19f,.215f,.24f,.265f}) {
+            for(const float radius:{.16f,.185f,.21f,.235f}) {
                 const int x=juce::roundToInt((centreX+std::sin(angles[state])*radius*diameter)*controlRenderScale);
                 const int y=juce::roundToInt((centreY-std::cos(angles[state])*radius*diameter*projectedCos)*controlRenderScale);
                 const auto own=images[state].getPixelAt(x,y),other=images[(state+1)%images.size()].getPixelAt(x,y);
@@ -557,6 +557,36 @@ void renderBenderPositions(SH09Processor& processor, juce::Component& editor,
     setParameter(processor,"age",initialAge);bender->setValue(initialBend,juce::sendNotificationSync);settleEditor();
 }
 
+void renderHardwareDetails(SH09Processor& processor,juce::Component& editor,
+                           const juce::File& directory,Checks& checks) {
+    auto* power=dynamic_cast<juce::Button*>(findComponent(editor,"power"));
+    if(power==nullptr||power->getParentComponent()==nullptr||!power->onClick) {
+        checks.expect(false,"POWER is available for on/off appearance evidence");return;
+    }
+    auto* panel=power->getParentComponent();
+    const bool originalPower=processor.isPowerEnabled();
+    const float originalAge=processor.state.getRawParameterValue("age")->load();
+    for(const float age:{0.0f,.70f}) {
+        setParameter(processor,"age",age);settleEditor();
+        const auto suffix=age==0?juce::String("age0"):juce::String("age7");
+        for(const bool enabled:{true,false}) {
+            if(processor.isPowerEnabled()!=enabled)power->onClick();
+            settleEditor();
+            const auto detail=panel->createComponentSnapshot({175,425,65,75},true,4.0f);
+            checks.expect(processor.isPowerEnabled()==enabled&&writePNG(detail,directory.getChildFile(
+                "power_"+suffix+(enabled?"_on.png":"_off.png"))),"POWER "+suffix+(enabled?" ON":" OFF")+" actual-panel export and click state");
+        }
+        if(!processor.isPowerEnabled())power->onClick();
+        settleEditor();
+        checks.expect(writePNG(panel->createComponentSnapshot({310,130,280,225},true,3.0f),
+            directory.getChildFile("knobs_"+suffix+".png")),"knobs "+suffix+" actual-panel detail export");
+        checks.expect(writePNG(panel->createComponentSnapshot({65,420,183,320},true,3.0f),
+            directory.getChildFile("performance_"+suffix+".png")),"performance controls "+suffix+" actual-panel detail export");
+    }
+    if(processor.isPowerEnabled()!=originalPower)power->onClick();
+    setParameter(processor,"age",originalAge);settleEditor();
+}
+
 void checkBenderAudioCallbacks(SH09Processor& processor,juce::Component& editor,Checks& checks) {
     auto* bender=dynamic_cast<juce::Slider*>(findComponent(editor,"bender"));
     checks.expect(bender!=nullptr&&bool(bender->onValueChange)&&bool(bender->onDragEnd),
@@ -763,6 +793,7 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
         checkCapLoss(processor,*editor,checks);
         checkValueBubbleColours(*editor, checks);
         renderBenderPositions(processor, *editor, directory, checks);
+        renderHardwareDetails(processor,*editor,directory,checks);
         checkBenderAudioCallbacks(processor,*editor,checks);
         checkAgeEvents(processor, *editor, checks);
     }

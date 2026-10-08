@@ -56,7 +56,10 @@ struct Artwork {
     juce::Image chassis=load(BinaryData::chassisblack_png,BinaryData::chassisblack_pngSize);
     juce::Image chassisAged=load(BinaryData::chassispersonalaged_png,BinaryData::chassispersonalaged_pngSize);
     juce::Image stains=load(BinaryData::chassisstains_png,BinaryData::chassisstains_pngSize);
-    juce::Image knob=load(BinaryData::knobpersonaloverheadv2_png,BinaryData::knobpersonaloverheadv2_pngSize);
+    // Normalize the new sprite's padding so its silver skirt keeps the previous
+    // on-panel width. Only the upper knob is narrower, as in the owner's photo.
+    juce::Image knob=load(BinaryData::knobpersonaloverheadv3_png,BinaryData::knobpersonaloverheadv3_pngSize)
+        .getClippedImage({70,70,1114,1114});
     juce::Image fader=load(BinaryData::faderpersonaloverhead_png,BinaryData::faderpersonaloverhead_pngSize);
     juce::Image rail=load(BinaryData::frontrailgrain_png,BinaryData::frontrailgrain_pngSize);
     juce::Image keys=load(BinaryData::keys_png,BinaryData::keys_pngSize);
@@ -266,13 +269,12 @@ void cap(juce::Graphics& g,juce::Rectangle<float> r,bool small=false,bool indexe
     }
 }
 void projectedKnob(juce::Graphics& g,juce::Rectangle<float> area,float angle,float age,uint32_t seed) {
-    // Use the exact knob image subsequently selected by the user, with only
-    // the camera moved almost overhead. Retain its physical height, silver
-    // skirt and grouped ribs; do not reconstruct a shorter barrel.
+    // The owner's overhead reference has a metal top about 59% of the skirt
+    // diameter. Keep the approved height, camera and grouped grip ribs.
     juce::Graphics::ScopedSaveState save(g);
     const float d=juce::jmin(area.getWidth(),area.getHeight());
     const auto sprite=area.withSizeKeepingCentre(d,d);
-    const auto top=juce::Point<float>(sprite.getX()+d*.50f,sprite.getY()+d*.435f);
+    const auto top=juce::Point<float>(sprite.getX()+d*.50f,sprite.getY()+d*.420f);
     const auto ellipse=[&](juce::Point<float> c,float radius) {
         return juce::Rectangle<float>(c.x-radius,c.y-radius*panelViewCos,2*radius,2*radius*panelViewCos);
     };
@@ -282,14 +284,14 @@ void projectedKnob(juce::Graphics& g,juce::Rectangle<float> area,float angle,flo
         g.setColour(juce::Colours::black.withAlpha(age*.12f));
         g.drawImage(artwork().knob,sprite,juce::RectanglePlacement::stretchToFit,true);
         juce::Graphics::ScopedSaveState metalSave(g);
-        juce::Path disc;disc.addEllipse(ellipse(top,d*.335f));g.reduceClipRegion(disc);
+        juce::Path disc;disc.addEllipse(ellipse(top,d*.267f));g.reduceClipRegion(disc);
         g.setColour(juce::Colour(0xff91764b).withAlpha(age*.13f));g.fillPath(disc);
     }
     // Keep independent gradual tarnish and dust; the discarded wear atlas is
     // not restored with the old knob. Each control has its own stable seed.
     for(uint32_t i=0;i<190;++i) {
         const float a=surfaceNoise(seed+i*17)*juce::MathConstants<float>::twoPi;
-        const float radius=d*(.295f+.037f*surfaceNoise(seed+i*29));
+        const float radius=d*(.235f+.029f*surfaceNoise(seed+i*29));
         const auto p=top+juce::Point<float>(std::sin(a)*radius,-std::cos(a)*radius*panelViewCos);
         const float size=d*(.0015f+.004f*surfaceNoise(seed+i*61));
         g.setColour(juce::Colour(i%3?0xff92754c:0xffb4a386).withAlpha(age*(.14f+.33f*surfaceNoise(seed+i*53))));
@@ -297,15 +299,15 @@ void projectedKnob(juce::Graphics& g,juce::Rectangle<float> area,float angle,flo
     }
     for(uint32_t i=0;i<58;++i) {
         const float a=(surfaceNoise(seed+i*71)-.5f)*juce::MathConstants<float>::pi;
-        const auto p=top+juce::Point<float>(std::sin(a)*d*.40f,
-            std::cos(a)*d*.40f*panelViewCos+d*(.012f+.055f*surfaceNoise(seed+i*79)));
+        const auto p=top+juce::Point<float>(std::sin(a)*d*.335f,
+            std::cos(a)*d*.335f*panelViewCos+d*(.025f+.050f*surfaceNoise(seed+i*79)));
         const float size=d*(.002f+.003f*surfaceNoise(seed+i*37));
         g.setColour(juce::Colour(0xffc6beaa).withAlpha(age*.35f));g.fillEllipse(p.x,p.y,size,size*.70f);
     }
     // The native opaque black tick rotates; photographic lighting stays fixed.
     const auto direction=juce::Point<float>(std::sin(angle),-std::cos(angle)*panelViewCos);
     g.setColour(juce::Colour(0xff141718));
-    g.drawLine({top+direction*d*.20f,top+direction*d*.329f},d*.026f);
+    g.drawLine({top+direction*d*.16f,top+direction*d*.260f},d*.020f);
 }
 void screwOxidation(juce::Graphics& g,juce::Point<float> c,float age,uint32_t seed) {
     if(age<=0)return;
@@ -390,71 +392,173 @@ public:
                 g.setGradientFill(juce::ColourGradient(juce::Colour(0xff030303),well.getX(),well.getY(),
                                                      juce::Colour(0xff202020),well.getX(),well.getBottom(),false));
                 g.fillRect(well);g.setColour(juce::Colours::black);g.drawRect(well,.9f);
-                // The user's broken PB-4 exposes its arched wheel and molded
-                // channels. The original tip rises from that wheel; its axle
-                // stays hidden below the panel. Projection/throw are estimates.
-                const float angle=amount*.610865f;
-                const float wheelBaseline=13.0f+60.0f*panelViewSin;
-                const auto wheelPoint=[centre,wheelBaseline](float theta,float radius,float depth=0.0f) {
-                    // Wheel height is normal to the panel; its thickness is
-                    // parallel to it. The two axes use sine and cosine respectively.
-                    return juce::Point<float>(centre+radius*std::sin(theta),
-                        wheelBaseline-panelViewSin*radius*std::cos(theta)+depth*panelViewCos);
+                // One rigid PB-4-like disk and finger tab, extruded along its
+                // hidden axle. Rotate object vertices first; the shared 9-degree
+                // camera then projects every face without screen-space reshaping.
+                const float angle=amount*.610865f,sa=std::sin(angle),ca=std::cos(angle);
+                constexpr float radius=60.0f,depth=7.5f,rootWidth=5.7f;
+                const float wheelBaseline=13.0f+radius*panelViewSin;
+                const bool broken=age>=.92f;
+                const auto project=[centre,wheelBaseline,sa,ca](juce::Point<float> p,float axleDepth) {
+                    const float xx=p.x*ca+p.y*sa,zz=p.y*ca-p.x*sa;
+                    return juce::Point<float>(centre+xx,wheelBaseline-zz*panelViewSin+axleDepth*panelViewCos);
                 };
-                const auto arc=[&](float radius,float depth) {
+                constexpr int circleSegments=256,vertexCapacity=circleSegments+16;
+                std::array<juce::Point<float>,vertexCapacity> outline{};
+                int count=0;
+                const float rootAngle=std::asin(rootWidth/radius),rootHeight=std::sqrt(radius*radius-rootWidth*rootWidth);
+                for(int i=0;i<=circleSegments;++i) {
+                    const float a=rootAngle+(juce::MathConstants<float>::twoPi-2*rootAngle)*float(i)/float(circleSegments);
+                    outline[size_t(count++)]={radius*std::sin(a),radius*std::cos(a)};
+                }
+                // The tab replaces the small crown arc, so there is no detached
+                // face or changing-width overlay sliding across the disk rim.
+                if(broken) {
+                    const std::array<juce::Point<float>,6> tab{{{-5.4f,62.6f},{-2.7f,64.5f},{-.7f,62.2f},
+                                                               {1.1f,63.8f},{3.0f,62.4f},{4.7f,63.0f}}};
+                    for(const auto p:tab)outline[size_t(count++)]=p;
+                } else {
+                    const std::array<juce::Point<float>,6> tab{{{-5.55f,rootHeight+1.2f},{-4.9f,82.8f},{-4.5f,85.0f},
+                                                               {4.5f,85.0f},{4.9f,82.8f},{5.55f,rootHeight+1.2f}}};
+                    for(const auto p:tab)outline[size_t(count++)]=p;
+                }
+                const auto section=[&](float z) {
+                    juce::Path p;p.startNewSubPath(project(outline[0],z));
+                    for(int i=1;i<count;++i)p.lineTo(project(outline[size_t(i)],z));
+                    p.closeSubPath();return p;
+                };
+                const auto rear=section(0),front=section(depth);
+                juce::Graphics::ScopedSaveState save(g);
+                g.reduceClipRegion(juce::Rectangle<int>(int(well.getX()),0,int(well.getWidth()),int(well.getBottom())));
+                g.setColour(juce::Colours::black.withAlpha(.40f));g.fillPath(rear,juce::AffineTransform::translation(.7f,1.3f));
+                g.fillPath(front,juce::AffineTransform::translation(.7f,1.3f));
+                g.setColour(juce::Colour(0xff080b0b));g.fillPath(rear);
+                g.setGradientFill(juce::ColourGradient(juce::Colour(0xff141615).darker(age*.20f),centre-45,16,
+                                                     juce::Colour(0xff050606),centre+45,well.getBottom(),false));g.fillPath(front);
+                // Smooth cylinder shading is evaluated per sample, rather than
+                // giving each mesh strip its own flat colour and antialias seam.
+                // The inverse projection uses the same rigid axle/camera above.
+                const auto plasticLight=[age=age](float nx,float ny,float nz,float axial) {
+                    const float diffuse=juce::jmax(0.0f,-.270f*nx+.090f*ny+.959f*nz);
+                    const float half=juce::jlimit(0.0f,1.0f,-.137f*nx+.125f*ny+.982f*nz);
+                    const float specular=std::pow(half,54.0f-28.0f*age);
+                    const float lightShape=.70f+.30f*std::exp(-((axial-1.2f)*(axial-1.2f))/1.8f);
+                    return .023f+.024f*diffuse+1.10f*(1-age*.68f)*specular*lightShape+age*.008f;
+                };
+                constexpr int samples=4;
+                const juce::Rectangle<float> rimBounds(centre-radius-1,12,2*radius+2,
+                                                       wheelBaseline+depth*panelViewCos-11);
+                juce::Image rim(juce::Image::ARGB,juce::roundToInt(rimBounds.getWidth()*samples),
+                                juce::roundToInt(rimBounds.getHeight()*samples),true);
+                {
+                    juce::Image::BitmapData pixels(rim,juce::Image::BitmapData::writeOnly);
+                    constexpr float bevel=.40f;
+                    for(int yy=0;yy<rim.getHeight();++yy)for(int xx=0;xx<rim.getWidth();++xx) {
+                        const float px=rimBounds.getX()+(float(xx)+.5f)/samples-centre;
+                        const float py=rimBounds.getY()+(float(yy)+.5f)/samples;
+                        if(std::abs(px)>=radius)continue;
+                        float z=std::sqrt(radius*radius-px*px);
+                        float axial=(py-wheelBaseline+z*panelViewSin)/panelViewCos;
+                        if(axial<-.18f||axial>depth+.18f)continue;
+                        float r=radius;
+                        for(int iteration=0;iteration<2;++iteration) {
+                            const float end=juce::jlimit(0.0f,bevel,juce::jmin(axial,depth-axial));
+                            r=radius-bevel+std::sqrt(juce::jmax(0.0f,bevel*bevel-(end-bevel)*(end-bevel)));
+                            if(std::abs(px)>=r)break;
+                            z=std::sqrt(r*r-px*px);
+                            axial=(py-wheelBaseline+z*panelViewSin)/panelViewCos;
+                        }
+                        if(std::abs(px)>=r||axial<-.18f||axial>depth+.18f)continue;
+                        const float localAngle=std::atan2(px*ca-z*sa,z*ca+px*sa);
+                        if(std::abs(localAngle)<rootAngle)continue;
+                        float radial=1,ny=0;
+                        if(axial<bevel)ny=juce::jlimit(-1.0f,0.0f,(axial-bevel)/bevel);
+                        else if(axial>depth-bevel)ny=juce::jlimit(0.0f,1.0f,(axial-(depth-bevel))/bevel);
+                        radial=std::sqrt(juce::jmax(0.0f,1-ny*ny));
+                        float value=plasticLight(px/r*radial,ny,z/r*radial,axial);
+                        const auto grainKey=uint32_t(int((localAngle+juce::MathConstants<float>::pi)*380))
+                                           +uint32_t(juce::jmax(0,int(axial*6)))*1177u;
+                        value+=(surfaceNoise(0x3a71u+grainKey)-.5f)*(.005f+age*.007f);
+                        const float coverage=juce::jlimit(0.0f,1.0f,(juce::jmin(axial,depth-axial)+.15f)/.30f);
+                        pixels.setPixelColour(xx,yy,juce::Colour::fromFloatRGBA(value,value*.99f,value*.96f,coverage));
+                    }
+                }
+                g.drawImage(rim,rimBounds);
+                // The tab and its fracture are planar rigid faces, with the same
+                // light as the curved rim. Sort their faces back to front.
+                std::array<int,vertexCapacity> order{};std::array<float,vertexCapacity> distance{};
+                for(int i=0;i<count;++i) {
+                    const auto a=outline[size_t(i)],b=outline[size_t((i+1)%count)];
+                    distance[size_t(i)]=((a.y+b.y)*ca-(a.x+b.x)*sa)*.5f;
+                    int j=i;while(j>0&&distance[size_t(order[size_t(j-1)])]>distance[size_t(i)]) {
+                        order[size_t(j)]=order[size_t(j-1)];--j;
+                    }
+                    order[size_t(j)]=i;
+                }
+                for(int index=0;index<count;++index) {
+                    const int i=order[size_t(index)];
+                    if(i<circleSegments)continue;
+                    const auto a=outline[size_t(i)],b=outline[size_t((i+1)%count)];
+                    const float dx=b.x-a.x,dz=b.y-a.y,length=std::sqrt(dx*dx+dz*dz);
+                    if(length<.0001f)continue;
+                    const float nx=(-dz*ca+dx*sa)/length,nz=(dx*ca+dz*sa)/length;
+                    if(nz<=0)continue;
+                    juce::Path wall;wall.startNewSubPath(project(a,0));wall.lineTo(project(b,0));
+                    wall.lineTo(project(b,depth));wall.lineTo(project(a,depth));wall.closeSubPath();
+                    const bool fracture=broken&&a.y>61&&b.y>61;
+                    const auto shade=[&](float axial) {
+                        const float value=plasticLight(nx,0,nz,axial);
+                        auto colour=juce::Colour::fromFloatRGBA(value,value*.99f,value*.96f,1);
+                        if(fracture)colour=colour.interpolatedWith(juce::Colour(0xff77786e),.35f);
+                        return colour;
+                    };
+                    const auto middle=(a+b)*.5f,backPoint=project(middle,0),frontPoint=project(middle,depth);
+                    juce::ColourGradient reflection(shade(0),backPoint.x,backPoint.y,shade(depth),frontPoint.x,frontPoint.y,false);
+                    reflection.addColour(.22,shade(depth*.22f));reflection.addColour(.70,shade(depth*.70f));
+                    g.setGradientFill(reflection);g.fillPath(wall);
+                    // Overlap the antialias coverage with the identical material.
+                    g.strokePath(wall,juce::PathStrokeType(.16f));
+                    g.setColour(juce::Colour(0xff8c9087).withAlpha((fracture?.12f:.075f)*(1-age*.45f)));
+                    g.drawLine({project(a,.15f),project(b,.15f)},.30f);
+                    g.setColour(juce::Colour(0xff010202).withAlpha(.55f));
+                    g.drawLine({project(a,depth),project(b,depth)},.35f);
+                }
+                const auto channel=[&](float r) {
                     juce::Path p;
-                    for(int i=0;i<=40;++i) {
-                        const auto q=wheelPoint(-1.48f+2.96f*float(i)/40,radius,depth);
+                    for(int i=0;i<=circleSegments;++i) {
+                        const float a=juce::MathConstants<float>::twoPi*float(i)/float(circleSegments);
+                        const auto q=project({r*std::sin(a),r*std::cos(a)},depth);
                         if(i==0)p.startNewSubPath(q);else p.lineTo(q);
                     }
                     return p;
                 };
                 {
-                    juce::Graphics::ScopedSaveState save(g);g.reduceClipRegion(well.toNearestInt());
-                    auto face=arc(60,5.5f);
-                    const float lowerEdge=wheelBaseline+5.5f*panelViewCos;
-                    face.lineTo(well.getRight(),lowerEdge);face.lineTo(well.getX(),lowerEdge);face.closeSubPath();
-                    g.setGradientFill(juce::ColourGradient(juce::Colour(0xff242827),centre,18,
-                                                         juce::Colour(0xff050707),centre,lowerEdge,false));g.fillPath(face);
-                    g.setColour(juce::Colours::black.withAlpha(.72f));g.strokePath(arc(54,6),juce::PathStrokeType(1.1f));
-                    g.setColour(juce::Colour(0xff9a9b94).withAlpha(.12f+age*.10f));g.strokePath(arc(51,6),juce::PathStrokeType(.55f));
+                    juce::Graphics::ScopedSaveState surface(g);g.reduceClipRegion(front);
+                    g.setColour(juce::Colours::black.withAlpha(.72f));g.strokePath(channel(54),juce::PathStrokeType(.55f));
+                    g.setColour(juce::Colour(0xffa2a397).withAlpha(.07f*(1-age*.50f)));g.strokePath(channel(53.6f),juce::PathStrokeType(.30f));
+                    g.setColour(juce::Colour(0xff020404));g.strokePath(channel(51),juce::PathStrokeType(.45f));
+                    // Fixed object-space grain follows the rigid part. Repaints
+                    // never move its particles; dust increases only with AGE.
+                    for(uint32_t i=0;i<190;++i) {
+                        const float a=juce::MathConstants<float>::twoPi*surfaceNoise(0x2b37u+i*19u);
+                        const float r=58.0f*std::sqrt(surfaceNoise(0x53a9u+i*41u));
+                        const auto p=project({r*std::sin(a),r*std::cos(a)},depth);
+                        const float size=.15f+.18f*surfaceNoise(0x713bu+i*17u);
+                        g.setColour(juce::Colour(i%3?0xffc4beab:0xff020404).withAlpha(i%3?.020f+age*.095f:.060f));
+                        g.fillEllipse(p.x,p.y,size,size*.75f);
+                    }
+                    for(uint32_t i=0;i<24;++i) {
+                        const auto p=project({(surfaceNoise(0x4387u+i*31u)-.5f)*8.0f,
+                            rootHeight+(broken?3.0f:23.0f)*surfaceNoise(0x68bdu+i*23u)},depth);
+                        g.setColour(juce::Colour(0xffb8b39e).withAlpha(.015f+age*.075f));g.fillEllipse(p.x,p.y,.22f,.17f);
+                    }
                 }
-                auto rim=arc(60,0);
-                for(int i=40;i>=0;--i)rim.lineTo(wheelPoint(-1.48f+2.96f*float(i)/40,60,5.5f));
-                rim.closeSubPath();
-                {
-                juce::Graphics::ScopedSaveState save(g);
-                g.reduceClipRegion(juce::Rectangle<int>(int(well.getX()),0,int(well.getWidth()),int(well.getBottom())));
-                g.setColour(juce::Colours::black.withAlpha(.48f));g.fillPath(rim,juce::AffineTransform::translation(.7f,1.1f));
-                g.setGradientFill(juce::ColourGradient(juce::Colour(0xff4c5050).darker(age*.16f),centre-34,12,
-                                                     juce::Colour(0xff090b0c),centre+36,27,false));g.fillPath(rim);
-                g.setColour(juce::Colour(0xffb2b5b1).withAlpha(.20f*(1-age*.4f)));g.strokePath(arc(60,.5f),juce::PathStrokeType(.8f));
-                g.setColour(juce::Colour(0xff020304));g.strokePath(arc(60,5.1f),juce::PathStrokeType(.9f));
-                }
-                const bool broken=age>=.92f;
-                const auto base=wheelPoint(angle,55,1),tip=wheelPoint(angle,broken?63.0f:85.0f,1);
-                // Project both radial and tangent directions from the same
-                // vertical wheel plane, including at the bend extremes.
-                const juce::Point<float> direction(std::sin(angle),-panelViewSin*std::cos(angle));
-                const juce::Point<float> side(std::cos(angle),panelViewSin*std::sin(angle));
-                juce::Path paddle;paddle.startNewSubPath(base-side*5.7f);
-                paddle.quadraticTo(base+direction*5-side*5.7f,tip-side*4.7f);
-                if(broken) {
-                    paddle.lineTo(tip-side*2.7f+direction*1.5f);paddle.lineTo(tip-side*.7f-direction*.8f);
-                    paddle.lineTo(tip+side*1.1f+direction*.8f);paddle.lineTo(tip+side*3.0f-direction*.6f);paddle.lineTo(tip+side*4.7f);
-                } else paddle.quadraticTo(tip+direction*2.3f,tip+side*4.7f);
-                paddle.quadraticTo(base+direction*5+side*5.7f,base+side*5.7f);paddle.closeSubPath();
-                g.setColour(juce::Colours::black.withAlpha(.46f));g.fillPath(paddle,juce::AffineTransform::translation(.9f,1.6f));
-                g.setColour(juce::Colour(0xff080a0b));g.fillPath(paddle,juce::AffineTransform::translation(.45f,1.1f));
-                g.setGradientFill(juce::ColourGradient(juce::Colour(0xff454b4d).darker(age*.18f),tip.x-4,tip.y,
-                                                     juce::Colour(0xff0a0d0e),base.x+5,base.y,false));g.fillPath(paddle);
-                g.setColour(juce::Colour(0xff030405));g.strokePath(paddle,juce::PathStrokeType(.75f));
-                g.setColour(juce::Colour(0xffbdc2bf).withAlpha(.28f*(1-age*.45f)));
-                g.drawLine({base-side*4.2f,tip-side*3.5f},.75f);
-                if(broken) {
-                    g.setColour(juce::Colour(0xff827f73).withAlpha(.65f));
-                    g.drawLine({tip-side*2.5f+direction,tip-side*.6f-direction*.6f},.9f);
-                    g.drawLine({tip+side*1.2f+direction*.5f,tip+side*3-direction*.4f},.75f);
+                for(uint32_t i=0;i<110;++i) {
+                    const float a=(surfaceNoise(0x37c9u+i*47u)-.5f)*juce::MathConstants<float>::twoPi;
+                    if(std::abs(a)<rootAngle||std::cos(a+angle)<=0)continue;
+                    const auto p=project({radius*std::sin(a),radius*std::cos(a)},depth*surfaceNoise(0x61d3u+i*29u));
+                    const float size=.16f+.18f*surfaceNoise(0x7a39u+i*13u);
+                    g.setColour(juce::Colour(0xffbcb6a4).withAlpha(.015f+age*.095f));g.fillEllipse(p.x,p.y,size,size*.8f);
                 }
             } else {
                 g.setColour(juce::Colour(0xff05080a));g.fillRoundedRectangle(float(x),cy-2,float(w),4,2);
@@ -763,28 +867,28 @@ public:
         const float age=juce::jlimit(0.0f,1.0f,processor.state.getRawParameterValue("age")->load());
         const bool pressed=processor.isPowerEnabled()||down;
         const auto recess=getLocalBounds().toFloat().reduced(.7f);
-        // The original is a pale moulded push button in a narrow dark opening,
-        // with a shallow bevel and short front wall, not a gray metal rocker.
+        // Grey moulded cap with a shallow front wall in the near-overhead view.
+        // Pressing it lowers the cap slightly without changing its hit target.
         g.setColour(juce::Colour(0xff050605));g.fillRoundedRectangle(recess,1.3f);
         g.setColour(juce::Colour(0xff43433b).withAlpha(.36f));g.drawRoundedRectangle(recess,1.3f,.45f);
-        auto cap=recess.reduced(1.35f,1.2f).translated(0,pressed?.65f:0);
-        g.setColour(juce::Colours::black.withAlpha(pressed?.40f:.57f));
-        g.fillRoundedRectangle(cap.translated(.45f,1.0f),1.1f);
-        const auto ivory=juce::Colour(0xffe8e5d6).interpolatedWith(juce::Colour(0xffd3c6a6),age*.76f);
-        const float wallHeight=pressed?1.5f:2.0f;
+        auto cap=recess.reduced(1.35f,2.1f).translated(0,pressed?.45f:0);
+        g.setColour(juce::Colours::black.withAlpha(pressed?.35f:.47f));
+        g.fillRoundedRectangle(cap.translated(.35f,pressed?.35f:.60f),1.1f);
+        const auto grey=juce::Colour(0xffa5a6a0).interpolatedWith(juce::Colour(0xff959487),age*.76f);
+        const float wallHeight=pressed?.45f:1.0f;
         const auto top=cap.withTrimmedBottom(wallHeight);
         const auto wall=cap.withTrimmedTop(cap.getHeight()-wallHeight-1);
-        g.setGradientFill(juce::ColourGradient(ivory.darker(.18f),0,wall.getY(),ivory.darker(.32f),0,wall.getBottom(),false));
+        g.setGradientFill(juce::ColourGradient(grey.darker(.18f),0,wall.getY(),grey.darker(.32f),0,wall.getBottom(),false));
         g.fillRoundedRectangle(wall,1.0f);
-        g.setColour(ivory.darker(.10f));g.fillRoundedRectangle(top,1.15f);
+        g.setColour(grey.darker(.10f));g.fillRoundedRectangle(top,1.15f);
         const auto face=top.reduced(.75f,.65f);
-        juce::ColourGradient enamel(ivory.brighter(over?.045f:.025f),0,face.getY(),ivory.darker(.045f),0,face.getBottom(),false);
-        enamel.addColour(.22,ivory);g.setGradientFill(enamel);g.fillRoundedRectangle(face,.65f);
-        g.setColour(juce::Colours::white.withAlpha(.46f-age*.24f));
+        juce::ColourGradient enamel(grey.brighter(over?.035f:.020f),0,face.getY(),grey.darker(.045f),0,face.getBottom(),false);
+        enamel.addColour(.22,grey);g.setGradientFill(enamel);g.fillRoundedRectangle(face,.65f);
+        g.setColour(juce::Colours::white.withAlpha(.26f-age*.12f));
         g.drawLine(top.getX()+1.1f,top.getY()+.45f,top.getRight()-1.1f,top.getY()+.45f,.55f);
-        g.setColour(juce::Colours::white.withAlpha(.18f-age*.08f));
+        g.setColour(juce::Colours::white.withAlpha(.12f-age*.05f));
         g.drawLine(top.getX()+.5f,top.getY()+1,top.getX()+.5f,top.getBottom()-1,.45f);
-        g.setColour(juce::Colour(0xff655e4a).withAlpha(.29f));
+        g.setColour(juce::Colour(0xff565851).withAlpha(.29f));
         g.drawLine(top.getRight()-.45f,top.getY()+1,top.getRight()-.45f,top.getBottom()-1,.55f);
         g.drawLine(top.getX()+1,top.getBottom()-.45f,top.getRight()-1,top.getBottom()-.45f,.45f);
         {
@@ -796,7 +900,7 @@ public:
                 const float x=face.getX()+surfaceNoise(0x9457u+i*37u)*face.getWidth();
                 const float y=face.getY()+surfaceNoise(0x3319u+i*61u)*face.getHeight();
                 const float size=.12f+.12f*surfaceNoise(0x71d3u+i*13u);
-                g.setColour((i%3?juce::Colour(0xff625c4b):juce::Colours::white).withAlpha(i%3?.025f+age*.025f:.045f));
+                g.setColour((i%3?juce::Colour(0xff62635e):juce::Colours::white).withAlpha(i%3?.025f+age*.025f:.035f));
                 g.fillEllipse(x,y,size,size*.75f);
             }
             for(uint32_t i=0;i<24;++i) {

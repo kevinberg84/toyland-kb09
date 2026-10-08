@@ -1,5 +1,7 @@
 # Knob selection and camera correction — 0.13.1 source
 
+**Latest source follow-up:** the owner's overhead screenshot led to the unreleased [v3 hardware preview](HARDWARE_PREVIEW_2026-10-07.md), with a smaller upper knob and unchanged installed 0.13.1 binaries. The v2 asset and validation described below belong to the installed 0.13.1 release.
+
 Updated 2026-10-07. The user's latest exact-image selection **supersedes the interim pre-photo restoration**. The 0.13.1 source references a camera-edited complete photographic sprite. The compiled editor was inspected and all 302 editor checks pass; the tested Windows VST3 is installed and packaged. [VALIDATION.md](VALIDATION.md) records exact hashes and test scope. Owner acceptance of the final rendering remains separate.
 
 ## Current selected object and correction

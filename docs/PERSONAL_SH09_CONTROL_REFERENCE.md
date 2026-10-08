@@ -2,7 +2,7 @@
 
 Inspection date: 2026-10-07. The user supplied original-unit close-ups from `C:\Users\kevin\OneDrive\Desktop\SH-09\SH-09`. These are stronger evidence for the visible details below than the earlier small web photographs. They are not calibrated dimensional or material measurements. The user's Volume knob is a replacement and is explicitly excluded from the original-knob reconstruction.
 
-Current source update: **0.13.1** uses the user's expressly selected photographic knob object with a near-overhead camera edit and separate native tick. The 0.13 18° native-cylinder reconstruction is historical. The new compiled result is not validated by this research document.
+Installed **0.13.1** uses the user's expressly selected photographic knob object with a near-overhead camera edit and separate native tick. The latest unreleased [hardware preview](HARDWARE_PREVIEW_2026-10-07.md) follows the later overhead screenshot: smaller upper knobs, a thicker rigid bender and neutral grey POWER cap with a lower OFF profile. The measurements and earlier rendering notes below remain historical where superseded by that preview. The 0.13 18° native-cylinder reconstruction is historical. This research document does not establish release validation.
 
 ## Photos actually displayed and inspected
 
