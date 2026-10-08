@@ -1,0 +1,40 @@
+name: Check Mac AU discovery
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: macos-15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: KB-09-Mac-UNVERIFIED
+          run-id: 37736197527
+          github-token: ${{ github.token }}
+      - name: Check system-wide AU registration
+        shell: bash
+        run: |
+          set -uo pipefail
+          ditto -x -k 'Toyland KB-09 for Mac - UNVERIFIED.zip' .
+          bundle='Toyland KB-09 for Mac - UNVERIFIED/Support/Toyland KB-09.component'
+          sudo ditto "$bundle" '/Library/Audio/Plug-Ins/Components/Toyland KB-09.component'
+          sudo killall -9 AudioComponentRegistrar || true
+          for attempt in 1 2 3 4 5; do
+            auval -a > au-components.txt
+            if grep -q Sh09 au-components.txt; then break; fi
+            sleep 2
+          done
+          auval -v aumu Sh09 PrIv > auval-system.txt 2>&1
+          result=$?
+          cat auval-system.txt
+          echo "$result" > auval-exit.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KB-09-AU-discovery-evidence
+          path: |
+            au-components.txt
+            auval-system.txt
+            auval-exit.txt
