@@ -872,11 +872,17 @@ void checkOptionalDescriptions(juce::Component& editor,Checks& checks) {
     if(button==nullptr)return;
     button->setToggleState(true,juce::sendNotificationSync);
     checks.expect(button->getToggleState(),"DESCRIPTION can enable optional hover help");
+    checks.expect(button->getButtonText()=="DESCRIPTION ON", "DESCRIPTION has an explicit enabled indication");
+    checks.expect(button->findColour(juce::TextButton::buttonOnColourId)!=button->findColour(juce::TextButton::buttonColourId), "DESCRIPTION enabled colour differs from off");
     button->setToggleState(false,juce::sendNotificationSync);
     checks.expect(!button->getToggleState(),"DESCRIPTION can disable hover help again");
     auto* age=dynamic_cast<juce::Slider*>(findComponent(editor,"age"));
     auto* bender=dynamic_cast<juce::Slider*>(findComponent(editor,"bender"));
     if(age==nullptr||bender==nullptr)return;
+    checks.expect(age->getHeight()>=30,"AGE has an enlarged grab area");
+    checks.expect(age->getTooltip().contains("release"),"AGE help explains live sound and deferred material update");
+    auto* cutoff=dynamic_cast<juce::Slider*>(findComponent(editor,"cutoff"));
+    checks.expect(cutoff!=nullptr&&cutoff->getTooltip().contains("harmonics"),"Parameter hover help explains its function");
     const auto render=[&]{return bender->createComponentSnapshot(bender->getLocalBounds(),true,1.0f);};
     double start=juce::Time::getMillisecondCounterHiRes();
     auto before=render();const auto fullMs=juce::Time::getMillisecondCounterHiRes()-start;
