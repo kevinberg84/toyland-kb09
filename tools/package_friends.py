@@ -34,7 +34,7 @@ updates = {
     'KB-09-source/SH-09/Source/GUI/Editor.cpp': root / 'Source/GUI/Editor.cpp',
     'KB-09-source/SH-09/Source/GUI/PowerDetails.h': root / 'Source/GUI/PowerDetails.h',
     'KB-09-source/SH-09/Tests/GUIRender.cpp': root / 'Tests/GUIRender.cpp',
-    'KB-09-source/SH-09/docs/manual/assets/panel-0.13.10.png': root / 'docs/manual/assets/panel-0.13.10.png',
+    'KB-09-source/SH-09/docs/manual/assets/panel-0.13.11.png': root / 'docs/manual/assets/panel-0.13.11.png',
 }
 # Ship the complete current source changes, including new headers and DSP tests.
 for folder in ('Source','Tests','Assets/Icons'):
@@ -54,7 +54,7 @@ with zipfile.ZipFile(kit) as old, zipfile.ZipFile(temporary, 'w', zipfile.ZIP_DE
             new.writestr(entry,data)
     for name, path in updates.items(): new.writestr(name.replace('KB-09-source/SH-09/','KB-09-source/KB-09/'), path.read_bytes())
 temporary.replace(kit)
-kit.rename(kit.with_name('KB-09-0.13.10-source.zip'))
+kit.rename(kit.with_name('KB-09-0.13.11-source.zip'))
 for note in (support/'Development').rglob('Read me.txt'):
     text=note.read_text(encoding='utf-8').replace('SH-09/','KB-09/').replace('-S SH-09 ','-S KB-09 ').replace('.sh09state','.kb09')
     note.write_text(text,encoding='utf-8')
@@ -62,8 +62,8 @@ dev_aax = support / 'Development/AAX unsigned Windows'
 for p in dev_aax.glob('*.aaxplugin'):
     shutil.rmtree(p)
 shutil.copytree(build / 'AAX/Toyland KB-09.aaxplugin', dev_aax / 'Toyland KB-09.aaxplugin')
-(support / 'Validation Summary.txt').write_text('KB-09 0.13.10 control and display fixes � 8 October 2026\nWindows VST3, standalone and unsigned AAX rebuilt.\nValidation results are recorded in the accompanying release record. Earlier Steinberg/actual-host evidence belongs to 0.13.2.\nMac AU/VST3 supplied separately as unverified test builds. AAX unsigned; Pro Tools untested.\n', encoding='utf-8')
-(support / 'Release Notes.txt').write_text('KB-09 0.13.10 � 8 October 2026\nAGE supports immediate track clicks and humorous condition phrases. Standalone MIDI setup is documented. Slightly denser fine dust grains, without blurred haze, build gradually between knob collars, around PORTAMENTO and the bender, and along protected panel edges. TUNE follows the original horizontal rule. Shared KB-09 standalone, folder and manual-shortcut icons.\nOptional DESCRIPTION button (off by default); switch value boxes use readable dark text.\nResponsive AGE drag with cached visual wear until release; larger utility sliders. Switch readouts match bold knob readouts. DESCRIPTION lights when enabled and provides actual explanations.\nUseful audio-taper VOLUME; existing intermediate volume settings now sound quieter.\nModern FREE/SYNC with 21 straight, dotted and triplet RATE divisions.\nReliable RATE display: half-cycle flashes below 8Hz, steady increasing glow above.\nSHIFT enables fine dragging; temporary switch value boxes replace focus outlines.\nAdded IN audio meter; removed OPTIONAL; refined aged fader strips and black-key sheen.\nHeld keys depress/darken; only the active key has an amber bar.\nRevised TUNE/NOISE labels and removed the PWM bracket.\nWindows floating title bars can request L by dragging to the top, with pull-down restore; host placement restrictions may require the internal header.\nHTML-only User Manual includes all changes and GarageBand setup instructions.\nPlease report bugs and manual corrections to Kevin.\n', encoding='utf-8')
+(support / 'Validation Summary.txt').write_text('KB-09 0.13.11 control and display fixes � 8 October 2026\nWindows VST3, standalone and unsigned AAX rebuilt.\nValidation results are recorded in the accompanying release record. Earlier Steinberg/actual-host evidence belongs to 0.13.2.\nMac AU/VST3 supplied separately as unverified test builds. AAX unsigned; Pro Tools untested.\n', encoding='utf-8')
+(support / 'Release Notes.txt').write_text('KB-09 0.13.11 � 8 October 2026\nStandalone has a visible AUDIO / MIDI button that opens device settings directly. AGE supports immediate track clicks and humorous condition phrases. Standalone MIDI setup is documented. Slightly denser fine dust grains, without blurred haze, build gradually between knob collars, around PORTAMENTO and the bender, and along protected panel edges. TUNE follows the original horizontal rule. Shared KB-09 standalone, folder and manual-shortcut icons.\nOptional DESCRIPTION button (off by default); switch value boxes use readable dark text.\nResponsive AGE drag with cached visual wear until release; larger utility sliders. Switch readouts match bold knob readouts. DESCRIPTION lights when enabled and provides actual explanations.\nUseful audio-taper VOLUME; existing intermediate volume settings now sound quieter.\nModern FREE/SYNC with 21 straight, dotted and triplet RATE divisions.\nReliable RATE display: half-cycle flashes below 8Hz, steady increasing glow above.\nSHIFT enables fine dragging; temporary switch value boxes replace focus outlines.\nAdded IN audio meter; removed OPTIONAL; refined aged fader strips and black-key sheen.\nHeld keys depress/darken; only the active key has an amber bar.\nRevised TUNE/NOISE labels and removed the PWM bracket.\nWindows floating title bars can request L by dragging to the top, with pull-down restore; host placement restrictions may require the internal header.\nHTML-only User Manual includes all changes and GarageBand setup instructions.\nPlease report bugs and manual corrections to Kevin.\n', encoding='utf-8')
 files = []
 for folder in ('VST3', 'Standalone', 'User Guide', 'Licenses', 'Factory Presets'):
     for path in sorted((support / folder).rglob('*')):
@@ -74,7 +74,7 @@ for folder in ('VST3', 'Standalone', 'User Guide', 'Licenses', 'Factory Presets'
 (package / 'START HERE.html').write_text('''<!doctype html>
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Start here � Toyland KB-09</title><style>body{background:#f4f0e7;color:#252620;font:19px/1.65 system-ui;margin:auto;padding:32px;max-width:800px}h1{line-height:1.2}li{margin:20px 0}a{color:#695019}strong{font-weight:750}.box{padding:20px;background:#e6dfd1;border-radius:10px}code{overflow-wrap:anywhere}</style>
-<h1>Let's play KB-09.</h1><p>A recreation of Kevin's Roland SH-09. Windows 64-bit � Version 0.13.10.</p>
+<h1>Let's play KB-09.</h1><p>A recreation of Kevin's Roland SH-09. Windows 64-bit � Version 0.13.11.</p>
 <div class="box"><strong>Received a ZIP file?</strong> Right-click it, choose <strong>Extract All�</strong>, then <strong>Extract</strong>. Open the newly extracted folder before installing.</div>
 <ol><li><strong>Close your music software.</strong></li>
 <li>Go back to the folder beside this page. Double-click <strong>INSTALL KB-09</strong> (the file ending in <strong>.cmd</strong>). If Windows asks whether to allow changes, choose <strong>Yes</strong>. In the installation window, press <strong>Enter</strong> when prompted.<br>The installer puts everything in the correct place. You do not need to copy or choose any files.</li>

@@ -3,6 +3,7 @@
 #include "PowerDetails.h"
 #include "../Plugin/Processor.h"
 #include "BinaryData.h"
+#include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
 #include <cmath>
 #include <vector>
 #include <array>
@@ -1173,6 +1174,14 @@ public:
         medium.setTooltip("Medium: fit within 90% of this screen's work-area width and height.");medium.onClick=[this]{sizing.chooseMedium();};
         addAndMakeVisible(large);large.setButtonText("L");large.setBounds(1373,5,35,24);large.setComponentID("sizeL");
         large.setTooltip("Large: fill this screen's available work area. For sharpness in Live, disable Auto-Scale Plug-in Window if available, then create a fresh instance.");large.onClick=[this]{sizing.chooseLarge();};
+        if(processor.wrapperType==juce::AudioProcessor::wrapperType_Standalone) {
+            addAndMakeVisible(audioMidi);audioMidi.setComponentID("audioMidiSettings");
+            audioMidi.setButtonText("AUDIO / MIDI");audioMidi.setBounds(232,5,151,24);
+            audioMidi.setTooltip("Choose your audio output device and enable your MIDI controller.");
+            audioMidi.onClick=[] {
+                if(auto* holder=juce::StandalonePluginHolder::getInstance())holder->showAudioSettingsDialog();
+            };
+        }
         addAndMakeVisible(maximise);maximise.setBounds(1453,0,47,34);maximise.setComponentID("maximise");
         sizing.onChange=[this]{header.repaint();maximise.repaint();};
         addSwitch("lfoWave",116,104,49,121,{0,1,2},{"SINE","SQUARE","RANDOM\n(S/H)"},"Modulator: sine, square or random sample-and-hold.");
@@ -1375,7 +1384,7 @@ private:
     };
     SH09Processor& processor;sh09::WindowSizing& sizing;sh09::PresetFiles presetFiles;HardwareLook look;
     Keyboard keyboard;Header header;MaximiseButton maximise;PowerButton power;
-    juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions;
+    juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions,audioMidi;
     std::unique_ptr<juce::TooltipWindow> tooltip;juce::Image conditionBackdrop;
     FineSlider bender;juce::Label externalHelp;Meter meter;RateLamp rateLamp;
     std::vector<std::unique_ptr<Control>> controls;
