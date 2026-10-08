@@ -712,6 +712,15 @@ void renderBenderPositions(SH09Processor& processor, juce::Component& editor,
     if (bender == nullptr) return;
     const float initialAge=processor.state.getRawParameterValue("age")->load();
     const double initialBend=bender->getValue();
+    checks.expect(bender->getTextFromValue(-1)=="-100.0%"&&bender->getTextFromValue(0)=="0.0%"&&bender->getTextFromValue(1)=="+100.0%",
+                  "bender readout reports signed position independently of depth");
+    const auto now=juce::Time::getCurrentTime();
+    const auto point=bender->getLocalBounds().getCentre().toFloat();
+    const juce::MouseEvent down(juce::Desktop::getInstance().getMainMouseSource(),point,
+        juce::ModifierKeys(juce::ModifierKeys::leftButtonModifier),1,0,0,0,0,bender,bender,now,point,now,1,false);
+    bender->mouseDown(down);settleEditor();
+    checks.expect(bender->getCurrentPopupDisplay()!=nullptr,"bender mouse gesture opens the actual value popup");
+    bender->mouseUp(down);settleEditor();
     const std::array<const char*, 3> names {"left", "neutral", "right"};
     for(const auto age:{0.0f,.91f,.92f}) {
         setParameter(processor,"age",age);settleEditor();
@@ -1081,4 +1090,5 @@ int main(int argc, char** argv) {
     }
     return checks.failures == 0 ? 0 : 1;
 }
+
 
