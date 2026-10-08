@@ -97,3 +97,10 @@ The historical 0.11 checkpoint recorded 280 GUI/asset, 92 DSP, 20 processor, 58 
 Historical native standalone observations were M 1051 × 642 and L 1280 × 720 logical pixels with complete footers. Those observations do not establish the new S control or the revised 0.12 materials. Offline 3840 × 2160 and 2880 × 1620 images establish their export dimensions only. A physical 4K display was unavailable; the 1774-pixel chassis and other raster assets remain finite-resolution sources.
 
 Exact alloy/plastic/ink chemistry, physical aging calibration, measured sonic equivalence and an exhaustive manual sweep of every intermediate Age value remain outside the verified evidence. Cosmetic uniqueness does not establish those properties.
+
+
+## Dust revision 0.13.9
+
+Removed the broad translucent radial gradients introduced in 0.13.8 after owner review: they read as blurry splotches. The replacement uses cached discrete grey grains of varying sizes, sparse short lint shapes, and density variation near the photographed protected control-base areas. AGE changes opacity at fixed particle positions. No diffuse dust haze is drawn.
+
+Reference: Kevin’s knob and PORTAMENTO/bender close-ups supplied 8 October 2026. Canadian Conservation Institute, [Pollutants — fine particles](https://www.canada.ca/en/conservation-institute/services/agents-deterioration/pollutants.html), describes indoor soil particles and carpet/cloth fibres and their deposition on objects. The exact distribution is an artistic interpretation of Kevin’s photographs, not a calibrated deposition simulation. Keep the revision removable pending owner review.
