@@ -38,7 +38,10 @@ sh09::Controls SH09Processor::readControls() const noexcept {
  #undef LOAD
  return c;
 }
-void SH09Processor::clearKeyDisplay() noexcept {for(auto& k:keyDisplay)k.store(0,std::memory_order_relaxed);}
+void SH09Processor::clearKeyDisplay() noexcept {
+ for(auto& k:keyDisplay)k.store(0,std::memory_order_relaxed);
+ displayedKeyboardNote.store(-1,std::memory_order_relaxed);
+}
 void SH09Processor::clearVoiceDisplay() noexcept {
  clearKeyDisplay();displayedNote.store(-1,std::memory_order_relaxed);
  displayedEnvelope.store(0,std::memory_order_relaxed);displayedFollower.store(0,std::memory_order_relaxed);
@@ -108,7 +111,9 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  auto r=queueRead.load(std::memory_order_relaxed);
  if(queueDidOverflow){engine.allSoundOff();clearKeyDisplay();r=w;}
  while(r!=w){const auto event=keyboardQueue[r];
-   if(event.generation==generation){if(event.down)engine.noteOn(event.note,100);else engine.noteOff(event.note);updateKeyDisplay(event.note,event.down);}
+   if(event.generation==generation){if(event.down)engine.noteOn(event.note,100);else engine.noteOff(event.note);updateKeyDisplay(event.note,event.down);
+     if(event.down)displayedKeyboardNote.store(event.note,std::memory_order_relaxed);
+     else if(displayedKeyboardNote.load(std::memory_order_relaxed)==event.note)displayedKeyboardNote.store(-1,std::memory_order_relaxed);}
    r=(r+1u)%unsigned(keyboardQueue.size());}
  queueRead.store(r,std::memory_order_release);
  auto input=getBusBuffer(buffer,true,0);auto output=getBusBuffer(buffer,false,0);

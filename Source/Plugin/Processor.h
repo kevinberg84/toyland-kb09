@@ -37,6 +37,9 @@ public:
  void queuePitchBend(float value) noexcept { guiBend.store(juce::jlimit(-1.0f,1.0f,value),std::memory_order_relaxed); guiBendDirty.store(true,std::memory_order_release); }
  juce::AudioProcessorValueTreeState state;
  std::atomic<int> displayedNote{-1};
+ // GUI contribution already consumed by the audio thread. The editor can
+ // replace it with its current mouse note without hiding same-pitch MIDI.
+ std::atomic<int> displayedKeyboardNote{-1};
  std::atomic<float> displayedEnvelope{0},displayedFollower{0};
  std::atomic<bool> displayedModulatorLamp{false};
  std::array<std::atomic<int>,128> keyDisplay{};

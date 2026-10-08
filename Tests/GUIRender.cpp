@@ -7,6 +7,7 @@
 #include <memory>
 #include <stdexcept>
 #include <thread>
+#include <utility>
 #include <vector>
 
 // Offline fixture: the real processor/editor run on the JUCE message thread.
@@ -170,10 +171,36 @@ void processMidi(SH09Processor& processor, const juce::MidiMessage& message) {
     settleEditor();
 }
 
-void checkKeyboardFeedback(SH09Processor& processor, juce::Component& editor, Checks& checks) {
+bool writePNG(const juce::Image& image, const juce::File& file);
+
+void checkKeyboardFeedback(SH09Processor& processor, juce::Component& editor, const juce::File& directory, Checks& checks) {
     auto* keyboard = findComponent(editor, "keyboard");
     checks.expect(keyboard != nullptr, "keyboard is available for MIDI visual-feedback checks");
     if (keyboard == nullptr) return;
+    const auto blackNote=[](int note) {const int pitch=note%12;return pitch==1||pitch==3||pitch==6||pitch==8||pitch==10;};
+    const auto keyPoint=[&](int note,bool marker) {
+        int whites=0;for(int pitch=53;pitch<note;++pitch)if(!blackNote(pitch))++whites;
+        const float width=float(keyboard->getWidth())/19;
+        const float height=float(keyboard->getHeight())*(blackNote(note)?.64f:1.0f);
+        return juce::Point<float>((float(whites)+(blackNote(note)?0.0f:.5f))*width,marker?height-7:height*.80f);
+    };
+    const auto markerIs=[&](const juce::Image& image,int note,juce::Colour expected) {
+        const auto point=keyPoint(note,true).roundToInt();
+        const auto colour=image.getPixelAt(point.x,point.y);
+        return std::abs(int(colour.getRed())-int(expected.getRed()))<8
+            && std::abs(int(colour.getGreen())-int(expected.getGreen()))<8
+            && std::abs(int(colour.getBlue())-int(expected.getBlue()))<8;
+    };
+    const juce::Colour amberBar(0xffdbb572),blueBar(0xff65c8ff);
+    const auto markerAbsent=[&](const juce::Image& image,int note) {
+        return !markerIs(image,note,amberBar)&&!markerIs(image,note,blueBar);
+    };
+    const auto mouseEvent=[&](int note) {
+        const auto point=keyPoint(note,false);const auto now=juce::Time::getCurrentTime();
+        return juce::MouseEvent(juce::Desktop::getInstance().getMainMouseSource(),point,
+            juce::ModifierKeys(juce::ModifierKeys::leftButtonModifier),1,0,0,0,0,
+            keyboard,keyboard,now,point,now,1,false);
+    };
     processMidi(processor, juce::MidiMessage::allNotesOff(1));
     for (const auto note : {60, 61}) {
         const auto name = juce::String(note == 60 ? "white C60" : "black C#61");
@@ -185,11 +212,85 @@ void checkKeyboardFeedback(SH09Processor& processor, juce::Component& editor, Ch
         checks.expect(processor.keyDisplay[size_t(note)].load() != 0
                       && processor.displayedNote.load() == note && changedPixels(released, held, 12) >= 100,
                       name + " MIDI note-on visibly changes keyboard pixels");
+        checks.expect(markerIs(held,note,amberBar),name+" held MIDI note has an amber lower-edge bar");
         processMidi(processor, juce::MidiMessage::noteOff(1, note));
         const auto restored = keyboard->createComponentSnapshot(keyboard->getLocalBounds(), true, 1.0f);
         checks.expect(processor.keyDisplay[size_t(note)].load() == 0 && changedPixels(released, restored) == 0,
                       name + " MIDI note-off restores the identical released keyboard appearance");
+
+        keyboard->mouseDown(mouseEvent(note));
+        const auto immediate=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+        checks.expect(processor.displayedNote.load()==-1&&markerIs(immediate,note,amberBar),
+                      name+" mouse press shows amber immediately, before any audio callback");
+        checks.expect(writePNG(immediate,directory.getChildFile(note==60?"keyboard_mouse_white.png":"keyboard_mouse_black.png")),
+                      name+" immediate mouse-held keyboard PNG export");
+        processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+        const auto processed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+        checks.expect(processor.displayedNote.load()==note&&markerIs(processed,note,amberBar),
+                      name+" queued mouse note remains amber after audio processing");
+        keyboard->mouseUp(mouseEvent(note));
+        const auto immediateRelease=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+        checks.expect(processor.displayedNote.load()==note&&changedPixels(released,immediateRelease)==0,
+                      name+" mouse release removes its highlight immediately before audio processing");
+        processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+        const auto mouseReleased=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+        checks.expect(processor.displayedNote.load()==-1&&changedPixels(released,mouseReleased)==0,
+                      name+" mouse release clears the note and both visual marks");
     }
+    keyboard->mouseDown(mouseEvent(55));
+    processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+    keyboard->mouseDrag(mouseEvent(64));
+    auto mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+    checks.expect(processor.displayedNote.load()==55&&markerIs(mixed,64,amberBar)&&markerAbsent(mixed,55),
+                  "upward mouse drag moves amber and releases the old key before audio processing");
+    processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+    mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+    checks.expect(processor.displayedNote.load()==64&&processor.displayedKeyboardNote.load()==64
+                  &&processor.keyDisplay[55].load()==0&&markerIs(mixed,64,amberBar),
+                  "processed upward drag keeps the destination selected when the previous mouse note is released");
+    keyboard->mouseUp(mouseEvent(64));
+    processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+    processMidi(processor,juce::MidiMessage::noteOn(1,60,juce::uint8(100)));
+    keyboard->mouseDown(mouseEvent(64));
+    mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+    checks.expect(markerIs(mixed,60,amberBar)&&markerIs(mixed,64,blueBar),
+                  "higher mouse note retains blue bar while lower MIDI-held note retains amber");
+    processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+    keyboard->mouseDrag(mouseEvent(55));
+    mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+    checks.expect(markerIs(mixed,55,amberBar),"lower mouse drag shows amber immediately before its queued note is processed");
+    processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+    mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+    checks.expect(processor.displayedNote.load()==55&&processor.keyDisplay[64].load()==0
+                  &&markerIs(mixed,55,amberBar)&&markerIs(mixed,60,blueBar),
+                  "processed mouse drag transfers low-note priority while the MIDI note remains held");
+    keyboard->mouseDrag(mouseEvent(64));
+    mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+    checks.expect(processor.displayedNote.load()==55&&markerAbsent(mixed,55)
+                  &&markerIs(mixed,60,amberBar)&&markerIs(mixed,64,blueBar),
+                  "upward mouse drag immediately restores lower MIDI priority without stale amber on the old mouse key");
+    processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+    mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+    checks.expect(processor.displayedNote.load()==60&&processor.keyDisplay[55].load()==0
+                  &&markerIs(mixed,60,amberBar)&&markerIs(mixed,64,blueBar),
+                  "processed upward mouse drag preserves the lower held MIDI note");
+    keyboard->mouseUp(mouseEvent(64));
+    processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+    mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+    checks.expect(processor.displayedNote.load()==60&&processor.keyDisplay[55].load()==0&&markerIs(mixed,60,amberBar),
+                  "mouse release restores the still-held MIDI note and its amber bar");
+    keyboard->mouseDown(mouseEvent(60));
+    processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+    keyboard->mouseDrag(mouseEvent(64));
+    mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+    checks.expect(processor.keyDisplay[60].load()==2&&markerIs(mixed,60,amberBar)&&markerIs(mixed,64,blueBar),
+                  "moving the mouse away from an overlapping MIDI pitch retains that MIDI key and its priority immediately");
+    processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+    checks.expect(processor.keyDisplay[60].load()==1&&processor.displayedNote.load()==60,
+                  "processed same-pitch mouse release preserves the real MIDI contribution");
+    keyboard->mouseUp(mouseEvent(64));
+    processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+    processMidi(processor,juce::MidiMessage::noteOff(1,60));
 }
 
 void checkOpaqueCaps(juce::Component& editor, Checks& checks) {
@@ -215,14 +316,14 @@ void checkOpaqueCaps(juce::Component& editor, Checks& checks) {
 
 void checkRotaryTicks(SH09Processor& processor,juce::Component& editor,Checks& checks) {
     const float initialAge=processor.state.getRawParameterValue("age")->load();
-    constexpr float origin=10,diameter=100,centreX=origin+diameter*.50f,centreY=origin+diameter*.420f;
+    constexpr float origin=10,diameter=100,centreX=origin+diameter*.497f,centreY=origin+diameter*.410f;
     // Independent visual contract: a predominantly round metal top and a short
     // black radial mark. It is not a copy of the renderer's tick-drawing code.
     constexpr float projectedCos=.987688f,maskRadius=diameter*.29f;
     const auto movingTicks=[&](const std::array<juce::Image,3>& images,const std::array<float,3>& angles) {
         for(size_t state=0;state<images.size();++state) {
             int darkAndMoving=0;
-            for(const float radius:{.16f,.185f,.21f,.235f}) {
+            for(const float radius:{.09f,.13f,.18f,.225f}) {
                 const int x=juce::roundToInt((centreX+std::sin(angles[state])*radius*diameter)*controlRenderScale);
                 const int y=juce::roundToInt((centreY-std::cos(angles[state])*radius*diameter*projectedCos)*controlRenderScale);
                 const auto own=images[state].getPixelAt(x,y),other=images[(state+1)%images.size()].getPixelAt(x,y);
@@ -460,6 +561,93 @@ bool writePNG(const juce::Image& image, const juce::File& file) {
         return written && stream->getStatus().wasOk();
     }
     return false;
+}
+
+void checkKnobMetalAging(SH09Processor& processor,juce::Component& editor,
+                        const juce::File& directory,Checks& checks) {
+    auto* slider=dynamic_cast<juce::Slider*>(findComponent(editor,"range"));
+    checks.expect(slider!=nullptr,"range knob is available for production metal-aging evidence");
+    if(slider==nullptr)return;
+    const float originalAge=processor.state.getRawParameterValue("age")->load();
+    const auto rotary=slider->getRotaryParameters();
+    const auto capture=[&](float age) {
+        setParameter(processor,"age",age);settleEditor();
+        juce::Image image(juce::Image::ARGB,120*controlRenderScale,120*controlRenderScale,true,juce::SoftwareImageType());
+        juce::Graphics g(image);g.fillAll(juce::Colour(0xff232927));
+        g.addTransform(juce::AffineTransform::scale(float(controlRenderScale)));
+        slider->getLookAndFeel().drawRotarySlider(g,10,10,100,100,.5f,
+            rotary.startAngleRadians,rotary.endAngleRadians,*slider);
+        return image;
+    };
+    constexpr std::array<float,4> ages{{0.0f,.3f,.7f,1.0f}};
+    constexpr std::array<const char*,4> names{{"age0","age3","age7","age10"}};
+    std::array<juce::Image,ages.size()> images;
+    for(size_t i=0;i<ages.size();++i) {
+        images[i]=capture(ages[i]);
+        const auto file=directory.getChildFile(juce::String("knob_wear_")+names[i]+".png");
+        checks.expect(writePNG(images[i],file),juce::String("knob ")+names[i]+" actual-render metal-aging closeup export");
+        std::cout<<"IMAGE "<<file.getFullPathName()<<'\n';
+    }
+    const auto light=[](juce::Colour colour) {
+        return (double(colour.getRed())+double(colour.getGreen())+double(colour.getBlue()))/3.0;
+    };
+    const auto meanLight=[&](const juce::Image& image,juce::Rectangle<int> area) {
+        double total=0;
+        for(int y=area.getY();y<area.getBottom();++y)for(int x=area.getX();x<area.getRight();++x)
+            total+=light(image.getPixelAt(x,y));
+        return total/double(area.getWidth()*area.getHeight());
+    };
+    // Remove the best-fitting overall brightness/contrast change before measuring
+    // small-scale change. Uniform tint or dulling alone cannot masquerade as pits.
+    const auto textureChange=[&](const juce::Image& fresh,const juce::Image& aged,juce::Rectangle<int> area) {
+        const double freshMean=meanLight(fresh,area),agedMean=meanLight(aged,area);
+        double variance=0,covariance=0;
+        for(int y=area.getY();y<area.getBottom();++y)for(int x=area.getX();x<area.getRight();++x) {
+            const double a=light(fresh.getPixelAt(x,y))-freshMean;
+            variance+=a*a;covariance+=a*(light(aged.getPixelAt(x,y))-agedMean);
+        }
+        const double slope=variance>1.0e-9?covariance/variance:0;
+        const auto residual=[&](int x,int y) {
+            return light(aged.getPixelAt(x,y))-agedMean
+                -slope*(light(fresh.getPixelAt(x,y))-freshMean);
+        };
+        const auto interior=area.reduced(2);
+        double texture=0;
+        for(int y=interior.getY();y<interior.getBottom();++y)for(int x=interior.getX();x<interior.getRight();++x)
+            texture+=std::abs(residual(x,y)-(residual(x-2,y)+residual(x+2,y)+residual(x,y-2)+residual(x,y+2))*.25);
+        return texture/double(interior.getWidth()*interior.getHeight());
+    };
+    // Both patches lie fully inside visible silver surfaces, away from the tick,
+    // black grip, bevel edges, cast shadow and decorative panel behind the knob.
+    for(const auto surface:{std::pair<const char*,juce::Rectangle<int>>{"top interior",{48,48,23,14}},
+                            std::pair<const char*,juce::Rectangle<int>>{"front silver skirt",{48,96,24,8}}}) {
+        const auto area=controlPixels(surface.second);
+        std::array<double,ages.size()> means{},texture{};
+        for(size_t i=0;i<ages.size();++i) {
+            means[i]=meanLight(images[i],area);
+            texture[i]=textureChange(images[0],images[i],area);
+        }
+        const juce::String label(surface.first);
+        checks.expect(means[0]>means[1]+1&&means[1]>means[2]+1&&means[2]>means[3]+1,
+                      label+" reflections dull progressively at AGE 0, 3, 7 and 10");
+        checks.expect(means[2]<means[0]*.88,
+                      label+" AGE 7 is visibly duller than clean metal (mean "+juce::String(means[0],1)+" to "+juce::String(means[2],1)+")");
+        auto tintOnly=images[0].createCopy();
+        for(int y=area.getY();y<area.getBottom();++y)for(int x=area.getX();x<area.getRight();++x) {
+            const auto value=juce::uint8(juce::jlimit(0,255,juce::roundToInt(light(images[0].getPixelAt(x,y))*.62+16)));
+            tintOnly.setPixelAt(x,y,juce::Colour(value,value,value));
+        }
+        const double negative=textureChange(images[0],tintOnly,area);
+        checks.expect(texture[2]>.8&&texture[2]>negative*3+.5,
+                      label+" AGE 7 adds fine surface variation beyond a tint-only negative control ("+juce::String(texture[2],2)+" vs "+juce::String(negative,2)+")");
+        checks.expect(texture[1]>.1&&texture[2]>texture[1]+.1&&texture[3]>texture[2]+.1,
+                      label+" fine pitting grows gradually across AGE 3, 7 and 10 ("+juce::String(texture[1],2)+", "+juce::String(texture[2],2)+", "+juce::String(texture[3],2)+")");
+    }
+    checks.expect(changedPixels(capture(.6999f),capture(.7001f),2)==0,
+                  "adjacent AGE values keep knob pit locations fixed without an abrupt damage event");
+    checks.expect(changedPixels(images[0],capture(0.0f))==0,
+                  "lowering AGE restores identical clean knob pixels after maximum wear");
+    setParameter(processor,"age",originalAge);settleEditor();
 }
 
 void checkSizeChoices(juce::AudioProcessorEditor& editor, const juce::File& directory, Checks& checks) {
@@ -787,9 +975,10 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
     if (fixture.program == 0) {
         checkSizeChoices(*editor,directory,checks);
         checkSwitchAttachment(processor, *editor, checks);
-        checkKeyboardFeedback(processor, *editor, checks);
+        checkKeyboardFeedback(processor, *editor, directory, checks);
         checkOpaqueCaps(*editor, checks);
         checkRotaryTicks(processor,*editor,checks);
+        checkKnobMetalAging(processor,*editor,directory,checks);
         checkCapLoss(processor,*editor,checks);
         checkValueBubbleColours(*editor, checks);
         renderBenderPositions(processor, *editor, directory, checks);

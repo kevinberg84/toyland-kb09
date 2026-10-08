@@ -58,7 +58,7 @@ struct Artwork {
     juce::Image stains=load(BinaryData::chassisstains_png,BinaryData::chassisstains_pngSize);
     // Normalize the new sprite's padding so its silver skirt keeps the previous
     // on-panel width. Only the upper knob is narrower, as in the owner's photo.
-    juce::Image knob=load(BinaryData::knobpersonaloverheadv3_png,BinaryData::knobpersonaloverheadv3_pngSize)
+    juce::Image knob=load(BinaryData::knobpersonaloverheadv5_png,BinaryData::knobpersonaloverheadv5_pngSize)
         .getClippedImage({70,70,1114,1114});
     juce::Image fader=load(BinaryData::faderpersonaloverhead_png,BinaryData::faderpersonaloverhead_pngSize);
     juce::Image rail=load(BinaryData::frontrailgrain_png,BinaryData::frontrailgrain_pngSize);
@@ -113,6 +113,62 @@ uint32_t surfaceHash(uint32_t value) {
     value^=value>>16;value*=0x7feb352du;value^=value>>15;value*=0x846ca68bu;return value^(value>>16);
 }
 float surfaceNoise(uint32_t seed) {return float(surfaceHash(seed)&0xffffu)/65535.0f;}
+struct KnobMetalWear {
+    juce::Image matte;
+    std::array<juce::Image,3> pits;
+    KnobMetalWear() {
+        const auto& photo=artwork().knob;
+        const int width=photo.getWidth(),height=photo.getHeight();
+        matte=juce::Image(juce::Image::ARGB,width,height,true,juce::SoftwareImageType());
+        for(auto& image:pits)image=juce::Image(juce::Image::ARGB,width,height,true,juce::SoftwareImageType());
+        const juce::Image::BitmapData input(photo,juce::Image::BitmapData::readOnly);
+        juce::Image::BitmapData dull(matte,juce::Image::BitmapData::readWrite);
+        for(int y=0;y<height;++y)for(int x=0;x<width;++x) {
+            const float u=(float(x)+.5f)/width,v=(float(y)+.5f)/height;
+            const auto colour=input.getPixelColour(x,y);
+            const float tx=(u-.497f)/.248f,ty=(v-.410f)/.258f;
+            const float sx=(u-.500f)/.455f,sy=(v-.505f)/.455f;
+            const float gx=(u-.500f)/.326f,gy=(v-juce::jlimit(.422f,.478f,v))/.326f;
+            const bool metal=tx*tx+ty*ty<1||(sx*sx+sy*sy<1&&gx*gx+gy*gy>1);
+            // Keep oxidation off the opaque grip and the transparent outline.
+            if(!metal||colour.getAlpha()<240||colour.getBrightness()<.30f)continue;
+            const float light=(colour.getFloatRed()+colour.getFloatGreen()+colour.getFloatBlue())/3;
+            dull.setPixelColour(x,y,juce::Colour::fromFloatRGBA(.35f+.22f*light,.33f+.21f*light,.30f+.19f*light,1));
+        }
+        // This fixed material field is generated once. AGE changes only its
+        // opacity, so neither pitting locations nor grain jump as AGE is moved.
+        constexpr std::array<uint32_t,3> seeds{{12011u,41117u,93973u}};
+        for(size_t index=0;index<pits.size();++index) {
+            juce::Image::BitmapData output(pits[index],juce::Image::BitmapData::writeOnly);
+            for(int y=0;y<height;++y)for(int x=0;x<width;++x) {
+                if(dull.getPixelColour(x,y).getAlpha()==0)continue;
+                const float u=(float(x)+.5f)/width*172,v=(float(y)+.5f)/height*172;
+                const int cellX=int(u),cellY=int(v);
+                float cavity=0,lip=0;uint32_t pitKey=0;
+                // Search neighbouring cells so fully jittered pit centres can
+                // overlap cell edges without a visible grid or squared cuts.
+                for(int row=-1;row<=1;++row)for(int column=-1;column<=1;++column) {
+                    const int cx=cellX+column,cy=cellY+row;
+                    const uint32_t key=surfaceHash(seeds[index]+uint32_t(cx)*7919u+uint32_t(cy)*104729u);
+                    if(surfaceNoise(key+19)>.72f)continue;
+                    const float dx=u-cx-surfaceNoise(key+31),dy=v-cy-surfaceNoise(key+47);
+                    const float radius=.12f+.32f*surfaceNoise(key+61),aspect=.65f+.55f*surfaceNoise(key+73);
+                    const float distance=std::sqrt(dx*dx+dy*dy/(aspect*aspect))/radius;
+                    const float depth=juce::jlimit(0.0f,1.0f,(1.12f-distance)/.25f);
+                    if(depth>cavity){cavity=depth;pitKey=key;}
+                    lip=juce::jmax(lip,juce::jlimit(0.0f,1.0f,1-std::abs(distance-1.12f)/.15f)
+                        *juce::jlimit(0.0f,1.0f,(dx+dy)/radius));
+                }
+                if(cavity>0) {
+                    const float tone=surfaceNoise(pitKey+89);
+                    output.setPixelColour(x,y,juce::Colour::fromFloatRGBA(.25f+.14f*tone,.22f+.12f*tone,
+                        .18f+.10f*tone,cavity*(.78f+.17f*surfaceNoise(pitKey+97))));
+                } else if(lip>0)output.setPixelColour(x,y,juce::Colour(0xffc3b7a0).withAlpha(lip*.32f));
+            }
+        }
+    }
+};
+const KnobMetalWear& knobMetalWear() {static const KnobMetalWear material;return material;}
 void keySurfaceWear(juce::Graphics& g,juce::Rectangle<float> r,int serial,bool black,float age) {
     juce::Graphics::ScopedSaveState save(g);g.reduceClipRegion(r.reduced(.8f).toNearestInt());
     const auto seed=uint32_t(serial+1)*7919u;
@@ -269,33 +325,21 @@ void cap(juce::Graphics& g,juce::Rectangle<float> r,bool small=false,bool indexe
     }
 }
 void projectedKnob(juce::Graphics& g,juce::Rectangle<float> area,float angle,float age,uint32_t seed) {
-    // The owner's overhead reference has a metal top about 59% of the skirt
-    // diameter. Keep the approved height, camera and grouped grip ribs.
+    // Final small inset correction retains the approved body height/camera.
     juce::Graphics::ScopedSaveState save(g);
     const float d=juce::jmin(area.getWidth(),area.getHeight());
     const auto sprite=area.withSizeKeepingCentre(d,d);
-    const auto top=juce::Point<float>(sprite.getX()+d*.50f,sprite.getY()+d*.420f);
-    const auto ellipse=[&](juce::Point<float> c,float radius) {
-        return juce::Rectangle<float>(c.x-radius,c.y-radius*panelViewCos,2*radius,2*radius*panelViewCos);
-    };
+    const auto top=juce::Point<float>(sprite.getX()+d*.497f,sprite.getY()+d*.410f);
     g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
     g.setOpacity(1);g.drawImage(artwork().knob,sprite,juce::RectanglePlacement::stretchToFit);
     if(age>0) {
         g.setColour(juce::Colours::black.withAlpha(age*.12f));
         g.drawImage(artwork().knob,sprite,juce::RectanglePlacement::stretchToFit,true);
-        juce::Graphics::ScopedSaveState metalSave(g);
-        juce::Path disc;disc.addEllipse(ellipse(top,d*.267f));g.reduceClipRegion(disc);
-        g.setColour(juce::Colour(0xff91764b).withAlpha(age*.13f));g.fillPath(disc);
-    }
-    // Keep independent gradual tarnish and dust; the discarded wear atlas is
-    // not restored with the old knob. Each control has its own stable seed.
-    for(uint32_t i=0;i<190;++i) {
-        const float a=surfaceNoise(seed+i*17)*juce::MathConstants<float>::twoPi;
-        const float radius=d*(.235f+.029f*surfaceNoise(seed+i*29));
-        const auto p=top+juce::Point<float>(std::sin(a)*radius,-std::cos(a)*radius*panelViewCos);
-        const float size=d*(.0015f+.004f*surfaceNoise(seed+i*61));
-        g.setColour(juce::Colour(i%3?0xff92754c:0xffb4a386).withAlpha(age*(.14f+.33f*surfaceNoise(seed+i*53))));
-        g.fillEllipse(p.x,p.y,size,size*.8f);
+        const auto& material=knobMetalWear();
+        g.setOpacity(age*.84f);g.drawImage(material.matte,sprite,juce::RectanglePlacement::stretchToFit);
+        const size_t index=seed==12011u?0:seed==41117u?1:2;
+        g.setOpacity(std::pow(age,1.35f));g.drawImage(material.pits[index],sprite,juce::RectanglePlacement::stretchToFit);
+        g.setOpacity(1);
     }
     for(uint32_t i=0;i<58;++i) {
         const float a=(surfaceNoise(seed+i*71)-.5f)*juce::MathConstants<float>::pi;
@@ -307,7 +351,8 @@ void projectedKnob(juce::Graphics& g,juce::Rectangle<float> area,float angle,flo
     // The native opaque black tick rotates; photographic lighting stays fixed.
     const auto direction=juce::Point<float>(std::sin(angle),-std::cos(angle)*panelViewCos);
     g.setColour(juce::Colour(0xff141718));
-    g.drawLine({top+direction*d*.16f,top+direction*d*.260f},d*.020f);
+    // One third of the metal top's diameter, with a clear square-ended mark.
+    g.drawLine({top+direction*d*.079f,top+direction*d*.245f},d*.028f);
 }
 void screwOxidation(juce::Graphics& g,juce::Point<float> c,float age,uint32_t seed) {
     if(age<=0)return;
@@ -716,9 +761,21 @@ public:
         g.fillAll(juce::Colour(0xff06090b));
         const float age=juce::jlimit(0.0f,1.0f,processor.state.getRawParameterValue("age")->load());
         const float gloss=1.0f-age*.90f;
+        std::array<bool,128> held{};
+        int effectiveNote=-1;
+        const bool powered=processor.isPowerEnabled();
+        const int consumedMouseNote=processor.displayedKeyboardNote.load(std::memory_order_relaxed);
+        // Replace the audio thread's previous mouse contribution with the live
+        // mouse position. Subtract only one count: MIDI on the same pitch stays
+        // held. Upward drags and releases then respond before the next callback.
+        for(int n=0;n<128;++n) {
+            const int midiCount=processor.keyDisplay[size_t(n)].load(std::memory_order_relaxed)-(n==consumedMouseNote?1:0);
+            held[size_t(n)]=powered&&(midiCount>0||n==mouseNote);
+            if(effectiveNote<0&&held[size_t(n)])effectiveNote=n;
+        }
         for(int pass=0;pass<2;++pass)for(int n=53;n<=84;++n)if(int(isBlack(n))==pass) {
             auto r=keyRect(n);
-            const bool down=n==mouseNote||processor.keyDisplay[size_t(n)].load(std::memory_order_relaxed)!=0;
+            const bool down=held[size_t(n)];
             const float depressed=down?3.5f:0;
             r=r.withTrimmedTop(depressed);
             if(pass==0) {
@@ -801,8 +858,8 @@ public:
                 const juce::Colour glow(0xff65c8ff);
                 g.setColour(glow.withAlpha(pass==0?.23f:.32f));g.fillRoundedRectangle(r.reduced(1),1.5f);
                 g.setColour(glow.withAlpha(.9f));g.drawRoundedRectangle(r.reduced(1.5f),1.5f,1.4f);
-                g.setColour(processor.displayedNote.load(std::memory_order_relaxed)==n?amber:glow);
-                g.fillRoundedRectangle(r.getX()+4,r.getBottom()-9,r.getWidth()-8,5,1.2f);
+                g.setColour(effectiveNote==n?amber:glow);
+                g.fillRoundedRectangle(r.getX()+4,r.getBottom()-11,r.getWidth()-8,7,1.2f);
             }
         }
         g.setGradientFill(juce::ColourGradient(juce::Colours::black.withAlpha(.68f),0,0,juce::Colours::transparentBlack,0,20,false));
@@ -1172,7 +1229,7 @@ private:
     juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset;
     juce::Slider bender;juce::Label externalHelp;Meter meter;RateLamp rateLamp;
     std::vector<std::unique_ptr<Control>> controls;
-    std::array<int,128> lastKeys{};float lastAge=-1;bool lastModern=false,bendActive=false,userPreset=false;int lastProgram=-1;unsigned lastProgramRevision=0;
+    std::array<int,128> lastKeys{};float lastAge=-1;bool lastModern=false,bendActive=false,userPreset=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1;unsigned lastProgramRevision=0;
     void timerCallback() override {
         const auto programRevision=processor.getProgramRevision();
         const int program=processor.getCurrentProgram();
@@ -1182,6 +1239,10 @@ private:
         rateLamp.setOn(processor.isPowerEnabled()&&processor.displayedModulatorLamp.load(std::memory_order_relaxed));
         bool keysChanged=false;
         for(size_t i=0;i<lastKeys.size();++i){const int n=processor.keyDisplay[i].load(std::memory_order_relaxed);if(lastKeys[i]!=n){lastKeys[i]=n;keysChanged=true;}}
+        const int displayedNote=processor.displayedNote.load(std::memory_order_relaxed);
+        if(displayedNote!=lastDisplayedNote){lastDisplayedNote=displayedNote;keysChanged=true;}
+        const int displayedKeyboardNote=processor.displayedKeyboardNote.load(std::memory_order_relaxed);
+        if(displayedKeyboardNote!=lastDisplayedKeyboardNote){lastDisplayedKeyboardNote=displayedKeyboardNote;keysChanged=true;}
         if(keysChanged)keyboard.repaint();
         const float age=processor.state.getRawParameterValue("age")->load();
         if(age!=lastAge){
