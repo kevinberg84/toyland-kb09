@@ -23,7 +23,7 @@ inline constexpr auto specs=std::to_array<ParameterSpec>({
  {"bendVcf","Bender VCF Depth",0,1,0,""}, {"volume","Volume",0,1,.7f,""},
  {"age","Condition / Age",0,1,0,""}, {"modern","Modern Mode",0,1,0,"Authentic|Modern"},
  {"velocity","Modern Velocity",0,1,0,""}, {"aftertouch","Modern Aftertouch",0,1,0,""},
- {"lfoSync","Modern LFO Sync",0,1,0,"Free|Tempo"},
+ {"lfoSync","Modern LFO Sync",0,1,0,"Free|Sync"},
  {"extGain","Modern Input Trim",0,1,.5f,""},
  // Preserve the legacy ID, index and range for existing state/automation data.
  // Both values are inert and refer to the single current instrument identity.

@@ -42,6 +42,8 @@ public:
  std::atomic<int> displayedKeyboardNote{-1};
  std::atomic<float> displayedEnvelope{0},displayedFollower{0};
  std::atomic<bool> displayedModulatorLamp{false};
+ std::atomic<float> displayedModulatorPhase{0},displayedModulatorFrequency{0},displayedInput{0};
+ std::atomic<double> displayedModulatorTime{0};
  std::array<std::atomic<int>,128> keyDisplay{};
 private:
  sh09::Controls readControls() const noexcept;

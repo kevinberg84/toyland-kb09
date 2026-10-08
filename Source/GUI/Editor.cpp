@@ -255,7 +255,7 @@ void cap(juce::Graphics& g,juce::Rectangle<float> r,bool small=false,bool indexe
             g.setColour(juce::Colours::black.withAlpha(age*.10f));
             g.fillPath(solid);
             // Registered top stripe warms gradually with the other printing.
-            g.setColour(juce::Colour(0xffaa8b4f).withAlpha(age*.23f));
+            g.setColour(juce::Colour(0xffc2a15d).withAlpha(age*.46f));
             g.fillRect(photo.getX()+photo.getWidth()*.055f,photo.getY()+photo.getHeight()*.405f,photo.getWidth()*.89f,photo.getHeight()*.12f);
         }
         return;
@@ -638,6 +638,23 @@ public:
         }
     }
 };
+// Relative drags keep fine adjustment consistent for knobs, faders and bender.
+class FineSlider final : public juce::Slider {
+public:
+ FineSlider() { setSliderSnapsToMousePosition(false); }
+ void mouseDown(const juce::MouseEvent& e) override {
+  juce::Slider::mouseDown(e);last=e.position;position=valueToProportionOfLength(getValue());
+ }
+ void mouseDrag(const juce::MouseEvent& e) override {
+  const auto delta=e.position-last;last=e.position;
+  const bool rotary=getSliderStyle()==RotaryHorizontalVerticalDrag;
+  const double distance=rotary?delta.x-delta.y:isVertical()?-delta.y:delta.x;
+  const double extent=rotary?190.0:juce::jmax(1,isVertical()?getHeight():getWidth());
+  position=juce::jlimit(0.0,1.0,position+distance/extent*(e.mods.isShiftDown()?.1:1.0));
+  setValue(proportionOfLengthToValue(position),juce::sendNotificationSync);
+ }
+private: juce::Point<float> last;double position=0;
+};
 class SlideSwitch final : public juce::Component, public juce::SettableTooltipClient {
 public:
     SlideSwitch(juce::RangedAudioParameter& p,std::vector<int> positions,juce::StringArray names,bool left=false)
@@ -711,14 +728,16 @@ public:
             } else caption(g,labels[int(i)],textBox,7.6f,labelsLeft?juce::Justification::centredRight:juce::Justification::centredLeft,true,ink);
             if(value==order[i])cap(g,{xx-5.5f,yy-9,11,18},true,false,age);
         }
-        if(hasKeyboardFocus(true)) {g.setColour(amber.withAlpha(.7f));g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(.8f),2,.7f);}
+        
     }
     void mouseDown(const juce::MouseEvent& e) override {
         dragging=true;pointerDownX=e.position.x;
-        draggingSlot=isActuatorGesture();attachment.beginGesture();select(e.position.y,false);
+        draggingSlot=isActuatorGesture();attachment.beginGesture();select(e.position.y,false);showValue(0);
     }
-    void mouseDrag(const juce::MouseEvent& e) override {select(e.position.y,false);}
-    void mouseUp(const juce::MouseEvent&) override {if(dragging){attachment.endGesture();dragging=false;}}
+    void mouseDrag(const juce::MouseEvent& e) override {select(e.position.y,false);showValue(0);}
+    void mouseEnter(const juce::MouseEvent&) override {showValue(0);}
+    void mouseExit(const juce::MouseEvent&) override {if(!dragging)popup.setVisible(false);}
+    void mouseUp(const juce::MouseEvent&) override {if(dragging){attachment.endGesture();dragging=false;showValue(800);}}
     void mouseDoubleClick(const juce::MouseEvent&) override {
         if(dragging){attachment.endGesture();dragging=false;}
         attachment.setValueAsCompleteGesture(float(initial));
@@ -734,6 +753,18 @@ public:
     }
 private:
     std::vector<int> order;juce::StringArray labels;bool labelsLeft=false,dragging=false,draggingSlot=false;int value=0,initial=0;
+    juce::BubbleMessageComponent popup;
+    void showValue(int duration) {
+        if(auto* parent=getParentComponent()) {
+            if(popup.getParentComponent()!=parent)parent->addChildComponent(popup);
+            popup.setAlwaysOnTop(true);
+            auto it=std::find(order.begin(),order.end(),value);
+            const int index=int(std::distance(order.begin(),it));
+            juce::AttributedString text; text.setJustification(juce::Justification::centred);
+            text.append(labels[juce::jlimit(0,labels.size()-1,index)].replace("\n"," "),font(13),ink);
+            popup.showAt(this,text,duration,true,false);
+        }
+    }
     float pointerDownX=0;
     juce::ParameterAttachment attachment;
     float actuatorX() const {
@@ -823,9 +854,15 @@ public:
                 g.drawLine(face.getX()+2,face.getY(),face.getRight()-2,face.getY(),.7f);
                 // Black keys lose their broad photographic shine especially
                 // strongly, while their silhouette remains fully opaque.
-                g.setOpacity(1.0f-age*.84f);g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+                g.setOpacity(1.0f-age*.40f);g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
                 g.drawImage(artwork().blackKey,r,juce::RectanglePlacement::stretchToFit);
                 g.setOpacity(1.0f);
+                // A worn surface spreads its reflected light across a wider area.
+                juce::ColourGradient reflection(juce::Colours::transparentWhite,top.getX(),top.getY(),
+                    juce::Colours::transparentWhite,top.getRight(),top.getY(),false);
+                reflection.addColour(.15,juce::Colours::white.withAlpha(age*.055f));
+                reflection.addColour(.40,juce::Colours::white.withAlpha(age*.025f));
+                g.setGradientFill(reflection);g.fillRoundedRectangle(top,1.5f);
                 g.setColour(juce::Colour(0xff6b6253).withAlpha(.004f+float(n-53)*.0012f));g.fillRoundedRectangle(r.reduced(.6f),1.2f);
             }
             // Each note receives independent tint and microgeometry over its
@@ -859,11 +896,10 @@ public:
                 g.strokePath(hairline,juce::PathStrokeType(.32f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
             }
             if(down) {
-                const juce::Colour glow(0xff65c8ff);
-                g.setColour(glow.withAlpha(pass==0?.23f:.32f));g.fillRoundedRectangle(r.reduced(1),1.5f);
-                g.setColour(glow.withAlpha(.9f));g.drawRoundedRectangle(r.reduced(1.5f),1.5f,1.4f);
-                g.setColour(effectiveNote==n?amber:glow);
-                g.fillRoundedRectangle(r.getX()+4,r.getBottom()-11,r.getWidth()-8,7,1.2f);
+                g.setColour(juce::Colours::black.withAlpha(pass==0?.14f:.18f));g.fillRoundedRectangle(r.reduced(1),1.5f);
+                if(effectiveNote==n) {
+                    g.setColour(amber);g.fillRoundedRectangle(r.getX()+4,r.getBottom()-11,r.getWidth()-8,7,1.2f);
+                }
             }
         }
         g.setGradientFill(juce::ColourGradient(juce::Colours::black.withAlpha(.68f),0,0,juce::Colours::transparentBlack,0,20,false));
@@ -894,28 +930,28 @@ private:
 };
 class Meter final : public juce::Component {
 public:
-    void setLevels(float e,float f) {if(std::abs(e-env)>.005f||std::abs(f-ext)>.005f){env=e;ext=f;repaint();}}
+    void setLevels(float e,float f,float input) {if(std::abs(e-env)>.005f||std::abs(f-ext)>.005f||std::abs(input-in)>.005f){env=e;ext=f;in=input;repaint();}}
     void paint(juce::Graphics& g) override {
-        for(int k=0;k<2;++k) {
-            const float xx=float(k*90);caption(g,k?"EXT":"ENV",{xx,0,25,20},9,juce::Justification::centredLeft);
+        for(int k=0;k<3;++k) {
+            const float xx=float(k*90);caption(g,k==2?"IN":k?"EXT":"ENV",{xx,0,25,20},9,juce::Justification::centredLeft);
             for(int i=0;i<8;++i) {
-                const bool lit=(k?ext:env)>float(i)/8;
+                const bool lit=(k==2?in:k?ext:env)>float(i)/8;
                 g.setColour(lit?amber:juce::Colour(0xff373b39));g.fillRect(xx+28+float(i*6),6.0f,4.0f,8.0f);
             }
         }
     }
-private:float env=0,ext=0;
+private:float env=0,ext=0,in=0;
 };
 class RateLamp final : public juce::Component {
 public:
-    void setOn(bool value) {if(on!=value){on=value;repaint();}}
+    void setLevel(float value) {if(std::abs(on-value)>.005f){on=value;repaint();}}
     void paint(juce::Graphics& g) override {
         auto r=getLocalBounds().toFloat().reduced(1);
         g.setColour(juce::Colour(0xff05090b));g.fillEllipse(r);
-        g.setColour(juce::Colour(on?0xffed5035:0xff471c17));g.fillEllipse(r.reduced(1.1f));
-        g.setColour(juce::Colour(0xffffc493).withAlpha(on?.65f:.12f));g.fillEllipse(r.getX()+2,r.getY()+1.8f,1.6f,1.6f);
+        g.setColour(juce::Colour(0xff471c17).interpolatedWith(juce::Colour(0xffed5035),on));g.fillEllipse(r.reduced(1.1f));
+        g.setColour(juce::Colour(0xffffc493).withAlpha(.12f+on*.53f));g.fillEllipse(r.getX()+2,r.getY()+1.8f,1.6f,1.6f);
     }
-private:bool on=false;
+private:float on=0;
 };
 class PowerButton final : public juce::Button {
 public:
@@ -1034,7 +1070,7 @@ void arcLabels(juce::Graphics& g,juce::Point<float> centre,
         auto label=centre+juce::Point<float>(std::sin(angle),-std::cos(angle))*(radius+10);
         // The neighbouring 2-foot and NOISE detents share the space between
         // selectors. Place NOISE above its knob while preserving the tick.
-        if(text=="NOISE")label+=juce::Point<float>(3,-26.5f);
+        if(text=="NOISE")label+=juce::Point<float>(3,-17.0f);
         if(text=="SAW"||text=="SQR"||text=="PULSE")
             panelGlyph(g,text=="SAW"?PanelGlyph::saw:text=="SQR"?PanelGlyph::square:PanelGlyph::pulse,
                        {label.x-8,label.y-4,16,8},ink);
@@ -1069,7 +1105,7 @@ public:
                 if(wasLoad){userPreset=true;lastProgramRevision=processor.getProgramRevision();lastProgram=processor.getCurrentProgram();presets.setSelectedId(0,juce::dontSendNotification);presets.setText(file.getFileNameWithoutExtension(),juce::dontSendNotification);}
             }
         };
-        addAndMakeVisible(meter);meter.setBounds(1024,7,177,20);
+        addAndMakeVisible(meter);meter.setBounds(1008,7,270,20);
         addAndMakeVisible(small);small.setButtonText("S");small.setBounds(1291,5,35,24);small.setComponentID("sizeS");
         small.setTooltip("Small: fit within 65% of this screen's work-area width and height, with the complete instrument visible.");small.onClick=[this]{sizing.chooseSmall();};
         addAndMakeVisible(medium);medium.setButtonText("M");medium.setBounds(1332,5,35,24);medium.setComponentID("sizeM");
@@ -1112,7 +1148,7 @@ public:
         addSwitch("modern",22,designH-headerH-44,131,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
         addUtility("age","CONDITION / AGE",257,154);
         addUtility("velocity","VELOCITY",493,113);addUtility("aftertouch","AFTERTOUCH",692,113);
-        addSwitch("lfoSync",811,designH-headerH-44,104,42,{0,1},{"FREE","TEMPO"},"Modern mode: free or tempo-synchronised LFO.");
+        addSwitch("lfoSync",811,designH-headerH-44,104,42,{0,1},{"FREE","SYNC"},"Modern mode: SYNC makes RATE select straight, dotted and triplet grid divisions.");
         addUtility("extGain","INPUT TRIM",1070,127);
         addAndMakeVisible(help);help.setButtonText("EXT AUDIO");help.setBounds(1323,designH-35,120,24);
         help.onClick=[this]{externalHelp.setVisible(!externalHelp.isVisible());};
@@ -1122,7 +1158,7 @@ public:
         externalHelp.setBorderSize(juce::BorderSize<int>(24));
         externalHelp.setColour(juce::Label::backgroundColourId,juce::Colour(0xf5101518));
         externalHelp.setColour(juce::Label::outlineColourId,amber);externalHelp.setInterceptsMouseClicks(true,true);
-        updateModern();startTimerHz(24);
+        updateModern();startTimerHz(60);
     }
     ~Panel() override {
         stopTimer();sizing.onChange=nullptr;if(bendActive)processor.queuePitchBend(0);setLookAndFeel(nullptr);
@@ -1187,13 +1223,12 @@ public:
             caption(g,"DELAY\nTIME",{218,92,29,22},7.6f,juce::Justification::centred,true,ink);
             caption(g,"RANGE",{319,96,74,12},9,juce::Justification::centred,true,ink);
             caption(g,"WAVEFORM",{408,91,84,17},9,juce::Justification::centred,true,ink);
-            caption(g,"TUNE",{305,84,35,15},8.4f,juce::Justification::centred,true,ink);
-            g.setColour(ink);g.drawLine(294,91,304,91,.8f);
+            caption(g,"TUNE",{315,79,30,15},8.4f,juce::Justification::centred,true,ink);
+            g.setColour(ink);g.drawLine(294,86,313,86,.8f);
             arcLabels(g,{356,163},{{"32'",-1.134464f},{"16'",-.567232f},{"8'",0.0f},{"4'",.567232f},{"2'",1.134464f}},43,age);
             arcLabels(g,{450,163},{{"NOISE",-1.047198f},{"SAW",-.349066f},{"SQR",.349066f},{"PULSE",1.047198f}},43,age);
             caption(g,"PULSE WIDTH MOD",{522,90,87,12},7.6f,juce::Justification::centred,true,ink);
-            g.setColour(ink);g.drawLine(512,109,512,96,.8f);g.drawLine(512,96,521,96,.8f);
-            g.drawLine(609,96,612,96,.8f);g.drawLine(612,96,612,109,.8f);
+            
             // Original user marks: split into manufacturer on right and instrument on left.
             const float printWear=age*age;
             for(int i=0;i<2;++i) {
@@ -1244,7 +1279,7 @@ public:
                                             juce::Colour(0xff121618),0,float(designH),false));
         g.fillRect(0,headerH+bodyH,designW,designH-headerH-bodyH);
         g.setColour(juce::Colour(0xff58605f));g.drawLine(0,float(headerH+bodyH),float(designW),float(headerH+bodyH),.65f);
-        caption(g,"OPTIONAL",{1208,float(designH-35),93,24},8.5f,juce::Justification::centred,false);
+        
     }
 private:
     using SliderAttachment=juce::AudioProcessorValueTreeState::SliderAttachment;
@@ -1257,7 +1292,7 @@ private:
     SH09Processor& processor;sh09::WindowSizing& sizing;sh09::PresetFiles presetFiles;HardwareLook look;
     Keyboard keyboard;Header header;MaximiseButton maximise;PowerButton power;juce::TooltipWindow tooltip;
     juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset;
-    juce::Slider bender;juce::Label externalHelp;Meter meter;RateLamp rateLamp;
+    FineSlider bender;juce::Label externalHelp;Meter meter;RateLamp rateLamp;
     std::vector<std::unique_ptr<Control>> controls;
     std::array<int,128> lastKeys{};float lastAge=-1;bool lastModern=false,bendActive=false,userPreset=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1;unsigned lastProgramRevision=0;
     void timerCallback() override {
@@ -1265,8 +1300,13 @@ private:
         const int program=processor.getCurrentProgram();
         if(!userPreset||program!=lastProgram||programRevision!=lastProgramRevision){presets.setSelectedId(program+1,juce::dontSendNotification);userPreset=false;}
         lastProgram=program;lastProgramRevision=programRevision;
-        meter.setLevels(processor.displayedEnvelope.load(),processor.displayedFollower.load());
-        rateLamp.setOn(processor.isPowerEnabled()&&processor.displayedModulatorLamp.load(std::memory_order_relaxed));
+        meter.setLevels(processor.displayedEnvelope.load(),processor.displayedFollower.load(),processor.displayedInput.load());
+        const double stamp=processor.displayedModulatorTime.load(std::memory_order_acquire);
+        const double elapsed=juce::jmax(0.0,(juce::Time::getMillisecondCounterHiRes()-stamp)*.001);
+        const float hz=processor.displayedModulatorFrequency.load(std::memory_order_relaxed);
+        const double phase=processor.displayedModulatorPhase.load(std::memory_order_relaxed)+elapsed*hz;
+        const float lamp=hz>=8?.48f+.52f*juce::jlimit(0.0f,1.0f,(hz-8)/24):float(phase-std::floor(phase)<.5);
+        rateLamp.setLevel(processor.isPowerEnabled()&&hz>0?lamp:0);
         bool keysChanged=false;
         for(size_t i=0;i<lastKeys.size();++i){const int n=processor.keyDisplay[i].load(std::memory_order_relaxed);if(lastKeys[i]!=n){lastKeys[i]=n;keysChanged=true;}}
         const int displayedNote=processor.displayedNote.load(std::memory_order_relaxed);
@@ -1303,7 +1343,7 @@ private:
         c->selector->setBounds(x,headerH+y,w,h);addAndMakeVisible(*c->selector);controls.push_back(std::move(c));
     }
     void addSlider(const char* id,const char* name,int x,int y,int w,int h,juce::Slider::SliderStyle style) {
-        auto c=std::make_unique<Control>();c->slider=std::make_unique<juce::Slider>();auto& slider=*c->slider;
+        auto c=std::make_unique<Control>();c->slider=std::make_unique<FineSlider>();auto& slider=*c->slider;
         slider.setComponentID(id);slider.setTitle(name);slider.setBounds(x,headerH+y,w,h);slider.setSliderStyle(style);
         slider.setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);slider.setPopupDisplayEnabled(true,true,this);
         slider.setScrollWheelEnabled(false);slider.setMouseDragSensitivity(190);
@@ -1315,6 +1355,10 @@ private:
         addAndMakeVisible(slider);c->attachment=std::make_unique<SliderAttachment>(processor.state,id,slider);
         for(const auto& spec:sh09::specs)if(juce::String(spec.id)==id&&spec.choices[0]==0) {
             if(juce::String(id)=="tune")slider.textFromValueFunction=[](double v){return juce::String(v,1)+" ct";};
+            else if(juce::String(id)=="lfoRate")slider.textFromValueFunction=[this](double v){
+                return processor.state.getRawParameterValue("modern")->load()>.5f&&processor.state.getRawParameterValue("lfoSync")->load()>.5f
+                    ?juce::String(sh09::rateDivision(v).label):juce::String(v*10,2);
+            };
             else slider.textFromValueFunction=[](double v){return juce::String(v*10,2);};
         }
         controls.push_back(std::move(c));

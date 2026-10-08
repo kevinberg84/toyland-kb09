@@ -253,8 +253,8 @@ void checkKeyboardFeedback(SH09Processor& processor, juce::Component& editor, co
     processMidi(processor,juce::MidiMessage::noteOn(1,60,juce::uint8(100)));
     keyboard->mouseDown(mouseEvent(64));
     mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
-    checks.expect(markerIs(mixed,60,amberBar)&&markerIs(mixed,64,blueBar),
-                  "higher mouse note retains blue bar while lower MIDI-held note retains amber");
+    checks.expect(markerIs(mixed,60,amberBar)&&markerAbsent(mixed,64),
+                  "higher mouse note is shaded without a coloured bar while lower MIDI-held note retains amber");
     processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
     keyboard->mouseDrag(mouseEvent(55));
     mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
@@ -262,17 +262,17 @@ void checkKeyboardFeedback(SH09Processor& processor, juce::Component& editor, co
     processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
     mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
     checks.expect(processor.displayedNote.load()==55&&processor.keyDisplay[64].load()==0
-                  &&markerIs(mixed,55,amberBar)&&markerIs(mixed,60,blueBar),
+                  &&markerIs(mixed,55,amberBar)&&markerAbsent(mixed,60),
                   "processed mouse drag transfers low-note priority while the MIDI note remains held");
     keyboard->mouseDrag(mouseEvent(64));
     mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
     checks.expect(processor.displayedNote.load()==55&&markerAbsent(mixed,55)
-                  &&markerIs(mixed,60,amberBar)&&markerIs(mixed,64,blueBar),
+                  &&markerIs(mixed,60,amberBar)&&markerAbsent(mixed,64),
                   "upward mouse drag immediately restores lower MIDI priority without stale amber on the old mouse key");
     processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
     mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
     checks.expect(processor.displayedNote.load()==60&&processor.keyDisplay[55].load()==0
-                  &&markerIs(mixed,60,amberBar)&&markerIs(mixed,64,blueBar),
+                  &&markerIs(mixed,60,amberBar)&&markerAbsent(mixed,64),
                   "processed upward mouse drag preserves the lower held MIDI note");
     keyboard->mouseUp(mouseEvent(64));
     processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
@@ -283,7 +283,7 @@ void checkKeyboardFeedback(SH09Processor& processor, juce::Component& editor, co
     processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
     keyboard->mouseDrag(mouseEvent(64));
     mixed=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
-    checks.expect(processor.keyDisplay[60].load()==2&&markerIs(mixed,60,amberBar)&&markerIs(mixed,64,blueBar),
+    checks.expect(processor.keyDisplay[60].load()==2&&markerIs(mixed,60,amberBar)&&markerAbsent(mixed,64),
                   "moving the mouse away from an overlapping MIDI pitch retains that MIDI key and its priority immediately");
     processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
     checks.expect(processor.keyDisplay[60].load()==1&&processor.displayedNote.load()==60,
@@ -291,6 +291,35 @@ void checkKeyboardFeedback(SH09Processor& processor, juce::Component& editor, co
     keyboard->mouseUp(mouseEvent(64));
     processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
     processMidi(processor,juce::MidiMessage::noteOff(1,60));
+}
+
+void checkFineGestures(SH09Processor& processor,juce::Component& editor,Checks& checks) {
+    for(const auto* id:{"volume","cutoff","bender"}) {
+        auto* slider=dynamic_cast<juce::Slider*>(findComponent(editor,id));
+        if(!slider){checks.expect(false,juce::String(id)+" fine control exists");continue;}
+        auto event=[&](juce::Point<float> point,bool shift) {
+            const auto now=juce::Time::getCurrentTime();
+            return juce::MouseEvent(juce::Desktop::getInstance().getMainMouseSource(),point,
+                juce::ModifierKeys(juce::ModifierKeys::leftButtonModifier|(shift?juce::ModifierKeys::shiftModifier:0)),
+                1,0,0,0,0,slider,slider,now,slider->getLocalBounds().toFloat().getCentre(),now,1,true);
+        };
+        const double centre=(slider->getMinimum()+slider->getMaximum())*.5;
+        auto delta=[&](bool shift) {
+            slider->setValue(centre,juce::sendNotificationSync);
+            const auto start=slider->getLocalBounds().toFloat().getCentre();
+            slider->mouseDown(event(start,shift));
+            slider->mouseDrag(event(start+juce::Point<float>(15,-15),shift));
+            const double change=std::abs(slider->getValue()-centre);
+            slider->mouseUp(event(start,shift));return change;
+        };
+        const double normal=delta(false),fine=delta(true);
+        checks.expect(normal>0&&fine>0&&fine<normal*.15,juce::String(id)+" SHIFT drag is ten times finer");
+    }
+    setParameter(processor,"modern",1);setParameter(processor,"lfoSync",1);settleEditor();
+    auto* rate=dynamic_cast<juce::Slider*>(findComponent(editor,"lfoRate"));
+    checks.expect(rate&&rate->getTextFromValue(0)=="4 bars"&&rate->getTextFromValue(1)=="1/64 T","RATE value box presents SYNC divisions");
+    setParameter(processor,"modern",0);settleEditor();
+    checks.expect(rate&&rate->getTextFromValue(1)=="10.00","Authentic RATE value box keeps numeric scale");
 }
 
 void checkOpaqueCaps(juce::Component& editor, Checks& checks) {
@@ -991,6 +1020,7 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
         checkSwitchAttachment(processor, *editor, checks);
         checkKeyboardFeedback(processor, *editor, directory, checks);
         checkOpaqueCaps(*editor, checks);
+        checkFineGestures(processor,*editor,checks);
         checkRotaryTicks(processor,*editor,checks);
         checkKnobMetalAging(processor,*editor,directory,checks);
         checkCapLoss(processor,*editor,checks);

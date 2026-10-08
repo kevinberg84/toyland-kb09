@@ -105,5 +105,26 @@ int main(){
   sh09::Engine a,b;a.prepare(48000);b.prepare(48000);auto c=clean();c.age=.7f;a.setControls(c);b.setControls(c);a.noteOn(61,100);b.noteOn(61,100);bool same=true;for(int i=0;i<12000;++i)same=same&&a.process(0)==b.process(0);check(same,"deterministic condition and oscillator rendering");
   c.cutoff=std::numeric_limits<float>::quiet_NaN();c.range=std::numeric_limits<float>::infinity();a.setControls(c);check(std::isfinite(a.process(std::numeric_limits<float>::quiet_NaN())),"nonfinite controls and input rejected");
  }
+ {
+  double full=0,previous=-1;
+  for(float volume:{0.f,.1f,.25f,.5f,.75f,1.f}) {
+   sh09::Engine e;e.prepare(48000);auto c=clean();c.volume=volume;e.setControls(c);e.noteOn(60,127);
+   render(e,.1,48000);const double level=rms(render(e,.2,48000));
+   check(volume==0?level==0:level>previous,"volume audio taper increases across the complete knob travel "+std::to_string(volume));
+   if(volume==1)full=level;previous=level;
+  }
+  sh09::Engine e;e.prepare(48000);auto c=clean();c.volume=.5f;e.setControls(c);e.noteOn(60,127);render(e,.1,48000);
+  check(std::abs(rms(render(e,.2,48000))/full-.125)<.002,"volume midpoint has useful -18dB gain and top preserves unity");
+  for(double bpm:{60.,120.,180.}) for(size_t index=0;index<sh09::rateDivisions.size();++index) {
+   sh09::Engine clock;clock.prepare(48000);auto controls=clean();controls.modern=controls.lfoSync=1;
+   controls.lfoRate=float(index)/float(sh09::rateDivisions.size()-1);clock.setControls(controls);clock.setTempo(bpm);
+   double elapsedCycles=0,last=clock.modulatorPhase();
+   for(int i=0;i<24000;++i){clock.process(0);const double phase=clock.modulatorPhase();elapsedCycles+=phase-last+(phase<last?1:0);last=phase;}
+   const double expected=bpm/(60*sh09::rateDivisions[index].beats);
+   check(std::abs(elapsedCycles/.5-expected)<1e-5,"SYNC audio clock division "+std::string(sh09::rateDivisions[index].label)+" BPM="+std::to_string(bpm));
+  }
+  sh09::Engine free;free.prepare(48000);c=clean();c.lfoRate=1;c.lfoSync=1;c.modern=0;free.setControls(c);free.setTempo(180);free.process(0);
+  check(std::abs(free.modulatorFrequency()-25)<1e-9,"Authentic retains free 25Hz endpoint despite saved SYNC setting");
+ }
  const auto elapsed=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();std::cout<<"RESULT "<<passed<<" passed "<<failed<<" failed wall_seconds="<<elapsed<<'\n';return failed?1:0;
 }

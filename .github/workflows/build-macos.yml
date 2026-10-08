@@ -35,7 +35,7 @@ jobs:
           set -euo pipefail
           sudo mkdir -p '/Library/Audio/Plug-Ins/Components'
           sudo ditto 'build-mac/SH09_artefacts/Release/AU/Toyland KB-09.component' '/Library/Audio/Plug-Ins/Components/Toyland KB-09.component'
-          /usr/libexec/PlistBuddy -c 'Print :AudioComponents' "$HOME/Library/Audio/Plug-Ins/Components/Toyland KB-09.component/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :AudioComponents' "/Library/Audio/Plug-Ins/Components/Toyland KB-09.component/Contents/Info.plist"
           sudo killall -9 AudioComponentRegistrar || true
           for attempt in 1 2 3 4 5; do
             auval -a > au-components.txt

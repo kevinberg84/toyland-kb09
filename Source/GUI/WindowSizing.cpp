@@ -72,6 +72,45 @@ struct WindowSizing::Impl final : private juce::Timer, private juce::ComponentLi
         void timerCallback() override { parent.initialFitTick(); }
         Impl& parent;
     };
+    struct CaptionTimer final : private juce::Timer {
+        explicit CaptionTimer(Impl& value):parent(value) { startTimerHz(60); }
+        void timerCallback() override { parent.captionTick(); }
+        Impl& parent;
+    };
+    CaptionTimer captionTimer{*this};
+    bool captionDown=false,captionTracking=false,captionMoved=false,captionWasLarge=false;
+    juce::Point<int> captionStart;
+    void captionTick() {
+#if JUCE_WINDOWS
+        if(dragging||applying||!editor.isShowing())return;
+        const bool down=(GetAsyncKeyState(VK_LBUTTON)&0x8000)!=0;
+        const auto cursor=cursorPixels();if(!cursor)return;
+        const auto target=native();
+        if(down&&!captionDown) {
+            captionTracking=false;captionMoved=false;
+            // Only the validated plug-in frame's title bar, never the DAW frame.
+            if(target.window!=nullptr&&target.outer.contains(*cursor)&&cursor->y<target.editor.getY()) {
+                NativeDpiScope dpi;
+                const auto hit=SendMessageW(target.window,WM_NCHITTEST,0,MAKELPARAM(cursor->x,cursor->y));
+                captionTracking=hit==HTCAPTION;
+                captionStart=*cursor;captionWasLarge=large();
+            }
+        }
+        if(down&&captionTracking&&target.window!=nullptr) {
+            captionMoved=captionMoved||cursor->getDistanceFrom(captionStart)>3;
+            if(captionWasLarge&&captionMoved&&cursor->y>captionStart.y+8) {
+                restoreWindow();captionWasLarge=false;
+            }
+        }
+        if(!down&&captionDown&&captionTracking) {
+            const auto work=workAt(*cursor);
+            if(captionMoved&&!work.isEmpty()&&cursor->y<=work.getY()+12&&work.contains(juce::Point<int>(cursor->x,work.getY())))
+                request(Mode::large);
+            captionTracking=false;
+        }
+        captionDown=down;
+#endif
+    }
     WindowSizing& owner;
     juce::AudioProcessorEditor& editor;
     const double aspect;
@@ -504,3 +543,4 @@ WindowSizing::Mode WindowSizing::getMode()const{return impl->currentMode();}
 juce::String WindowSizing::placementStatus()const{return canMoveWindow()?"Drag the header to the screen top to maximise.":"This host controls window placement; S, M and L request editor sizes.";}
 juce::Rectangle<float> WindowSizing::contentBounds(juce::Rectangle<float> area)const noexcept{return fitAspect(area,impl->aspect);}
 }
+

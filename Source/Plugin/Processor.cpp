@@ -46,6 +46,7 @@ void SH09Processor::clearVoiceDisplay() noexcept {
  clearKeyDisplay();displayedNote.store(-1,std::memory_order_relaxed);
  displayedEnvelope.store(0,std::memory_order_relaxed);displayedFollower.store(0,std::memory_order_relaxed);
  displayedModulatorLamp.store(false,std::memory_order_relaxed);
+ displayedInput.store(0,std::memory_order_relaxed);displayedModulatorFrequency.store(0,std::memory_order_relaxed);
 }
 void SH09Processor::updateKeyDisplay(int note,bool down) noexcept {
  auto& key=keyDisplay[size_t(note)];const int count=key.load(std::memory_order_relaxed);
@@ -118,10 +119,11 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  queueRead.store(r,std::memory_order_release);
  auto input=getBusBuffer(buffer,true,0);auto output=getBusBuffer(buffer,false,0);
  auto event=midi.cbegin(); const auto end=midi.cend();
+ float inputPeak=0;
  for(int s=0;s<buffer.getNumSamples();++s){
    while(event!=end&&(*event).samplePosition<=s){const auto meta=*event;handleMidi(meta.data,meta.numBytes);++event;}
    float external=0;
-   for(int ch=0;ch<input.getNumChannels();++ch){float x=input.getSample(ch,s);external+=std::isfinite(x)?juce::jlimit(-32.0f,32.0f,x):0;}
+   for(int ch=0;ch<input.getNumChannels();++ch){float x=input.getSample(ch,s);x=std::isfinite(x)?juce::jlimit(-32.0f,32.0f,x):0;external+=x;inputPeak=juce::jmax(inputPeak,std::abs(x));}
    if(input.getNumChannels()>1)external/=float(input.getNumChannels());
    const float sample=engine.process(external);
    for(int ch=0;ch<output.getNumChannels();++ch)output.setSample(ch,s,sample);
@@ -131,6 +133,10 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  midi.clear();displayedNote.store(engine.currentNote(),std::memory_order_relaxed);
  displayedEnvelope.store(engine.envelopeLevel(),std::memory_order_relaxed);displayedFollower.store(engine.followerLevel(),std::memory_order_relaxed);
  displayedModulatorLamp.store(engine.modulatorLampOn(),std::memory_order_relaxed);
+ displayedInput.store(juce::jmax(inputPeak,displayedInput.load(std::memory_order_relaxed)*float(std::exp(-buffer.getNumSamples()/(getSampleRate()*.15)))),std::memory_order_relaxed);
+ displayedModulatorPhase.store(float(engine.modulatorPhase()),std::memory_order_relaxed);
+ displayedModulatorFrequency.store(float(engine.modulatorFrequency()),std::memory_order_relaxed);
+ displayedModulatorTime.store(juce::Time::getMillisecondCounterHiRes(),std::memory_order_release);
 }
 juce::AudioProcessorEditor* SH09Processor::createEditor(){return new SH09Editor(*this);}
 void SH09Processor::getStateInformation(juce::MemoryBlock& destination){

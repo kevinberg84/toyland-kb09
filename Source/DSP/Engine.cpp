@@ -162,7 +162,7 @@ float Engine::process(float externalMono) noexcept {
  // neither maximum is claimed as a measured hardware modulation calibration.
  const double vcoModSemitones=modern?36.0:12.0,vcfModOctaves=modern?8.0:5.0;
  const double trim=modern?std::pow(10.0,(smooth.extGain-.5)*48/20):1;
- const double lfoHz=modern&&choice(smooth.lfoSync,1)!=0?tempo/60:expRange(smooth.lfoRate,.2,25);
+ const double lfoHz=lfoFrequency(smooth.lfoRate,modern&&choice(smooth.lfoSync,1)!=0,tempo);
  const double pole=1-std::exp(-2*pi*8000/internalFs),dc=1-std::exp(-2*pi*12/internalFs);
  // Preserve analogue noise power as the internal sampling rate changes.
  const double referencePole=1-std::exp(-2*pi*8000/176400.0);
@@ -209,7 +209,7 @@ float Engine::process(float externalMono) noexcept {
   const double cutoff=clamp(expRange(smooth.cutoff,10,20000)*std::exp2(cutoffOctaves+.05*smooth.age),5,22000);
   const double velocityGain=modern?1-smooth.velocity*(1-selectedVelocity):1;
   double amplitude=env;if(choice(smooth.vcaMode,2)==0)amplitude=1;else if(choice(smooth.vcaMode,2)==2)amplitude=gateGain;
-  Frame frame{.55*(osc*smooth.vcoLevel+sub*smooth.subLevel),amplitude,cutoff,clamp(smooth.resonance*(1+.015*smooth.age),0,1),smooth.volume*velocityGain*modeGain,smooth.extLevel,choice(smooth.vcfEnvMode,2)==2?smooth.vcfEnv*8.0:0};
+  Frame frame{.55*(osc*smooth.vcoLevel+sub*smooth.subLevel),amplitude,cutoff,clamp(smooth.resonance*(1+.015*smooth.age),0,1),smooth.volume*smooth.volume*smooth.volume*velocityGain*modeGain,smooth.extLevel,choice(smooth.vcfEnvMode,2)==2?smooth.vcfEnv*8.0:0};
   Frame delayedFrame=frames[framePos];frames[framePos]=frame;framePos=(framePos+1)%alignment;
   double finalCutoff=delayedFrame.cutoff;
   finalCutoff*=std::exp2(clamp(follower[2],0,1)*delayedFrame.followerAmount);

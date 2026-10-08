@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include "LfoRate.h"
 #include <cstdint>
 
 namespace sh09 {
@@ -31,7 +32,9 @@ public:
  float followerLevel() const noexcept {return float(follower[2]);}
  double currentPitch() const noexcept {return pitch;}
  double modulatorLevel() const noexcept {return lastLfo;}
- bool modulatorLampOn() const noexcept {return lfoPhase<.18;}
+ bool modulatorLampOn() const noexcept {return lfoPhase<.5;}
+ double modulatorPhase() const noexcept {return lfoPhase;}
+ double modulatorFrequency() const noexcept {return lfoFrequency(smooth.lfoRate, smooth.modern>=.5f && smooth.lfoSync>=.5f,tempo);}
  int latencySamples() const noexcept {return 128;}
  std::uint64_t solverFailures() const noexcept {return failures;}
  static constexpr int oversamplingFactor=4;
