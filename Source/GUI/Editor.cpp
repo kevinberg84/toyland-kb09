@@ -401,6 +401,7 @@ public:
     }
     juce::Font getComboBoxFont(juce::ComboBox&) override {return font(11);}
     juce::Font getTextButtonFont(juce::TextButton&,int) override {return font(11,true);}
+    juce::Font getSliderPopupFont(juce::Slider&) override {return font(15,true);}
     juce::Font getLabelFont(juce::Label& l) override {return l.getFont();}
     void drawLinearSlider(juce::Graphics& g,int x,int y,int w,int h,float pos,float,float,
                           const juce::Slider::SliderStyle style,juce::Slider& slider) override {
@@ -610,10 +611,10 @@ public:
                     g.setColour(juce::Colour(0xffbcb6a4).withAlpha(.015f+age*.095f));g.fillEllipse(p.x,p.y,size,size*.8f);
                 }
             } else {
-                g.setColour(juce::Colour(0xff05080a));g.fillRoundedRectangle(float(x),cy-2,float(w),4,2);
-                g.setColour(juce::Colours::white.withAlpha(.18f));g.drawLine(float(x),cy+2,float(x+w),cy+2,.6f);
+                g.setColour(juce::Colour(0xff05080a));g.fillRoundedRectangle(float(x),cy-3,float(w),6,3);
+                g.setColour(juce::Colours::white.withAlpha(.18f));g.drawLine(float(x),cy+3,float(x+w),cy+3,.6f);
                 g.setColour(ink.withAlpha(.35f));g.fillRect(float(x),cy-1,juce::jmax(0.0f,pos-float(x)),1.5f);
-                cap(g,{pos-6,cy-5,12,11},true);
+                cap(g,{pos-8,cy-8,16,17},true);
             }
         }
     }
@@ -639,6 +640,15 @@ public:
     }
 };
 // Relative drags keep fine adjustment consistent for knobs, faders and bender.
+class DescriptionTips final : public juce::TooltipWindow {
+public:
+ DescriptionTips(juce::Component* owner,juce::TextButton& toggle):TooltipWindow(owner,500),button(toggle){}
+ juce::String getTipFor(juce::Component& c) override {
+  if(&c==&button)return "DESCRIPTION: enable or disable explanations when you hover over controls. Value readouts are always available.";
+  return button.getToggleState()?juce::TooltipWindow::getTipFor(c):juce::String();
+ }
+private: juce::TextButton& button;
+};
 class FineSlider final : public juce::Slider {
 public:
  FineSlider() { setSliderSnapsToMousePosition(false); }
@@ -764,7 +774,7 @@ private:
             popup.setName(label);
             juce::AttributedString text; text.setJustification(juce::Justification::centred);
             // The bubble is pale; panel ink is pale too and would hide its text.
-            text.append(label,font(13),juce::Colour(0xff22262a));
+            text.append(label,font(15,true),juce::Colour(0xff22262a));
             popup.showAt(this,text,duration,true,false);
         }
     }
@@ -1152,18 +1162,31 @@ public:
         bender.onDragEnd=[this]{bender.setValue(0,juce::sendNotificationSync);};
         addSwitch("modern",22,designH-headerH-44,131,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
         addUtility("age","CONDITION / AGE",257,154);
-        controls.back()->slider->onDragStart=[this]{look.conditionDragging=true;};
-        controls.back()->slider->onDragEnd=[this]{look.conditionDragging=false;repaint();keyboard.repaint();};
+        controls.back()->slider->onDragStart=[this]{
+            // Cache the expensive material layer once. Mouse movement and DSP
+            // remain live without repeatedly painting photographic wear.
+            conditionBackdrop=juce::Image(juce::Image::RGB,designW,designH,true);
+            juce::Graphics frame(conditionBackdrop);paint(frame);
+            look.conditionDragging=true;
+            for(auto& c:controls)if(c->slider&&c->slider->getComponentID()!="age")c->slider->setBufferedToImage(true);
+            keyboard.setBufferedToImage(true);
+        };
+        controls.back()->slider->onDragEnd=[this]{
+            look.conditionDragging=false;conditionBackdrop={};
+            look.age=processor.state.getRawParameterValue("age")->load();
+            for(auto& c:controls)if(c->slider)c->slider->setBufferedToImage(false);
+            keyboard.setBufferedToImage(false);repaint();keyboard.repaint();
+        };
         addUtility("velocity","VELOCITY",493,113);addUtility("aftertouch","AFTERTOUCH",692,113);
         addSwitch("lfoSync",811,designH-headerH-44,104,42,{0,1},{"FREE","SYNC"},"Modern mode: SYNC makes RATE select straight, dotted and triplet grid divisions.");
         addUtility("extGain","INPUT TRIM",1070,127);
         addAndMakeVisible(descriptions);descriptions.setComponentID("descriptions");
         descriptions.setButtonText("DESCRIPTION");descriptions.setClickingTogglesState(true);
         descriptions.setBounds(1170,designH-35,139,24);
-        descriptions.onClick=[this]{
-            if(descriptions.getToggleState())tooltip=std::make_unique<juce::TooltipWindow>(this,650);
-            else tooltip.reset();
-        };
+        descriptions.setColour(juce::TextButton::buttonOnColourId,amber);
+        descriptions.setColour(juce::TextButton::textColourOnId,juce::Colour(0xff151a1d));
+        descriptions.onClick=[this]{descriptions.setButtonText(descriptions.getToggleState()?"DESCRIPTION ON":"DESCRIPTION");};
+        tooltip=std::make_unique<DescriptionTips>(this,descriptions);
         addAndMakeVisible(help);help.setButtonText("EXT AUDIO");help.setBounds(1323,designH-35,120,24);
         help.onClick=[this]{externalHelp.setVisible(!externalHelp.isVisible());};
         addChildComponent(externalHelp);externalHelp.setBounds(390,headerH+418,900,225);
@@ -1178,6 +1201,7 @@ public:
         stopTimer();sizing.onChange=nullptr;if(bendActive)processor.queuePitchBend(0);setLookAndFeel(nullptr);
     }
     void paint(juce::Graphics& g) override {
+        if(look.conditionDragging&&conditionBackdrop.isValid()) {g.drawImageAt(conditionBackdrop,0,0);return;}
         look.age=processor.state.getRawParameterValue("age")->load();
         const float age=look.age;
         const auto ink=agedInk(age);
@@ -1306,7 +1330,7 @@ private:
     SH09Processor& processor;sh09::WindowSizing& sizing;sh09::PresetFiles presetFiles;HardwareLook look;
     Keyboard keyboard;Header header;MaximiseButton maximise;PowerButton power;
     juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions;
-    std::unique_ptr<juce::TooltipWindow> tooltip;
+    std::unique_ptr<juce::TooltipWindow> tooltip;juce::Image conditionBackdrop;
     FineSlider bender;juce::Label externalHelp;Meter meter;RateLamp rateLamp;
     std::vector<std::unique_ptr<Control>> controls;
     std::array<int,128> lastKeys{};float lastAge=-1;bool lastModern=false,bendActive=false,userPreset=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1;unsigned lastProgramRevision=0;double lastConditionPaint=0;
@@ -1332,7 +1356,7 @@ private:
         const float age=processor.state.getRawParameterValue("age")->load();
         // Coalesce full-instrument wear redraws while the AGE thumb remains live.
         const auto now=juce::Time::getMillisecondCounterHiRes();
-        if(age!=lastAge && (!look.conditionDragging||now-lastConditionPaint>=50.0)){
+        if(age!=lastAge && !look.conditionDragging){
             lastConditionPaint=now;lastAge=age;look.age=age;
             for(auto& c:controls)if(c->label&&bool(c->label->getProperties().getWithDefault("hardwarePrint",false)))
                 c->label->setColour(juce::Label::textColourId,agedInk(age));
@@ -1368,7 +1392,34 @@ private:
         if(juce::String(id)=="range")slider.setRotaryParameters(twoPi-1.134464f,twoPi+1.134464f,true);
         else if(juce::String(id)=="wave")slider.setRotaryParameters(twoPi-1.047198f,twoPi+1.047198f,true);
         else slider.setRotaryParameters(juce::MathConstants<float>::pi*1.25f,juce::MathConstants<float>::pi*2.75f,true);
-        for(const auto& spec:sh09::specs)if(juce::String(spec.id)==id) {slider.setTooltip(spec.name);slider.setDoubleClickReturnValue(true,spec.initial);}
+        for(const auto& spec:sh09::specs)if(juce::String(spec.id)==id) {slider.setTooltip(spec.name);
+        if(juce::String(id)=="tune")slider.setTooltip("Fine-tune oscillator pitch in cents.");
+        if(juce::String(id)=="range")slider.setTooltip("Choose the oscillator octave range.");
+        if(juce::String(id)=="wave")slider.setTooltip("Choose noise, saw, square or pulse as the main oscillator source.");
+        if(juce::String(id)=="pulseWidth")slider.setTooltip("Set pulse width manually, or the amount of pulse-width modulation.");
+        if(juce::String(id)=="vcoLevel")slider.setTooltip("Mix the main oscillator into the filter.");
+        if(juce::String(id)=="subLevel")slider.setTooltip("Mix the sub-oscillator into the filter.");
+        if(juce::String(id)=="extLevel")slider.setTooltip("Mix incoming external audio into the filter; watch the IN indicator.");
+        if(juce::String(id)=="lfoRate")slider.setTooltip("Set modulation speed. In Modern SYNC, choose a musical division of the host tempo.");
+        if(juce::String(id)=="lfoDelay")slider.setTooltip("Delay the onset of modulation after a note starts.");
+        if(juce::String(id)=="vcoMod")slider.setTooltip("Set the amount of LFO pitch modulation.");
+        if(juce::String(id)=="cutoff")slider.setTooltip("Set filter cutoff frequency; lower it to remove upper harmonics.");
+        if(juce::String(id)=="resonance")slider.setTooltip("Emphasise the cutoff frequency; high settings make the filter self-oscillate.");
+        if(juce::String(id)=="vcfMod")slider.setTooltip("Set the amount of LFO modulation applied to filter cutoff.");
+        if(juce::String(id)=="vcfEnv")slider.setTooltip("Set the amount of envelope or external envelope-follower modulation of cutoff.");
+        if(juce::String(id)=="attack")slider.setTooltip("Set how quickly the envelope rises after a note starts.");
+        if(juce::String(id)=="decay")slider.setTooltip("Set how quickly the envelope falls to sustain.");
+        if(juce::String(id)=="sustain")slider.setTooltip("Set the envelope level while a note is held.");
+        if(juce::String(id)=="release")slider.setTooltip("Set how slowly the envelope falls after a note ends.");
+        if(juce::String(id)=="portamento")slider.setTooltip("Set the time taken to glide between note pitches.");
+        if(juce::String(id)=="bendVco")slider.setTooltip("Set how much the spring-return bender changes oscillator pitch.");
+        if(juce::String(id)=="bendVcf")slider.setTooltip("Set how much the bender changes filter cutoff.");
+        if(juce::String(id)=="volume")slider.setTooltip("Set instrument output volume, from silence to full level.");
+        if(juce::String(id)=="age")slider.setTooltip("Age the circuitry and appearance. Sound and value update while dragging; detailed visual wear refreshes on release. SHIFT gives fine adjustment.");
+        if(juce::String(id)=="velocity")slider.setTooltip("In Modern mode, set how strongly playing velocity affects the sound.");
+        if(juce::String(id)=="aftertouch")slider.setTooltip("In Modern mode, set the amount of pressure-controlled expression.");
+        if(juce::String(id)=="extGain")slider.setTooltip("In Modern mode, adjust external input gain before the follower and mixer.");
+slider.setDoubleClickReturnValue(true,spec.initial);}
         addAndMakeVisible(slider);c->attachment=std::make_unique<SliderAttachment>(processor.state,id,slider);
         for(const auto& spec:sh09::specs)if(juce::String(spec.id)==id&&spec.choices[0]==0) {
             if(juce::String(id)=="tune")slider.textFromValueFunction=[](double v){return juce::String(v,1)+" ct";};
@@ -1400,7 +1451,7 @@ private:
         addSlider(id,id,cx-d/2,cy-d/2,d,d,juce::Slider::RotaryHorizontalVerticalDrag);
     }
     void addUtility(const char* id,const char* name,int centre,int width) {
-        addSlider(id,name,centre-width/2,designH-headerH-27,width,18,juce::Slider::LinearHorizontal);
+        addSlider(id,name,centre-width/2,designH-headerH-34,width,30,juce::Slider::LinearHorizontal);
         addLabel(*controls.back(),name,centre-width/2-8,designH-headerH-46,width+16,18,9);
     }
 };
