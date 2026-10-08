@@ -18,7 +18,8 @@ build = Path('C:/Dev/SH-09/build-kb09/SH09_artefacts/Release')
 for folder in ('VST3', 'Standalone', 'AAX'):
     if (support / folder).exists(): shutil.rmtree(support / folder)
     shutil.copytree(build / folder, support / folder)
-(support / 'Standalone/desktop.ini').write_text('[.ShellClassInfo]\nIconResource=Toyland KB-09.exe,0\n',encoding='utf-8')
+shutil.move(support/'Standalone/Toyland KB-09.exe', package/'Toyland KB-09.exe')
+shutil.rmtree(support/'Standalone')
 shutil.copy2(root / 'docs/manual/User Manual.html', package / 'User Manual.html')
 shutil.copy2(root / 'docs/manual/index.html', support / 'User Guide/index.html')
 shutil.copytree(root / 'docs/manual/assets', support / 'User Guide/assets', dirs_exist_ok=True)
@@ -65,10 +66,11 @@ shutil.copytree(build / 'AAX/Toyland KB-09.aaxplugin', dev_aax / 'Toyland KB-09.
 (support / 'Validation Summary.txt').write_text('KB-09 0.13.12 control and display fixes � 8 October 2026\nWindows VST3, standalone and unsigned AAX rebuilt.\nValidation results are recorded in the accompanying release record. Earlier Steinberg/actual-host evidence belongs to 0.13.2.\nMac AU/VST3 supplied separately as unverified test builds. AAX unsigned; Pro Tools untested.\n', encoding='utf-8')
 (support / 'Release Notes.txt').write_text('KB-09 0.13.12 � 8 October 2026\nStandalone-only KEYBOARD mode plays computer keys A W S E D F T G Y H U J K, with Z/X octave changes and automatic note release on focus loss. VELOCITY, AFTERTOUCH and INPUT TRIM now support immediate track clicks. Standalone has a visible AUDIO / MIDI button that opens device settings directly. AGE supports immediate track clicks and humorous condition phrases. Standalone MIDI setup is documented. Slightly denser fine dust grains, without blurred haze, build gradually between knob collars, around PORTAMENTO and the bender, and along protected panel edges. TUNE follows the original horizontal rule. Shared KB-09 standalone, folder and manual-shortcut icons.\nOptional DESCRIPTION button (off by default); switch value boxes use readable dark text.\nResponsive AGE drag with cached visual wear until release; larger utility sliders. Switch readouts match bold knob readouts. DESCRIPTION lights when enabled and provides actual explanations.\nUseful audio-taper VOLUME; existing intermediate volume settings now sound quieter.\nModern FREE/SYNC with 21 straight, dotted and triplet RATE divisions.\nReliable RATE display: half-cycle flashes below 8Hz, steady increasing glow above.\nSHIFT enables fine dragging; temporary switch value boxes replace focus outlines.\nAdded IN audio meter; removed OPTIONAL; refined aged fader strips and black-key sheen.\nHeld keys depress/darken; only the active key has an amber bar.\nRevised TUNE/NOISE labels and removed the PWM bracket.\nWindows floating title bars can request L by dragging to the top, with pull-down restore; host placement restrictions may require the internal header.\nHTML-only User Manual includes all changes and GarageBand setup instructions.\nPlease report bugs and manual corrections to Kevin.\n', encoding='utf-8')
 files = []
-for folder in ('VST3', 'Standalone', 'User Guide', 'Licenses', 'Factory Presets'):
+for folder in ('VST3', 'User Guide', 'Licenses', 'Factory Presets'):
     for path in sorted((support / folder).rglob('*')):
         if path.is_file():
             files.append({'path': path.relative_to(support).as_posix(), 'sha256': sha256(path.read_bytes()).hexdigest()})
+files.append({'path':'../Toyland KB-09.exe','sha256':sha256((package/'Toyland KB-09.exe').read_bytes()).hexdigest()})
 (support / 'install-files.json').write_text(json.dumps(files, indent=2), encoding='utf-8')
 (package / 'INSTALL KB-09.cmd').write_text('@echo off\r\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Support\\Install.ps1"\r\nif errorlevel 1 pause\r\n', encoding='ascii')
 (package / 'START HERE.html').write_text('''<!doctype html>
@@ -79,7 +81,7 @@ for folder in ('VST3', 'Standalone', 'User Guide', 'Licenses', 'Factory Presets'
 <ol><li><strong>Close your music software.</strong></li>
 <li>Go back to the folder beside this page. Double-click <strong>INSTALL KB-09</strong> (the file ending in <strong>.cmd</strong>). If Windows asks whether to allow changes, choose <strong>Yes</strong>. In the installation window, press <strong>Enter</strong> when prompted.<br>The installer puts everything in the correct place. You do not need to copy or choose any files.</li>
 <li><strong>Open your music software.</strong> Find <strong>Toyland KB-09</strong> in its instrument list and add it to an instrument/MIDI track. If it is missing, rescan VST3 plug-ins in your music software's settings, then reopen the software.</li></ol>
-<h2>No music software? You can still play.</h2><p>After installing, open the Windows <strong>Start menu</strong>, type <strong>Play KB-09</strong>, and open it. In its audio settings, select your speakers or headphones. Click the piano keys to play, or select your connected MIDI keyboard.</p>
+<h2>No music software? You can still play.</h2><p>Double-click <strong>Toyland KB-09.exe</strong> beside this page. No plug-in installation is needed to use the standalone app. Click <strong>AUDIO / MIDI</strong> in its top bar to select your speakers/headphones and enable your MIDI controller under <strong>Active MIDI inputs</strong>. Or enable <strong>KEYBOARD</strong> to play with your computer keyboard. After installing, you can also use Start menu > Play KB-09.</p>
 <p><a href="User Manual.html">Open the illustrated User Manual</a> � <a href="User Manual.html#daws">Help with your music software</a></p>
 <h2>Need help?</h2><p>Send Kevin any bugs or mistakes you find. Include what you were doing, your Windows and music software versions, and a screenshot or the exact error message.</p>
 <p>If Windows reports a missing VCRUNTIME or MSVCP file, install the <a href="https://aka.ms/vc14/vc_redist.x64.exe">Microsoft Visual C++ runtime for Windows x64</a> and try again. If your computer blocks the installer, ask Kevin for help; do not disable your security software.</p>

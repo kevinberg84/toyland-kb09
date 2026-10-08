@@ -23,7 +23,7 @@ try {
     $appBase = Join-Path ${env:ProgramFiles} 'Toyland/KB-09'
   }
   $backup = Join-Path $appBase ('Backups/' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
-  $targets = @(@{source='VST3/Toyland KB-09.vst3'; dest=(Join-Path $vstBase 'Toyland KB-09.vst3')}, @{source='Standalone';dest=(Join-Path $appBase 'Standalone')}, @{source='User Guide';dest=(Join-Path $appBase 'User Guide')}, @{source='Licenses';dest=(Join-Path $appBase 'Licenses')}, @{source='Factory Presets';dest=(Join-Path $appBase 'Factory Presets')})
+  $targets = @(@{source='VST3/Toyland KB-09.vst3'; dest=(Join-Path $vstBase 'Toyland KB-09.vst3')}, @{source='../Toyland KB-09.exe';backup='Standalone/Toyland KB-09.exe';dest=(Join-Path $appBase 'Standalone/Toyland KB-09.exe')}, @{source='User Guide';dest=(Join-Path $appBase 'User Guide')}, @{source='Licenses';dest=(Join-Path $appBase 'Licenses')}, @{source='Factory Presets';dest=(Join-Path $appBase 'Factory Presets')})
   $changed = @()
   try {
     foreach ($target in $targets) {
@@ -32,7 +32,8 @@ try {
       if (Test-Path -LiteralPath $stage) { throw "Previous unfinished installation at $stage. Contact Kevin for help." }
       New-Item -ItemType Directory -Path (Split-Path $destination) -Force | Out-Null
       Copy-Item -LiteralPath (Join-Path $support $target.source) -Destination $stage -Recurse
-      $old = Join-Path $backup $target.source
+      $backupName = if ($target.backup) { $target.backup } else { $target.source }
+      $old = Join-Path $backup $backupName
       if (Test-Path -LiteralPath $destination) {
         New-Item -ItemType Directory -Path (Split-Path $old) -Force | Out-Null
         Move-Item -LiteralPath $destination -Destination $old
