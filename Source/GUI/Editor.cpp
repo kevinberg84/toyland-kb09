@@ -8,7 +8,7 @@
 
 namespace {
 constexpr int designW=1500, bodyH=750, headerH=34, designH=834;
-constexpr float panelViewSin=.309017f,panelViewCos=.951057f;
+constexpr float panelViewSin=.156434f,panelViewCos=.987688f;
 const juce::Colour ink(0xffe9e7dd), muted(0xffb4b7b5), amber(0xffdbb572);
 juce::Colour agedInk(float age) {
     return ink.interpolatedWith(juce::Colour(0xffd1bd86),juce::jlimit(0.0f,1.0f,age)*.86f);
@@ -56,7 +56,7 @@ struct Artwork {
     juce::Image chassis=load(BinaryData::chassisblack_png,BinaryData::chassisblack_pngSize);
     juce::Image chassisAged=load(BinaryData::chassispersonalaged_png,BinaryData::chassispersonalaged_pngSize);
     juce::Image stains=load(BinaryData::chassisstains_png,BinaryData::chassisstains_pngSize);
-    juce::Image knob=load(BinaryData::knobpersonal_png,BinaryData::knobpersonal_pngSize);
+    juce::Image knob=load(BinaryData::knobpersonaloverheadv2_png,BinaryData::knobpersonaloverheadv2_pngSize);
     juce::Image fader=load(BinaryData::faderpersonaloverhead_png,BinaryData::faderpersonaloverhead_pngSize);
     juce::Image rail=load(BinaryData::frontrailgrain_png,BinaryData::frontrailgrain_pngSize);
     juce::Image keys=load(BinaryData::keys_png,BinaryData::keys_pngSize);
@@ -266,74 +266,46 @@ void cap(juce::Graphics& g,juce::Rectangle<float> r,bool small=false,bool indexe
     }
 }
 void projectedKnob(juce::Graphics& g,juce::Rectangle<float> area,float angle,float age,uint32_t seed) {
-    // Preserve the approved tall barrel as geometry. Camera projection changes
-    // the visible walls, never the mechanical height or the cylinder diameter.
-    // Reuse its photographic aluminum top as material, not its oblique silhouette.
+    // Use the exact knob image subsequently selected by the user, with only
+    // the camera moved almost overhead. Retain its physical height, silver
+    // skirt and grouped ribs; do not reconstruct a shorter barrel.
+    juce::Graphics::ScopedSaveState save(g);
     const float d=juce::jmin(area.getWidth(),area.getHeight());
-    const auto top=juce::Point<float>(area.getX()+d*.50f,area.getY()+d*.40f);
-    const auto base=top+juce::Point<float>(0,d*.50f*panelViewSin);
+    const auto sprite=area.withSizeKeepingCentre(d,d);
+    const auto top=juce::Point<float>(sprite.getX()+d*.50f,sprite.getY()+d*.435f);
     const auto ellipse=[&](juce::Point<float> c,float radius) {
         return juce::Rectangle<float>(c.x-radius,c.y-radius*panelViewCos,2*radius,2*radius*panelViewCos);
     };
-    const auto skirt=ellipse(base,d*.425f),rim=ellipse(top,d*.34f),disc=ellipse(top,d*.30f);
-    g.setColour(juce::Colours::black.withAlpha(.45f));g.fillEllipse(skirt.expanded(.7f).translated(.7f,1.3f));
-    juce::ColourGradient alloy(juce::Colour(0xffb8bab5),skirt.getX(),skirt.getY(),
-                               juce::Colour(0xff5e615d),skirt.getRight(),skirt.getBottom(),false);
-    alloy.addColour(.37,juce::Colour(0xffd0d0c6));alloy.addColour(.71,juce::Colour(0xff91948e));
-    g.setGradientFill(alloy);g.fillEllipse(skirt);
-    g.setColour(juce::Colour(0xff323633));g.drawEllipse(skirt,.7f);
-    // Front half of a ribbed vertical cylinder, orthographically projected.
-    // Each facet has its actual top and bottom Z; no sprite-height squashing.
-    for(int i=0;i<40;++i) {
-        const float a0=-juce::MathConstants<float>::halfPi+juce::MathConstants<float>::pi*float(i)/40;
-        const float a1=-juce::MathConstants<float>::halfPi+juce::MathConstants<float>::pi*float(i+1)/40;
-        const auto upper=[&](float a){return top+juce::Point<float>(std::sin(a)*d*.34f,std::cos(a)*d*.34f*panelViewCos);};
-        const auto lower=[&](float a){return base+juce::Point<float>(std::sin(a)*d*.34f,std::cos(a)*d*.34f*panelViewCos);};
-        juce::Path face;face.startNewSubPath(upper(a0));face.lineTo(upper(a1));face.lineTo(lower(a1));face.lineTo(lower(a0));face.closeSubPath();
-        const auto black=juce::Colour(i%2?0xff090a09:0xff32342f);
-        const auto shade=black.interpolatedWith(juce::Colour(0xff171914),age*.45f);
-        g.setGradientFill(juce::ColourGradient(shade.brighter(i%2?.02f:.16f),upper(a0),shade.darker(.35f),lower(a0),false));
-        g.fillPath(face);
-        {
-            // Map the approved grip photograph along each projected facet.
-            // Its longitudinal grain keeps the material photographic while
-            // the mesh determines the camera and the full barrel height.
-            juce::Graphics::ScopedSaveState save(g);g.reduceClipRegion(face);
-            const auto bounds=face.getBounds();
-            const float u0=(std::sin(a0)+1)*.5f,u1=(std::sin(a1)+1)*.5f;
-            const int sx=230+juce::roundToInt(u0*780),sw=juce::jmax(1,juce::roundToInt((u1-u0)*780));
-            g.setOpacity(.68f-age*.12f);
-            g.drawImage(artwork().knob,bounds.getX(),bounds.getY(),bounds.getWidth(),bounds.getHeight(),sx,715,sw,230);
-        }
-        if(i%2==0) {g.setColour(juce::Colour(0xff93968b).withAlpha(.24f-age*.12f));g.drawLine({upper(a0),lower(a0)},d*.004f);}
+    g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+    g.setOpacity(1);g.drawImage(artwork().knob,sprite,juce::RectanglePlacement::stretchToFit);
+    if(age>0) {
+        g.setColour(juce::Colours::black.withAlpha(age*.12f));
+        g.drawImage(artwork().knob,sprite,juce::RectanglePlacement::stretchToFit,true);
+        juce::Graphics::ScopedSaveState metalSave(g);
+        juce::Path disc;disc.addEllipse(ellipse(top,d*.335f));g.reduceClipRegion(disc);
+        g.setColour(juce::Colour(0xff91764b).withAlpha(age*.13f));g.fillPath(disc);
     }
-    g.setColour(juce::Colour(0xff10120f));g.fillEllipse(rim);
-    g.setColour(juce::Colour(0xff565a51).withAlpha(.45f-age*.20f));g.drawEllipse(rim,d*.006f);
-    {
-        juce::Graphics::ScopedSaveState save(g);juce::Path mask;mask.addEllipse(disc);g.reduceClipRegion(mask);
-        g.setOpacity(1);g.drawImage(artwork().knob,disc.getX(),disc.getY(),disc.getWidth(),disc.getHeight(),283,101,674,550);
-        g.setColour(juce::Colour(0xff91764b).withAlpha(age*.17f));g.fillPath(mask);
-        g.setColour(juce::Colours::black.withAlpha(age*.07f));g.fillPath(mask);
-    }
-    // Independent metal grain, tarnish and protected-rib dust for each control.
-    for(uint32_t i=0;i<240;++i) {
+    // Keep independent gradual tarnish and dust; the discarded wear atlas is
+    // not restored with the old knob. Each control has its own stable seed.
+    for(uint32_t i=0;i<190;++i) {
         const float a=surfaceNoise(seed+i*17)*juce::MathConstants<float>::twoPi;
-        const float radius=d*(i<120?.265f+.035f*surfaceNoise(seed+i*29):.35f+.07f*surfaceNoise(seed+i*29));
-        const auto c=i<120?top:base;
-        const auto p=c+juce::Point<float>(std::sin(a)*radius,-std::cos(a)*radius*panelViewCos);
+        const float radius=d*(.295f+.037f*surfaceNoise(seed+i*29));
+        const auto p=top+juce::Point<float>(std::sin(a)*radius,-std::cos(a)*radius*panelViewCos);
         const float size=d*(.0015f+.004f*surfaceNoise(seed+i*61));
         g.setColour(juce::Colour(i%3?0xff92754c:0xffb4a386).withAlpha(age*(.14f+.33f*surfaceNoise(seed+i*53))));
         g.fillEllipse(p.x,p.y,size,size*.8f);
     }
-    for(uint32_t i=0;i<42;++i) {
+    for(uint32_t i=0;i<58;++i) {
         const float a=(surfaceNoise(seed+i*71)-.5f)*juce::MathConstants<float>::pi;
-        const auto p=top+juce::Point<float>(std::sin(a)*d*.342f,std::cos(a)*d*.342f*panelViewCos+d*.50f*panelViewSin*surfaceNoise(seed+i*79));
+        const auto p=top+juce::Point<float>(std::sin(a)*d*.40f,
+            std::cos(a)*d*.40f*panelViewCos+d*(.012f+.055f*surfaceNoise(seed+i*79)));
         const float size=d*(.002f+.003f*surfaceNoise(seed+i*37));
         g.setColour(juce::Colour(0xffc6beaa).withAlpha(age*.35f));g.fillEllipse(p.x,p.y,size,size*.70f);
     }
-    // Fixed photographic lighting, with a separate moving opaque black top tick.
+    // The native opaque black tick rotates; photographic lighting stays fixed.
     const auto direction=juce::Point<float>(std::sin(angle),-std::cos(angle)*panelViewCos);
-    g.setColour(juce::Colour(0xff10110f));g.drawLine({top+direction*d*.175f,top+direction*d*.287f},d*.026f);
+    g.setColour(juce::Colour(0xff141718));
+    g.drawLine({top+direction*d*.20f,top+direction*d*.329f},d*.026f);
 }
 void screwOxidation(juce::Graphics& g,juce::Point<float> c,float age,uint32_t seed) {
     if(age<=0)return;

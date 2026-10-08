@@ -215,10 +215,10 @@ void checkOpaqueCaps(juce::Component& editor, Checks& checks) {
 
 void checkRotaryTicks(SH09Processor& processor,juce::Component& editor,Checks& checks) {
     const float initialAge=processor.state.getRawParameterValue("age")->load();
-    constexpr float origin=10,diameter=100,centreX=origin+diameter*.50f,centreY=origin+diameter*.40f;
+    constexpr float origin=10,diameter=100,centreX=origin+diameter*.50f,centreY=origin+diameter*.435f;
     // Independent visual contract: a predominantly round metal top and a short
     // black radial mark. It is not a copy of the renderer's tick-drawing code.
-    constexpr float projectedCos=.951057f,maskRadius=diameter*.315f;
+    constexpr float projectedCos=.987688f,maskRadius=diameter*.35f;
     const auto movingTicks=[&](const std::array<juce::Image,3>& images,const std::array<float,3>& angles) {
         for(size_t state=0;state<images.size();++state) {
             int darkAndMoving=0;

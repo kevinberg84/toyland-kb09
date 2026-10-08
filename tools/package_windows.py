@@ -1,4 +1,4 @@
-"""Assemble the validated 0.13 personal Windows test download, without installing."""
+"""Assemble the validated 0.13.1 personal Windows test download, without installing."""
 from hashlib import sha256
 from pathlib import Path
 import re
@@ -8,14 +8,14 @@ import sys
 import zipfile
 
 root = Path(__file__).resolve().parents[1]
-version = "0.13.0"
+version = "0.13.1"
 build = Path(r"C:\Dev\SH-09\build-kb09\SH09_artefacts\Release")
 juce = Path(r"C:\Dev\JUCE")
 bundle = build / "VST3/Toyland KB-09.vst3"
 exe = build / "Standalone/Toyland KB-09.exe"
 inner = Path("Contents/x86_64-win/Toyland KB-09.vst3")
-expected_module = "732ab009624c0a3b33c324c8f4ad9f1e7cb6ed6fc20e1599c22963aaf58bb065"
-expected_exe = "1c894c7798eb4ee66a57bfea3623b4c412d55b0c9cc75175968a3f501146e8f6"
+expected_module = "2338de51ae7b010ddeb5e69c343ea8a8bf28146483bdc61b7140140166413d8b"
+expected_exe = "6d3fac1f46c934234453d2b18176bde258eb76626896349efa8c5c11fe73fdde"
 
 
 def digest(path):
@@ -24,8 +24,8 @@ def digest(path):
 
 assert digest(bundle / inner) == expected_module, "Untested VST3 source"
 assert digest(exe) == expected_exe, "Untested standalone source"
-assert re.search(r'"Version"\s*:\s*"0\.13\.0"', (bundle / "Contents/Resources/moduleinfo.json").read_text())
-bank = sorted((root / "artifacts/Presets-0.13-final").glob("*.sh09state"))
+assert re.search(r'"Version"\s*:\s*"0\.13\.1"', (bundle / "Contents/Resources/moduleinfo.json").read_text())
+bank = sorted((root / "artifacts/Presets-0.13.1-final").glob("*.sh09state"))
 assert len(bank) == 16, "Incomplete factory bank"
 release = root / "artifacts/Release"
 package = release / f"Toyland KB-09-{version}-Windows-x64"
@@ -36,7 +36,7 @@ shutil.copytree(bundle, package / "VST3/Toyland KB-09.vst3")
 (package / "Standalone").mkdir()
 shutil.copy2(exe, package / "Standalone/Toyland KB-09.exe")
 guide = package / "User Guide"
-for relative in ("index.html", "styles.css", "assets/marks.png", "assets/panel-0.13.png"):
+for relative in ("index.html", "styles.css", "assets/marks.png", "assets/panel-0.13.1.png"):
     destination = guide / relative
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(root / "docs/manual" / relative, destination)
@@ -54,7 +54,7 @@ def write(relative, text):
 write("START HERE.html", """
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Welcome to Toyland KB-09</title>
 <style>body{margin:0;background:#f4f0e7;color:#252620;font:18px/1.65 Arial,sans-serif}main{max-width:860px;margin:40px auto;padding:32px}header{background:#111311;color:#eee9db;padding:32px}svg{display:block;max-width:100%;height:auto}.toyland{width:190px;margin-bottom:30px}.model{width:620px}h1{font-size:1.2em;letter-spacing:.1em}h2{font-size:1.3em}a{color:#755319}header p{color:#d6cdb9}li{margin-bottom:16px}code{overflow-wrap:anywhere;background:#e5dfd1;padding:2px 4px}small{font-size:.7em}a:focus-visible{outline:3px solid #a27d35;outline-offset:3px}</style></head><body><main>
-<header><svg class="toyland" viewBox="85 308 722 158" role="img" aria-label="Toyland"><image href="User Guide/assets/marks.png" width="2172" height="724" /></svg><svg class="model" viewBox="846 308 1253 158" role="img" aria-label="KEVINBERG 09 KB-09"><image href="User Guide/assets/marks.png" width="2172" height="724" /></svg><h1>WELCOME TO KB-09</h1><p>A recreation of Kevin's Roland SH-09.</p><p><small>Windows x64 · 0.13.0 · Personal project · 7 October 2026</small></p></header>
+<header><svg class="toyland" viewBox="85 308 722 158" role="img" aria-label="Toyland"><image href="User Guide/assets/marks.png" width="2172" height="724" /></svg><svg class="model" viewBox="846 308 1253 158" role="img" aria-label="KEVINBERG 09 KB-09"><image href="User Guide/assets/marks.png" width="2172" height="724" /></svg><h1>WELCOME TO KB-09</h1><p>A recreation of Kevin's Roland SH-09.</p><p><small>Windows x64 · 0.13.1 · Personal project · 7 October 2026</small></p></header>
 <p>A hands-on synth modeled after Kevin's own aged SH-09. Shape basses, leads and pulses, then use <strong>AGE</strong> to explore a changing panel and subtle shifts in the circuit model's behavior. Send external audio through its filter and use the envelope follower to make that filter respond to the incoming level.</p>
 <h2>Choose how you want to play</h2><ol><li><strong>In your DAW:</strong> copy the entire <code>VST3/Toyland KB-09.vst3</code> bundle into <code>C:\\Program Files\\Common Files\\VST3\\</code>, then rescan VST3 instruments in your DAW. <a href="User Guide/index.html#install">Open the installation walkthrough</a>.</li><li><strong>Without a DAW:</strong> open <code>Standalone/Toyland KB-09.exe</code> in File Explorer. Select your audio output and MIDI keyboard in its settings. <a href="User Guide/index.html#start">Play your first sound</a>.</li></ol>
 <p>Extract this complete ZIP before opening the guide or synth. The plug-in already contains its graphics and sixteen factory sounds. The optional <code>Factory Presets</code> folder contains copies you can load or keep for reference.</p>
@@ -67,18 +67,20 @@ write("START HERE.html", """
 """)
 write("Factory Presets/Read me.txt", """
 These sixteen factory sounds are already available from the preset field in KB-09.
-The .sh09state files are optional exported copies from the validated 0.13 VST3.
+The .sh09state files are optional exported copies from the validated 0.13.1 VST3.
 To load a copy, click LOAD in KB-09 and choose its file.
 To save your own sound, click SAVE; new files use the .kb09 extension.
 Loading a user sound does not remove the factory bank.
 """)
 write("Release Notes.txt", """
-Toyland KB-09 0.13.0 — 7 October 2026
+Toyland KB-09 0.13.1 — 7 October 2026
 
-The knobs retain a tall ribbed barrel with a more overhead viewing angle and
-a moving black top tick. The bender uses the same projected camera. Fader tops
-now face the viewer; their pale index continues down the sides. Missing caps
-reveal the thin longitudinal edge of a metal blade. All controls stay usable.
+The exact knob selected by the owner now uses a mostly overhead camera view,
+with its physical barrel height and alternating clusters of slim ribs and wide
+smooth grip panels preserved. A separate opaque black top tick moves with the
+control while the photographic lighting stays fixed. The bender uses the same
+camera target. The approved overhead fader caps remain unchanged; their pale
+index continues down the sides. All controls stay usable.
 
 AGE gradually dulls the keys, especially the black keys, and develops pale
 white/gray oxidation on screw heads. The lower case rail has a fine textured

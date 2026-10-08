@@ -1,6 +1,32 @@
 # Validation record
 
-## Current Windows build — Toyland KB-09 0.13.0, 2026-10-07
+## Current Windows build — Toyland KB-09 0.13.1, 2026-10-07
+
+The exact knob image selected by the owner (`exec-8bcd38b0-7cb9-4ce3-99bc-80b29603b296.png`) replaces the rejected native cylinder reconstruction. Built-in edits move the viewing angle almost overhead while preserving the selected object's physical-height intent, silver skirt and alternating rib clusters / broad smooth panels. The registered clean sprite is drawn whole, with a separate moving opaque black top tick. The shared bender/post projection target is now 9° off normal. The approved overhead fader bitmap is unchanged. The actual compiled 3840 × 2160 fresh/aged previews were inspected; this does not establish calibrated CAD, measured image-generation geometry or owner acceptance.
+
+- VST3 module SHA-256: `2338DE51AE7B010DDEB5E69C343EA8A8BF28146483BDC61B7140140166413D8B`.
+- Standalone SHA-256: `6D3FAC1F46C934234453D2B18176BDE258EB76626896349EFA8C5C11FE73FDDE`.
+- Installed bundle: `C:\Program Files\Common Files\VST3\Toyland KB-09.vst3`; matching module and 0.13.1 manifest verified. Previous 0.13.0 is verified at `artifacts/Backup/Toyland KB-09-0.13.0-before-0.13.1/Toyland KB-09.vst3`.
+- Package: `artifacts/Release/Toyland KB-09-0.13.1-Windows-x64` and sibling ZIP, 41,861,411 bytes, all 32 files and every ZIP entry/hash verified. ZIP SHA-256: `1F2E00AD0F6F52BE334E03E84EB656661C57550243D67B122F5448EC1ACF96DB`.
+
+| Current check | Result | Log under artifacts/Validation-KB09 |
+|---|---|---|
+| Release build | Exit 0 | build-0.13.1.txt; build-0.13.1-exit.txt |
+| DSP | 92 passed / 0 failed | dsp-0.13.1-final.txt |
+| Processor | 20 passed / 0 failed; zero tracked C++ new allocations | processor-0.13.1-final.txt |
+| Preset files | 58 passed / 0 failed; actual final bank | presets-0.13.1-final.txt |
+| Actual editor | 302 checks / 0 failures, including moving tick and static-indicator negative controls | gui-0.13.1-final.txt |
+| Steinberg validator | 47 passed / 0 failed, exit 0 | steinberg-0.13.1-final.txt |
+| Pluginval 1.0.4 level 10, GUI enabled | SUCCESS, confirmed process exit 0 | pluginval-0.13.1-final-level10.txt; pluginval-0.13.1-exit.txt |
+| Actual VST3 host | 75 assertions / 0 failures; 600-second finite/audible render | host-0.13.1-final.txt |
+| Installed module and backup | PASS | installation-0.13.1-final.txt |
+| Package and offline navigation | PASS, including START HERE and guide | package-0.13.1-final.txt; package-manual-0.13.1-final.txt |
+
+Pluginval uses seed 9009, rates 44.1/48/88.2/96/192 kHz and blocks 1/17/64/257/1024/8192. The confirmed run explicitly waits for the process and records its exit code; the preceding launch's log alone is not used as process-exit evidence. The host covers state/automation, external audio/follower, 16 factory exports/round-trips and editor/instance lifecycles. Endurance callback time was 59.537 seconds for 600 rendered seconds (9.92284% of realtime); peak observed block was 1.3557 ms against 2.66667 ms at 128/48 kHz. This is one offline workstation measurement, not a DAW CPU guarantee. The engine is unchanged.
+
+The source guide's version and panel image now match 0.13.1. Complete-package offline navigation passes: 2 HTML documents, 25 IDs, 44 fragment links, 18 local references and 14 external citations. Consumer wording is unchanged from the reviewed feature-first guide. No new browser-layout, physical 4K-display, native Live recall, AU or AAX test is claimed. Current artwork and exact prompts are recorded in `Assets/Photoreal/PROMPTS.md` and `docs/KNOB_RESTORATION.md`.
+
+## Historical release — Toyland KB-09 0.13.0, 2026-10-07
 
 The revised Windows VST3 and standalone are built. The tested VST3 is installed at `C:\Program Files\Common Files\VST3\Toyland KB-09.vst3`; its module hash and 0.13.0 moduleinfo match the build. The previous 0.12 bundle was verified and preserved outside DAW scan folders at `artifacts/Backup/Toyland KB-09-0.12.0-before-0.13.0/Toyland KB-09.vst3`.
 

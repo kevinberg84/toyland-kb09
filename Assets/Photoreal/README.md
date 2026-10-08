@@ -1,6 +1,6 @@
-# KB-09 artwork inventory — 0.13.0
+# KB-09 artwork inventory — 0.13.1 source
 
-Kevin's personal SH-09 photographs guide the current geometry and wear. The reference photographs themselves are not embedded. The replacement Volume knob, bunny sticker and waveform tape are excluded; the original Range/Wave construction also guides the software Volume knob. This inventory describes source integration, not independent visual acceptance or a passing build.
+Kevin's personal SH-09 photographs guide the current geometry and wear. The reference photographs themselves are not embedded. The replacement Volume knob, bunny sticker and waveform tape are excluded; the original Range/Wave construction also guides the software Volume knob. This inventory describes the 0.13.1 integration. [VALIDATION.md](../../docs/VALIDATION.md) records the installed build's hashes and passing checks; owner visual acceptance remains separate.
 
 ## Runtime inputs
 
@@ -11,7 +11,7 @@ The current CMake list embeds **nine PNGs**. Actual source dimensions below were
 | `chassis-black.png` | 1774 × 887 | Clean neutral-black case |
 | `chassis-personal-aged.png` | 1774 × 887 | Registered dust, dulling and damaged paint informed by the user's unit |
 | `chassis-stains.png` | 1774 × 887, RGBA | Only the original envelope coffee-ring crop is sampled |
-| `knob-personal.png` | 1254 × 1254, RGBA | Approved original material source for native knob top and rib facets; its oblique full silhouette is no longer drawn |
+| `knob-personal-overhead-v2.png` | 1254 × 1254, RGBA | Complete near-overhead photographic knob sprite derived from the owner's expressly selected object; no baked tick |
 | `fader-personal-overhead.png` | **1484 × 1060**, RGBA | Overhead cap, with its index crossing the centre of the top and continuing down the sides |
 | `front-rail-grain.png` | 2172 × 724 | Fine matte texture for the narrow rail below the keys |
 | `keys.png` | 1254 × 1254, RGBA | Shared clean key materials, individually composited over native key geometry |
@@ -28,9 +28,9 @@ The coffee-ring source crop `(1420, 0, 300, 320)` appears once at normalized Age
 
 The lower rail has a distinct fine matte grain, following photo `20261007_131213.jpg`; the main painted panel remains smoother. The renderer selects the texture's top 70 source rows and places them in the 1382 × 43 body-unit rail region, preserving its outline and upper joint. The selected generator output is `exec-e284c8b1-b01a-45b5-bcc1-5bd7ee2a219c.png`; the exact production record is [front-rail-grain-prompt.txt](front-rail-grain-prompt.txt). The earlier coarse, rock-like candidate was rejected.
 
-The large knob is now a **native projected cylinder/skirt/top**, using the approved `knob-personal.png` as material. The shared camera is 18° off the panel normal: sine 0.309017, cosine 0.951057. With local drawing size `d`, modeled barrel height is `0.50d`, body radius `0.34d`, skirt radius `0.425d`, and top-disc radius `0.30d`. The top centre is `(0.50d, 0.40d)`. These are engineering reconstruction dimensions, not measured original-part CAD.
+The owner subsequently selected the exact generated object `exec-8bcd38b0-7cb9-4ce3-99bc-80b29603b296.png`, superseding the interim return to the pre-photo knob. The current large control draws the **complete photographic sprite**, not a native cylinder reconstructed from texture fragments. The edit request preserves that object's physical barrel height, silver skirt and grouped ribs alternating with wider smooth panels, moving the camera toward approximately 90% overhead. It must not shorten the physical barrel to obtain a smaller visible wall. These are art-direction constraints; the generated image is not measured original-part CAD.
 
-The metal top samples `(283, 101, 674, 550)` from the approved image and maps it inside the projected top ellipse. Rib facets sample the material band **x230–1010, y715–945**, with native facets controlling the cylindrical form. The separate black tick spans radii `0.175d–0.287d` at width `0.026d`; only the tick moves. Material lighting, skirt and shadow stay fixed. Independent rim stipple and lower-grip dust increase gradually. Later generated knob variants that flattened the physical barrel were **rejected and are not integrated**.
+The native projection target is now **9° off the panel normal**, sine 0.156434 and cosine 0.987688, shared by the bender, exposed blades and knob overlays. For square drawing size `d`, the top-tick centre is `(0.50d, 0.435d)`, with radii `0.20d–0.329d` and width `0.026d`. Only this opaque black tick rotates; the whole-image photographic lighting stays fixed. Independent rim stipple and grip dust remain native. The clean sprite and non-runtime ticked preview, `knob-personal-overhead-v2-preview.png`, are both 1254 × 1254. [The saved prompt](knob-personal-overhead-v2-prompt.txt) records the selection, camera edits and final tick removal. The preview is not an additional runtime input. The approved overhead fader is unchanged.
 
 ## Native wear and controls
 
@@ -48,6 +48,6 @@ Brand wear removes coverage only within the exact supplied shapes. Native labels
 
 ## Provenance, history and limits
 
-[Production records](PROMPTS.md) distinguish generated source materials from native reconstruction. The old eight-PNG 0.12 inventory, full-sprite knob rendering, older cap variants, old wear atlas and generated crack images are historical; they do not describe the current nine-PNG runtime list.
+[Production records](PROMPTS.md) distinguish generated source materials from native reconstruction. Version 0.13's 18° native knob cylinder/skirt used `knob-personal.png` as material; that renderer is historical. The older eight-PNG 0.12 inventory, pre-photo `knob.png`, older cap variants, old wear atlas and generated crack images are also historical. The current nine-PNG source list uses the newly selected complete knob sprite; this does not restore the old wear atlas.
 
 See [the personal control reference](../../docs/PERSONAL_SH09_CONTROL_REFERENCE.md) for inspected photographs and [material research](../../docs/GUI_MATERIAL_AGING.md) for evidence limits. Warm source lighting is not calibrated colour evidence. Source assets remain finite-resolution: a 3840 × 2160 export does not turn the 1774-pixel case or smaller control crops into native 4K photography. No exact chemistry, measured visual equivalence or physical 4K-display test is claimed here. Build-specific results belong in [VALIDATION.md](../../docs/VALIDATION.md).
