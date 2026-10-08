@@ -33,11 +33,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
-          ditto 'build-mac/SH09_artefacts/Release/AU/Toyland KB-09.component' "$HOME/Library/Audio/Plug-Ins/Components/Toyland KB-09.component"
+          sudo mkdir -p '/Library/Audio/Plug-Ins/Components'
+          sudo ditto 'build-mac/SH09_artefacts/Release/AU/Toyland KB-09.component' '/Library/Audio/Plug-Ins/Components/Toyland KB-09.component'
           /usr/libexec/PlistBuddy -c 'Print :AudioComponents' "$HOME/Library/Audio/Plug-Ins/Components/Toyland KB-09.component/Contents/Info.plist"
-          killall AudioComponentRegistrar || true
-          auval -a > au-components.txt
+          sudo killall -9 AudioComponentRegistrar || true
+          for attempt in 1 2 3 4 5; do
+            auval -a > au-components.txt
+            if grep -q Sh09 au-components.txt; then break; fi
+            sleep 2
+          done
           auval -v aumu Sh09 PrIv | tee auval.txt
       - name: Package unverified Mac download
         shell: bash
@@ -45,9 +49,10 @@ jobs:
           set -euo pipefail
           folder='Toyland KB-09 for Mac - UNVERIFIED'
           mkdir -p "$folder/Support"
-          ditto 'build-mac/SH09_artefacts/Release/AU/Toyland KB-09.component' "$folder/Support/Toyland KB-09.component"
+          sudo ditto 'build-mac/SH09_artefacts/Release/AU/Toyland KB-09.component' "$folder/Support/Toyland KB-09.component"
           ditto 'build-mac/SH09_artefacts/Release/VST3/Toyland KB-09.vst3' "$folder/Support/Toyland KB-09.vst3"
           ditto 'docs/manual' "$folder/Support/User Guide"
+          cp 'docs/manual/User Manual.html' "$folder/User Manual.html"
           cp 'docs/manual/User Manual.pdf' "$folder/User Manual.pdf"
           cp auval.txt "$folder/Support/auval.txt"
           cp au-components.txt "$folder/Support/au-components.txt"
@@ -60,5 +65,6 @@ jobs:
           name: KB-09-Mac-UNVERIFIED
           path: Toyland KB-09 for Mac - UNVERIFIED.zip
           retention-days: 30
+
 
 
