@@ -1,6 +1,37 @@
 # Validation record
 
-## Current Windows build — Toyland KB-09 0.13.1, 2026-10-07
+## Current Windows build — Toyland KB-09 0.13.2, 2026-10-07
+
+The final v5 knob proportions, long native top ticks, gradual silver micro-pitting, mouse-held amber note feedback and photo-referenced grey POWER cap/screw area are built into the Windows VST3 and standalone. A real x64 AAX Native development bundle also compiled using JUCE's bundled AAX SDK 2.9. **AAX is unsigned and has not been loaded in Pro Tools. AU is not built: no Mac/Xcode host is available.** The package supplies a separate Mac source/build kit rather than an installable `.component`.
+
+- VST3 inner module SHA-256: `EE8D267AE65D1035C4C098FA22E62F8A4876BE5D68A4A23DAF2B487C39F6209B`.
+- Standalone SHA-256: `C705C84A0A3CA1CB749ED01685A4A512A04C0E78A5D1CF1094FA76DFAFFE53ED`.
+- Unsigned AAX inner module SHA-256: `DBE5A6BD92B4820E61A32785D11EC9CA39AA29BCCFF80B3D8F397EEF7CD2618A`.
+- Installed VST3: `C:\Program Files\Common Files\VST3\Toyland KB-09.vst3`; both bundle files match the tested build. The previous 0.13.1 bundle is verified outside scanned folders at `artifacts/Backup/Toyland KB-09-0.13.1-before-0.13.2/Toyland KB-09.vst3`.
+- Binary source starts at `c4f3f75244518eeadc26575ed634254f5e97f7cb`, plus the 0.13.2 format/version CMake configuration, SHA-256 `14AB77E2196980EFB53579C726A05EC39392C284A0656CEC4D374C0688619FCD`. Release documentation does not alter binary inputs.
+
+| Check on final release | Result | Log under artifacts/Validation-KB09 |
+|---|---|---|
+| Configure and Release build | Exit 0; VST3, standalone, AAX development | configure-0.13.2-final.txt; build-0.13.2-final.txt; build-0.13.2-exit.txt |
+| DSP | 92 passed / 0 failed | dsp-0.13.2-final.txt |
+| Processor | 20 passed / 0 failed; zero tracked C++ new allocations | processor-0.13.2-final.txt |
+| Preset files | 58 passed / 0 failed; final actual-host bank | presets-0.13.2-final.txt |
+| Compiled editor | 347 checks / 0 failures | gui-0.13.2-final.txt |
+| Steinberg VST3 validator | 47 passed / 0 failed; exit 0 | steinberg-0.13.2-final.txt |
+| Pluginval 1.0.4 level 10, GUI enabled | SUCCESS; confirmed process exit 0 | pluginval-0.13.2-final-confirmed-level10.txt; pluginval-0.13.2-confirmed-exit.txt |
+| Actual VST3 host | 75 assertions / 0 failures; 600-second finite/audible render | host-0.13.2-final.txt |
+| AAX inspection | x64 PE, seven ACF exports and dependencies present; unsigned | aax-0.13.2-inspect.txt; aax-0.13.2-signature.txt |
+| Installed VST3 and old-version backup | Both bundle files verified | installation-0.13.2-final.txt |
+
+Pluginval uses seed 9009, rates 44.1/48/88.2/96/192 kHz and blocks 1/17/64/257/1024/8192. The first PowerShell launch produced SUCCESS but no native exit code; it is not used as process-exit evidence. The final launch explicitly waited on the process and recorded exit 0. The actual-module host covers state/automation, MIDI timing, external audio/follower, all sixteen exported factory sounds and editor/instance lifecycles. The 600-second render used 52.5501 seconds of callback time (8.75836% of realtime), with peak observed block 0.5606 ms against 2.66667 ms at 128/48 kHz. This is one offline workstation measurement, not a DAW CPU guarantee.
+
+Fresh compiled previews are in `artifacts/GUI-0.13.2-final`. The manual's unchanged full-size panel image has SHA-256 `F241C6DF612EA458B039382ED7EC57243DAC83A4CDF7BDDE1F18EE9002037EE6`. Desktop and 390×844 responsive browser layouts, internal navigation, disclosures, checkboxes and the loaded panel were inspected; see `docs/manual/qa/consumer-review-0.13.2.md`. Source-guide dependency checks pass. The consumer package excludes historical images and internal evidence/QA pages. No final PDF pagination is claimed.
+
+The package target is `artifacts/Release/Toyland KB-09-0.13.2-Windows-x64` and its sibling ZIP; the desktop copy is `C:\Users\kevin\Desktop\Toyland KB-09-0.13.2-Windows-x64`. Assembly verifies the exact binary identities, offline navigation, every archive entry and source-kit checksums. Final assembly and desktop-copy records are `package-0.13.2-final.txt` and `desktop-0.13.2-final.txt`; the machine-readable build/test identity is `release-0.13.2.json`. These records, rather than an inferred filename, establish completed package copies and archive hashes.
+
+The DSP is unchanged; no new age-dependent saturation law is asserted. The existing nonlinear engine remains. No fresh Live Set recall, other native DAW test, physical 4K-display test, measured hardware audio match, Mac/AU pass or Pro Tools/AAX pass is claimed. AAX compilation/entry-point inspection does not validate its wrapper in a host. See [format status](FORMAT_ROADMAP.md).
+
+## Historical Windows build — Toyland KB-09 0.13.1, 2026-10-07
 
 The exact knob image selected by the owner (`exec-8bcd38b0-7cb9-4ce3-99bc-80b29603b296.png`) replaces the rejected native cylinder reconstruction. Built-in edits move the viewing angle almost overhead while preserving the selected object's physical-height intent, silver skirt and alternating rib clusters / broad smooth panels. The registered clean sprite is drawn whole, with a separate moving opaque black top tick. The shared bender/post projection target is now 9° off normal. The approved overhead fader bitmap is unchanged. The actual compiled 3840 × 2160 fresh/aged previews were inspected; this does not establish calibrated CAD, measured image-generation geometry or owner acceptance.
 

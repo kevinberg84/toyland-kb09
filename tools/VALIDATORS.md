@@ -1,6 +1,14 @@
 # Validator tools
 
-## Current 0.11 validation scope
+## Current 0.13.2 release
+
+Validate the exact rebuilt bundle and confirm process exit. The final VST3 module SHA-256 is `EE8D267AE65D1035C4C098FA22E62F8A4876BE5D68A4A23DAF2B487C39F6209B`, matching the installed build. DSP 92, processor 20 (zero tracked allocations), presets 58, compiled-editor 347, Steinberg 47 and actual-VST3 host 75 checks pass with no failures. GUI-enabled Pluginval strictness 10 reports SUCCESS and confirmed process exit 0. Exact release logs and scope are in [VALIDATION.md](../docs/VALIDATION.md).
+
+On this workstation, invoking the GUI-subsystem pluginval with PowerShell's `&` did not populate `$LASTEXITCODE`. The confirmed run used `Start-Process -Wait -PassThru -WindowStyle Hidden` and recorded the returned `ExitCode`. A SUCCESS line alone is not process-completion evidence.
+
+AAX is a compiled unsigned x64 development bundle with inspected ACF exports/imports, not an AAX host validation pass. No Pro Tools host/signing tools or Mac/AU tools are available here. Keep format status distinct from the successful VST3 tests.
+
+## Historical 0.11 validation scope
 
 Validate the exact rebuilt **Toyland KB-09.vst3** bundle, preserve each tool's exit code, and record the inner module SHA-256. Final October 7 module hash: `46BE3DC797F48DCC1468AEF235CE2B1E40938E9ED885275F42397B443155DACC`, identical in build, staging and installation. Results: **92 DSP, 20 processor, 58 preset-file, 280 GUI, 47 Steinberg and 75 actual-VST3 host checks passed**, all without failures. GUI-enabled pluginval strictness 10 reported SUCCESS and exited 0. [VALIDATION.md](../docs/VALIDATION.md) and [ACCEPTANCE.md](../docs/ACCEPTANCE.md) record the exact final scope. Revalidate after any source or asset change.
 

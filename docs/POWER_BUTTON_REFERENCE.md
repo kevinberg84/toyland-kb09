@@ -1,5 +1,7 @@
 # POWER cap and panel details — 7 October 2026
 
+**Release follow-up:** the cap, label and differentiated screw-wear work is included in installed 0.13.2. Earlier preview-only statements below retain their historical scope; see [VALIDATION.md](VALIDATION.md) for the release results.
+
 The owner clarified that the POWER cap **should stand tall in OFF**. The earlier reduction to a shallow OFF cap was a misinterpretation. This correction retains the shared near-overhead camera and grey material, and raises the same cap in OFF without stretching its face or changing its viewing angle.
 
 ## Evidence

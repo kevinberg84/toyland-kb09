@@ -1,4 +1,19 @@
-# 0.12.0 — Toyland KB-09
+# 0.13.2 — Toyland KB-09
+
+This update brings the owner's final control/material refinements into the Windows VST3 and standalone build. A real Windows AAX Native development bundle also compiles from the shared source; it is **unsigned and untested in Pro Tools**, so it belongs in the package's clearly labeled Development area. Native AU configuration and Mac build instructions are supplied, but no AU binary has been built because no Mac/Xcode host is available. A Mac source kit is not an installable Audio Unit.
+
+- The selected v5 photographic knobs retain their full physical barrel height, near-overhead view, silver skirt and grouped ribs alternating with smooth panels. Silver top insets and black rims are narrower. The native black top tick is approximately one third of the silver top's diameter; photographed lighting stays fixed as the tick rotates, and no collar tick is drawn.
+- Fine irregular micro-pitting develops across each silver top and skirt with independent deterministic patterns. Reflections dull progressively with AGE so the knobs age with the panel; returning AGE to zero restores the clean metal. This is photo-informed illustrative wear, not a measured corrosion law.
+- The POWER area follows the owner's close-up: diffuse grey plastic, a broad rounded bevel, substantial raised OFF position and lower ON position, filled button-profile ON/OFF symbols, restrained print wear and the lamp below the legend. Its two surrounding screws are aligned with the cap and age differently: a dark tarnished upper head and broader pale oxidation below. Height, travel, alloy and chemistry are not measured hardware claims.
+- The approved top-down fader caps retain their stripe across the top and down the sides, with black front lips. Thin exposed fader blades and the rigid extruded bender retain the shared 9° native camera target; the bender's disk and pointer rotate together. Matte key aging, the almost hairline single crack, fine textured lower rail, moved coffee ring and corrected GATE / + / TRIG selector legends remain.
+- Click-and-hold mouse playing now shows the effective note's amber bar immediately at the key's lower edge. Presses, upward/downward drags and release update before the next audio callback; MIDI and mouse retain the same lowest-held-note priority, with other held notes blue.
+- The offline HTML guide and release image are updated for 0.13.2. The desktop package separates usable Windows VST3/standalone files from unsigned AAX development material and Mac build source, with explicit format status and preserved dependency notices. Exact assembled files and installation status are recorded separately.
+
+The DSP and parameter/state identities remain unchanged from the preceding release. No additional age-dependent saturation was introduced: the [research](SH09_AGE_DISTORTION_RESEARCH.md) does not establish a universal distortion curve for aged SH-09 hardware. Older Modern patches retain the deeper MOD mapping introduced in 0.11; Authentic mappings are unchanged.
+
+Release-specific test counts, binary hashes, package checks and installed identity belong in [VALIDATION.md](VALIDATION.md). Successful compilation alone does not validate the AAX wrapper or establish a new native DAW, Mac/AU, Pro Tools or physical-display test. [Format status](FORMAT_ROADMAP.md) and [known limitations](KNOWN_LIMITATIONS.md) preserve these boundaries.
+
+# Historical 0.12.0 — Toyland KB-09
 
 Photo-informed controls and AGE wear now follow Kevin's personal SH-09. This Windows VST3/standalone build includes corrected compact opaque caps, stripes across their top and down the sides, native black knob-top indicator ticks, stepped exposed fader blades, raised ribbed switches and an arched bender. The owner's replacement volume knob, sticker and waveform tape are excluded.
 
@@ -26,7 +41,7 @@ This release adds user-preset files, deeper Modern modulation, revised black-met
 - Modern LFO MOD maxima increase to **±36 semitones VCO / ±8 octaves VCF**. Authentic retains **±12 semitones / ±5 octaves**. These engineering ranges are unmeasured; the separate bender depth controls are unchanged.
 - Held white and black MIDI notes now have verified visible feedback. Value-bubble colours have a checked **12.68:1 configured contrast ratio**; this is not a full accessibility certification.
 
-## Current validation record
+## 0.11 validation record
 
 Final October 7 results apply to VST3 module SHA-256 `46BE3DC797F48DCC1468AEF235CE2B1E40938E9ED885275F42397B443155DACC`, identical in the build, staged bundle and installed location. The standalone SHA-256 is `93F1660185E8C67781D0118DAED461598080580EB30976AB6D5C11D227E6216A`.
 

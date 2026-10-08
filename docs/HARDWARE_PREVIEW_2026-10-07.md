@@ -1,5 +1,7 @@
 # Hardware visual preview — 7 October 2026
 
+**Release follow-up:** this historical preview is incorporated in 0.13.2, whose rebuilt VST3 passed final release checks and was installed. See [VALIDATION.md](VALIDATION.md) for the new binary identity; the unchanged-install statements below describe the preview stage.
+
 This is the **unreleased v5 source and GUI preview** following the owner's overhead SH-09 screenshot and subsequent proportion and ageing feedback. The installed Windows VST3, standalone and 0.13.1 package remain unchanged. Only the `SH09GUIRender` target is compiled for this review; these results do not validate a new plugin binary or release.
 
 ## Knob proportions

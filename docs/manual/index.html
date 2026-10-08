@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="The Toyland KB-09 working user guide: installation, playing, AGE, presets and DAW display settings.">
+  <meta name="description" content="The Toyland KB-09 user guide: installation, playing, AGE, external audio filtering, presets and DAW display settings.">
   <title>Toyland KB-09 — A recreation of Kevin's Roland SH-09</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -14,7 +14,7 @@
     <a class="brand" href="#top" aria-label="Toyland KB-09 home">
       <svg viewBox="85 308 722 158" role="img" aria-labelledby="toyland-title"><title id="toyland-title">Toyland</title><image href="assets/marks.png" width="2172" height="724" /></svg>
     </a>
-    <span class="edition">Working user guide · 7 October 2026</span>
+    <span class="edition">User guide · Windows 0.13.2 · 7 October 2026</span>
     <button class="print-button" type="button" onclick="window.print()">Print / Save PDF</button>
   </div>
 </header>
@@ -29,7 +29,7 @@
   <a href="#presets">06 · Save your sounds</a>
   <a href="#display">07 · A sharp, comfortable view</a>
   <a href="#daws">08 · Find your DAW</a>
-  <div class="daw-nav"><a href="#live">Ableton Live</a><a href="#cubase">Cubase / Nuendo</a><a href="#studio-one">Studio One / Studio Pro</a><a href="#fl-studio">FL Studio</a><a href="#reaper">REAPER</a><a href="#bitwig">Bitwig Studio</a><a href="#future-hosts">Logic / Pro Tools (future)</a></div>
+  <div class="daw-nav"><a href="#live">Ableton Live</a><a href="#cubase">Cubase / Nuendo</a><a href="#studio-one">Studio One / Studio Pro</a><a href="#fl-studio">FL Studio</a><a href="#reaper">REAPER</a><a href="#bitwig">Bitwig Studio</a><a href="#future-hosts">Logic / Pro Tools availability</a></div>
   <a href="#external">09 · Filter external audio</a>
   <a href="#troubleshooting">10 · Solve a problem</a>
   <a href="#test-drive">11 · Take a test drive</a>
@@ -45,7 +45,7 @@
   <div class="quick-links"><a href="#start">Play your first sound <span aria-hidden="true">↗</span></a><a href="#age">Explore AGE <span aria-hidden="true">↗</span></a><a href="#daws">Choose your DAW <span aria-hidden="true">↗</span></a></div>
   <p class="project-mark">UNOFFICIAL PERSONAL PROJECT — NOT AFFILIATED WITH ROLAND CORPORATION — NOT FOR SALE</p>
 </section>
-<aside class="notice draft"><strong>Working user manual.</strong> This edition covers Windows 0.13.1, available as VST3 and a standalone app. AU for Mac and AAX for Pro Tools are planned.</aside>
+<aside class="notice"><strong>Windows 0.13.2.</strong> Use the VST3 instrument in your DAW or play the standalone app. AU and a signed AAX release are unavailable; see <a href="#install">Which file do I need?</a>.</aside>
 
 <section id="features">
   <p class="section-number">01 / DISCOVER KB-09</p><h2>A personal synth, ready to explore</h2>
@@ -61,8 +61,8 @@
   <h3>Standalone</h3>
   <p>Keep <code>Toyland KB-09.exe</code> in a convenient folder and open it directly. Its panel and factory sounds are embedded; no separate graphics installation is needed. Select the correct audio device and MIDI keyboard in the standalone settings. If another app is using an exclusive audio driver, close that app or choose a shared device.</p>
   <h3>Which file do I need?</h3>
-  <div class="table-wrap"><table><thead><tr><th>Format</th><th>Use it for</th><th>Availability</th></tr></thead><tbody><tr><td>VST3</td><td>A compatible Windows DAW, including Live</td><td>Current Windows build</td></tr><tr><td>Standalone EXE</td><td>Playing without a DAW</td><td>Current Windows build</td></tr><tr><td>AU — Audio Unit</td><td>Mac hosts such as Logic Pro and GarageBand</td><td>Planned for a separate Mac download</td></tr><tr><td>AAX Native</td><td>Pro Tools on Windows or Mac</td><td>Planned for a future download</td></tr></tbody></table></div>
-  <p>Use the Windows VST3 for a compatible DAW, or the EXE to play on its own. AU is Apple's Mac plug-in format. AU and AAX files will be supplied separately when available; changing a file's extension does not change its format.</p>
+  <div class="table-wrap"><table><thead><tr><th>Format</th><th>Use it for</th><th>Availability</th></tr></thead><tbody><tr><td>VST3</td><td>A compatible Windows DAW, including Live</td><td>Included; ready to install</td></tr><tr><td>Standalone EXE</td><td>Playing without a DAW</td><td>Included; ready to open</td></tr><tr><td>AU — Audio Unit</td><td>Mac hosts such as Logic Pro and GarageBand</td><td>Not built; a Mac build and testing are required</td></tr><tr><td>AAX Native</td><td>Pro Tools</td><td>Included separately as an unsigned Windows development build; not ready for ordinary Pro Tools</td></tr></tbody></table></div>
+  <p>Use the Windows VST3 for a compatible DAW, or the EXE to play on its own. AU is Apple's Mac plug-in format; the Mac build kit supplies source, not an installable AU. The separate AAX development build is unsigned and has not been tested in Pro Tools. It is for development testing only. Changing a file's extension does not change its format.</p>
 </section>
 
 <section id="start">
@@ -76,7 +76,7 @@
   <p class="section-number">04 / CHARACTER</p><h2>Meet AGE</h2>
   <p class="lead">Choose the condition of your instrument.</p>
   <p><strong>CONDITION / AGE</strong> lives below the instrument. At <strong>0</strong> it selects the healthy calibration profile. Turn it up to explore a more played-in instrument, then turn it back whenever you like. AGE is saved with your sound and works in both Authentic and Modern modes.</p>
-  <p>The wear is modeled after Kevin's own aged SH-09. Dust settles in slider openings, around knob skirts and in grip ribs; keys warm to ivory; printing discolours; and worn panel paint reveals the metal beneath. Explore the look at a larger size to see the small details.</p>
+  <p>The wear is modeled after Kevin's own aged SH-09. Dust settles in slider openings, around knob skirts and in grip ribs; keys warm to ivory and lose their shine; printing discolours; and worn panel paint reveals the metal beneath. The knobs' metal surfaces dull and develop fine pitting, while pale oxidation gathers on the screws. Explore the look at a larger size to see the small details.</p>
   <h3>What changes?</h3>
   <div class="two-col"><div><h4>Appearance</h4><p>Yellowing, dust, dulling and tarnish build gradually. Distinct stains appear separately and keep their shape once present, including a coffee ring in the envelope section. One key develops a fine hairline crack that can extend a little. Later wear can remove a fader cap or two and break the bender tip, revealing the parts beneath.</p><p>The controls continue to work through every condition. Lower AGE whenever you want to bring back the caps, intact bender and fresher panel.</p></div><div><h4>Sound</h4><p>AGE subtly changes pitch calibration, filter tuning/resonance and envelope timing within the circuit model. The same setting gives the same condition each time, so you can save it with a patch and return to it.</p><p>AGE is a creative condition control rather than a clock counting elapsed years. It does not add random crackles or make a worn key stop playing.</p></div></div>
   <h3>Try this</h3><p>Save a favourite patch. Hold one note and move AGE slowly from fresh to worn. Compare the subtle sound changes, then explore the filter and envelope with AGE at a setting you like. Inspect the panel at L size, and load your saved patch whenever you want to return to the starting point.</p>
@@ -84,8 +84,9 @@
 
 <section id="panel">
   <p class="section-number">05 / HANDS ON</p><h2>Learn the panel</h2>
-  <figure><a href="assets/panel-0.13.1.png"><img src="assets/panel-0.13.1.png" alt="The aged KB-09 panel, with Modulator, VCO, Sub Oscillator, Audio Mixer, VCF, VCA and Envelope across the top; the performance bay at lower left; keyboard below; utility controls in the footer." width="3840" height="2160" loading="lazy"></a><figcaption>Get to know the panel. Click for the full-size image.</figcaption></figure>
+  <figure><a href="assets/panel-0.13.2.png"><img src="assets/panel-0.13.2.png" alt="The aged KB-09 panel, with Modulator, VCO, Sub Oscillator, Audio Mixer, VCF, VCA and Envelope across the top; the performance bay at lower left; keyboard below; utility controls in the footer." width="3840" height="2160" loading="lazy"></a><figcaption>Get to know the panel in KB-09 0.13.2. Click for the full-size image.</figcaption></figure>
   <p>Drag sliders vertically; drag a knob vertically or horizontally. Hover or drag to read its value bubble. Most sound controls use a <strong>0–10</strong> display; TUNE displays cents. Double-click a continuous control to return to its default. Click or drag the ridged switches, or click their adjacent labels. Focused switches also accept arrow keys, Home and End.</p>
+  <p>Click the grey <strong>POWER</strong> button to switch the instrument on or off. It stands tall when OFF and sits lower when ON; the red lamp below the POWER label lights when the synth is on. Switching it off mutes the sound and clears held notes. Play a fresh note after switching it back on.</p>
   <div class="table-wrap"><table class="control-table"><thead><tr><th>Section</th><th>What it does</th><th>A first experiment</th></tr></thead><tbody>
   <tr><td>MODULATOR</td><td>The low-frequency oscillator (LFO) moves pitch, filter or pulse width. Select sine, square or random/sample-and-hold; RATE sets speed and DELAY TIME delays its note-triggered modulation rise.</td><td>Add a little VCO MOD for vibrato. PWM uses the undelayed sine LFO.</td></tr>
   <tr><td>VCO</td><td>The main oscillator selects noise, saw, square or variable pulse. RANGE changes octave; TUNE adjusts fine pitch. PULSE WIDTH MOD selects LFO, Manual or Envelope.</td><td>Select variable pulse, then raise PULSE WIDTH in Manual mode.</td></tr>
@@ -153,7 +154,7 @@
     <p>The menu label can differ between versions. If the option is available, reopen the editor after changing it and try a fresh instance if needed.</p>
     <p class="source-note"><a href="https://downloads.bitwig.com/stable/2.5.1/Release-Notes-2.5.1.html">Bitwig's Windows stretching option</a> · <a href="https://soniccharge.com/forum/topic/1856-hidpi-display">The option in Bitwig 3.3.7</a> · <a href="https://www.bitwig.com/userguide/latest/vst_plug-in_handling_and_options/">Current plug-in guide</a>.</p>
   </article>
-  <article id="future-hosts" class="host"><h3>Logic Pro / GarageBand / Pro Tools <span class="badge planned">Future formats</span></h3><p>Logic Pro and GarageBand use Apple's <strong>Audio Unit (AU)</strong> format on Mac. Pro Tools uses <strong>AAX</strong>. KB-09's current download contains Windows VST3 and standalone; AU and AAX are planned for separate downloads. Instructions for those hosts will accompany their compatible versions.</p><p class="source-note"><a href="https://support.apple.com/en-gb/102082">Apple Audio Unit compatibility</a> · <a href="https://developer.avid.com/aax/">Avid AAX overview</a>.</p></article>
+  <article id="future-hosts" class="host"><h3>Logic Pro / GarageBand / Pro Tools <span class="badge planned">Release unavailable</span></h3><p>Logic Pro and GarageBand use Apple's <strong>Audio Unit (AU)</strong> format on Mac. KB-09's AU source is prepared for a Mac build, but no installable <code>.component</code> file is supplied. Pro Tools uses <strong>AAX</strong>; KB-09 has no signed, host-tested AAX release. An unsigned development build cannot be treated as a plug-in ready for ordinary Pro Tools. Use the Windows VST3 in a compatible DAW, or the standalone app, for this release.</p><p class="source-note"><a href="https://support.apple.com/en-gb/102082">Apple Audio Unit compatibility</a> · <a href="https://developer.avid.com/aax/">Avid AAX overview</a>.</p></article>
 </section>
 
 <section id="external">
@@ -168,7 +169,7 @@
 
 <section id="troubleshooting">
   <p class="section-number">10 / QUICK FIXES</p><h2>Solve a problem</h2>
-  <details open><summary>I cannot find KB-09 in my DAW</summary><p>Confirm you installed the entire .vst3 bundle in the VST3 folder, extracted the download, and rescanned. Look under instruments. Use a 64-bit VST3 host; Pro Tools and Logic need their future AAX/AU builds.</p></details>
+  <details open><summary>I cannot find KB-09 in my DAW</summary><p>Confirm you installed the entire .vst3 bundle in the VST3 folder, extracted the download, and rescanned. Look under instruments. Use a 64-bit VST3 host. Logic requires a built AU, and ordinary Pro Tools requires a signed AAX release; those versions are unavailable in this package.</p></details>
   <details><summary>I hear nothing</summary><p>Load Calibrated Init, switch POWER on and play a fresh note. Check track monitoring, MIDI input, VOLUME and the DAW output. Close the EXT AUDIO overlay if it covers the keyboard. External presets need an audio source. In standalone, check audio/MIDI settings.</p></details>
   <details><summary>A sound keeps playing</summary><p>VCA HOLD deliberately passes audio without a key. Try ENV or GATE, or load Calibrated Init. POWER mutes and clears note history; play a new note after turning it back on.</p></details>
   <details><summary>The window is large but blurry</summary><p>Use the <a href="#daws">DAW-specific scaling setting</a>. In Live, disabling Auto-Scale Plug-in Window fixed this for the owner. Then choose KB-09's own size. Do not lower the screen resolution to make the plug-in bigger.</p></details>
@@ -186,7 +187,7 @@
   <div class="notes-box"><h3>Session notes</h3><p>Date: ____________________ &nbsp; DAW / version: ____________________</p><p>Preset: ____________________ &nbsp; Favourite AGE: ____________________</p><p>Sounds, settings and ideas to return to:</p><div class="writing-lines" aria-hidden="true"></div></div>
 </section>
 
-<section id="about"><p class="section-number">PROJECT NOTES</p><h2>Made for curiosity &amp; playing</h2><p>KB-09 is an unofficial personal recreation of Kevin's Roland SH-09, using a circuit-informed digital model and artwork modeled after his own aged instrument. “Authentic” names the original-style routing mode; individual hardware instruments can differ. This project is not affiliated with Roland Corporation and is not for sale.</p><p>The instrument has one voice, no onboard effects, no sequencer and no MIDI Learn. It reports 128 samples of processing latency. Hardware Gate/CV sockets, alternate tunings and per-note expressive protocols are not provided. Use your DAW for recording, effects and arrangement.</p><p>This working guide is offline HTML: keep the complete <code>User Guide</code> folder together. Contents links and pictures work without internet; vendor documentation links need a connection. Use <strong>Print / Save PDF</strong> for a printable copy.</p></section>
+<section id="about"><p class="section-number">PROJECT NOTES</p><h2>Made for curiosity &amp; playing</h2><p>KB-09 is an unofficial personal recreation of Kevin's Roland SH-09, using a circuit-informed digital model and artwork modeled after his own aged instrument. “Authentic” names the original-style routing mode; individual hardware instruments can differ. This project is not affiliated with Roland Corporation and is not for sale.</p><p>The instrument has one voice, no onboard effects, no sequencer and no MIDI Learn. It reports 128 samples of processing latency. Hardware Gate/CV sockets, alternate tunings and per-note expressive protocols are not provided. Use your DAW for recording, effects and arrangement.</p><p>This guide is offline HTML: keep the complete <code>User Guide</code> folder together. Contents links and pictures work without internet; vendor documentation links need a connection. Use <strong>Print / Save PDF</strong> for a printable copy.</p></section>
 
 <footer class="guide-footer"><svg viewBox="85 308 722 158" aria-hidden="true"><image href="assets/marks.png" width="2172" height="724" /></svg><p>KEVINBERG 09 · KB-09<br>UNOFFICIAL PERSONAL PROJECT — NOT FOR SALE</p><a href="#top">Back to top ↑</a></footer>
 </main>
