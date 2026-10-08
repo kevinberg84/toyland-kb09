@@ -46,6 +46,15 @@ juce_add_plugin(SH09
     IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE VST3_CATEGORIES Instrument Synth
     AU_MAIN_TYPE kAudioUnitType_MusicDevice AAX_CATEGORY SWGenerators
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE)
+
+# JUCE 9's rcfile rule omits Info.txt from its dependencies. Without this,
+# an incremental version change leaves stale Explorer file-version metadata.
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    get_target_property(kb09_generated_sources SH09 JUCE_GENERATED_SOURCES_DIRECTORY)
+    get_target_property(kb09_info_file SH09 JUCE_INFO_FILE)
+    add_custom_command(OUTPUT "${kb09_generated_sources}/SH09_resources.rc" APPEND
+        DEPENDS "${kb09_info_file}")
+endif()
 juce_add_binary_data(KB09Artwork SOURCES Assets/Photoreal/chassis-black.png Assets/Photoreal/chassis-personal-aged.png Assets/Photoreal/chassis-stains.png Assets/Photoreal/knob-personal-overhead-v5.png Assets/Photoreal/fader-personal-overhead.png Assets/Photoreal/front-rail-grain.png Assets/Photoreal/keys.png Assets/Photoreal/marks.png Assets/Photoreal/marks-aged.png)
 target_sources(SH09 PRIVATE Source/Plugin/Processor.cpp Source/GUI/Editor.cpp Source/GUI/WindowSizing.cpp Source/GUI/PresetFiles.cpp Source/DSP/Engine.cpp)
 target_compile_definitions(SH09 PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)

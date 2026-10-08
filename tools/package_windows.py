@@ -17,6 +17,7 @@ assert version == "0.13.2"
 assert all(c["exit"] == 0 for c in manifest["checks"].values())
 assert manifest["formats"]["aax"] == "unsigned development; Pro Tools untested"
 assert manifest["formats"]["au"] == "not built; Mac required"
+assert "Windows file versions" in manifest["checks"]
 build = source / "build-kb09/SH09_artefacts/Release"
 vst_inner = Path("Contents/x86_64-win/Toyland KB-09.vst3")
 aax_inner = Path("Contents/x64/Toyland KB-09.aaxplugin")

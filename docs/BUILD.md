@@ -20,6 +20,8 @@ $env:JUCE_DIR = 'C:\Dev\JUCE'
 
 The script searches PATH and the known Visual Studio Community CMake installation. Other installations can invoke CMake explicitly. `JUCE_DIR` defaults to `../JUCE`. Runtime needs neither the source checkout nor JUCE source files.
 
+The project adds the generated `Info.txt` dependency to JUCE 9's Windows resource rule, so incremental version changes regenerate the Explorer file/product version. Check these versions as well as the VST3 module manifest when packaging; a current manifest alone can hide a stale resource object.
+
 ## Targets and source contents
 
 The internal target remains `SH09`; the public product is **Toyland KB-09**. CMake sets version 0.13.2. Windows builds **VST3** and **Standalone** by default. Native macOS builds also enable **AU** by default; **AAX Native** is an explicit option on Windows/macOS. Target configuration does not establish that a particular format was built, signed or host-tested. Consult [VALIDATION.md](VALIDATION.md) for the actual release artifacts. `Assets/Branding.h` defines the visible identity; compatibility keys remain unchanged as described in [REBRANDING.md](REBRANDING.md).

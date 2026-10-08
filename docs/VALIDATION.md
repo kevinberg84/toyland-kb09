@@ -1,18 +1,18 @@
 # Validation record
 
-## Current Windows build — Toyland KB-09 0.13.2, 2026-10-07
+## Current Windows build â€” Toyland KB-09 0.13.2, 2026-10-07
 
 The final v5 knob proportions, long native top ticks, gradual silver micro-pitting, mouse-held amber note feedback and photo-referenced grey POWER cap/screw area are built into the Windows VST3 and standalone. A real x64 AAX Native development bundle also compiled using JUCE's bundled AAX SDK 2.9. **AAX is unsigned and has not been loaded in Pro Tools. AU is not built: no Mac/Xcode host is available.** The package supplies a separate Mac source/build kit rather than an installable `.component`.
 
-- VST3 inner module SHA-256: `EE8D267AE65D1035C4C098FA22E62F8A4876BE5D68A4A23DAF2B487C39F6209B`.
-- Standalone SHA-256: `C705C84A0A3CA1CB749ED01685A4A512A04C0E78A5D1CF1094FA76DFAFFE53ED`.
-- Unsigned AAX inner module SHA-256: `DBE5A6BD92B4820E61A32785D11EC9CA39AA29BCCFF80B3D8F397EEF7CD2618A`.
+- VST3 inner module SHA-256: `5257325EF38A733D716D85B303443D61BEDBAC833A202A0FC348B3E3E2C9F7BE`.
+- Standalone SHA-256: `ADA71047F66F13DBC72ED457D9B5FB6A20F6D1145CE2A9215ED5E3E8D4EE4B64`.
+- Unsigned AAX inner module SHA-256: `77C75AE3101618096A7B8FDC04B2236A1D8447394AA5C8CA25F3047C0ED4376C`.
 - Installed VST3: `C:\Program Files\Common Files\VST3\Toyland KB-09.vst3`; both bundle files match the tested build. The previous 0.13.1 bundle is verified outside scanned folders at `artifacts/Backup/Toyland KB-09-0.13.1-before-0.13.2/Toyland KB-09.vst3`.
-- Binary source starts at `c4f3f75244518eeadc26575ed634254f5e97f7cb`, plus the 0.13.2 format/version CMake configuration, SHA-256 `14AB77E2196980EFB53579C726A05EC39392C284A0656CEC4D374C0688619FCD`. Release documentation does not alter binary inputs.
+- Binary source starts at `c4f3f75244518eeadc26575ed634254f5e97f7cb`, plus the 0.13.2 format/version CMake configuration, SHA-256 `70ADB94825AC6472942A91F434E5D6AD06AD6A649B2A8008AA35B698CA84BD45`. Release documentation does not alter binary inputs.
 
 | Check on final release | Result | Log under artifacts/Validation-KB09 |
 |---|---|---|
-| Configure and Release build | Exit 0; VST3, standalone, AAX development | configure-0.13.2-final.txt; build-0.13.2-final.txt; build-0.13.2-exit.txt |
+| Configure and Release build | Exit 0; VST3, standalone, AAX development; version resources refreshed | configure-0.13.2-metadata.txt; build-0.13.2-final.txt; build-0.13.2-metadata.txt; build-0.13.2-exit.txt |
 | DSP | 92 passed / 0 failed | dsp-0.13.2-final.txt |
 | Processor | 20 passed / 0 failed; zero tracked C++ new allocations | processor-0.13.2-final.txt |
 | Preset files | 58 passed / 0 failed; final actual-host bank | presets-0.13.2-final.txt |
@@ -21,19 +21,22 @@ The final v5 knob proportions, long native top ticks, gradual silver micro-pitti
 | Pluginval 1.0.4 level 10, GUI enabled | SUCCESS; confirmed process exit 0 | pluginval-0.13.2-final-confirmed-level10.txt; pluginval-0.13.2-confirmed-exit.txt |
 | Actual VST3 host | 75 assertions / 0 failures; 600-second finite/audible render | host-0.13.2-final.txt |
 | AAX inspection | x64 PE, seven ACF exports and dependencies present; unsigned | aax-0.13.2-inspect.txt; aax-0.13.2-signature.txt |
+| Windows file/product versions | 0.13.2 on VST3, standalone and AAX | file-versions-0.13.2-final.txt |
 | Installed VST3 and old-version backup | Both bundle files verified | installation-0.13.2-final.txt |
 
-Pluginval uses seed 9009, rates 44.1/48/88.2/96/192 kHz and blocks 1/17/64/257/1024/8192. The first PowerShell launch produced SUCCESS but no native exit code; it is not used as process-exit evidence. The final launch explicitly waited on the process and recorded exit 0. The actual-module host covers state/automation, MIDI timing, external audio/follower, all sixteen exported factory sounds and editor/instance lifecycles. The 600-second render used 52.5501 seconds of callback time (8.75836% of realtime), with peak observed block 0.5606 ms against 2.66667 ms at 128/48 kHz. This is one offline workstation measurement, not a DAW CPU guarantee.
+Pluginval uses seed 9009, rates 44.1/48/88.2/96/192 kHz and blocks 1/17/64/257/1024/8192. The first PowerShell launch produced SUCCESS but no native exit code; it is not used as process-exit evidence. The final launch explicitly waited on the process and recorded exit 0. The actual-module host covers state/automation, MIDI timing, external audio/follower, all sixteen exported factory sounds and editor/instance lifecycles. The 600-second render used 52.1202 seconds of callback time (8.6867% of realtime), with peak observed block 0.787 ms against 2.66667 ms at 128/48 kHz. This is one offline workstation measurement, not a DAW CPU guarantee.
 
-Fresh compiled previews are in `artifacts/GUI-0.13.2-final`. The manual's unchanged full-size panel image has SHA-256 `F241C6DF612EA458B039382ED7EC57243DAC83A4CDF7BDDE1F18EE9002037EE6`. Desktop and 390×844 responsive browser layouts, internal navigation, disclosures, checkboxes and the loaded panel were inspected; see `docs/manual/qa/consumer-review-0.13.2.md`. Source-guide dependency checks pass. The consumer package excludes historical images and internal evidence/QA pages. No final PDF pagination is claimed.
+Fresh compiled previews are in `artifacts/GUI-0.13.2-final`. The manual's unchanged full-size panel image has SHA-256 `F241C6DF612EA458B039382ED7EC57243DAC83A4CDF7BDDE1F18EE9002037EE6`. Desktop and 390Ã—844 responsive browser layouts, internal navigation, disclosures, checkboxes and the loaded panel were inspected; see `docs/manual/qa/consumer-review-0.13.2.md`. Source-guide dependency checks pass. The consumer package excludes historical images and internal evidence/QA pages. No final PDF pagination is claimed.
 
 The package target is `artifacts/Release/Toyland KB-09-0.13.2-Windows-x64` and its sibling ZIP; the desktop copy is `C:\Users\kevin\Desktop\Toyland KB-09-0.13.2-Windows-x64`. Assembly verifies the exact binary identities, offline navigation, every archive entry and source-kit checksums. Final assembly and desktop-copy records are `package-0.13.2-final.txt` and `desktop-0.13.2-final.txt`; the machine-readable build/test identity is `release-0.13.2.json`. These records, rather than an inferred filename, establish completed package copies and archive hashes.
 
 The DSP is unchanged; no new age-dependent saturation law is asserted. The existing nonlinear engine remains. No fresh Live Set recall, other native DAW test, physical 4K-display test, measured hardware audio match, Mac/AU pass or Pro Tools/AAX pass is claimed. AAX compilation/entry-point inspection does not validate its wrapper in a host. See [format status](FORMAT_ROADMAP.md).
 
-## Historical Windows build — Toyland KB-09 0.13.1, 2026-10-07
+An assembly check found that JUCE 9's Windows `rcfile` rule did not depend on its changed `Info.txt`, leaving Explorer's file version at 0.10.0 despite a current VST3 manifest. The project now adds that dependency; the regenerated resources and relinked VST3/standalone/AAX report 0.13.2. Steinberg, actual-module host and confirmed Pluginval runs were repeated on the corrected module. DSP/processor/editor fixtures use unchanged shared code. The earlier metadata candidate was retained under `artifacts/Release/Rejected-0.13.2-old-file-version` and is excluded from the final desktop package.
 
-The exact knob image selected by the owner (`exec-8bcd38b0-7cb9-4ce3-99bc-80b29603b296.png`) replaces the rejected native cylinder reconstruction. Built-in edits move the viewing angle almost overhead while preserving the selected object's physical-height intent, silver skirt and alternating rib clusters / broad smooth panels. The registered clean sprite is drawn whole, with a separate moving opaque black top tick. The shared bender/post projection target is now 9° off normal. The approved overhead fader bitmap is unchanged. The actual compiled 3840 × 2160 fresh/aged previews were inspected; this does not establish calibrated CAD, measured image-generation geometry or owner acceptance.
+## Historical Windows build â€” Toyland KB-09 0.13.1, 2026-10-07
+
+The exact knob image selected by the owner (`exec-8bcd38b0-7cb9-4ce3-99bc-80b29603b296.png`) replaces the rejected native cylinder reconstruction. Built-in edits move the viewing angle almost overhead while preserving the selected object's physical-height intent, silver skirt and alternating rib clusters / broad smooth panels. The registered clean sprite is drawn whole, with a separate moving opaque black top tick. The shared bender/post projection target is now 9Â° off normal. The approved overhead fader bitmap is unchanged. The actual compiled 3840 Ã— 2160 fresh/aged previews were inspected; this does not establish calibrated CAD, measured image-generation geometry or owner acceptance.
 
 - VST3 module SHA-256: `2338DE51AE7B010DDEB5E69C343EA8A8BF28146483BDC61B7140140166413D8B`.
 - Standalone SHA-256: `6D3FAC1F46C934234453D2B18176BDE258EB76626896349EFA8C5C11FE73FDDE`.
@@ -57,7 +60,7 @@ Pluginval uses seed 9009, rates 44.1/48/88.2/96/192 kHz and blocks 1/17/64/257/1
 
 The source guide's version and panel image now match 0.13.1. Complete-package offline navigation passes: 2 HTML documents, 25 IDs, 44 fragment links, 18 local references and 14 external citations. Consumer wording is unchanged from the reviewed feature-first guide. No new browser-layout, physical 4K-display, native Live recall, AU or AAX test is claimed. Current artwork and exact prompts are recorded in `Assets/Photoreal/PROMPTS.md` and `docs/KNOB_RESTORATION.md`.
 
-## Historical release — Toyland KB-09 0.13.0, 2026-10-07
+## Historical release â€” Toyland KB-09 0.13.0, 2026-10-07
 
 The revised Windows VST3 and standalone are built. The tested VST3 is installed at `C:\Program Files\Common Files\VST3\Toyland KB-09.vst3`; its module hash and 0.13.0 moduleinfo match the build. The previous 0.12 bundle was verified and preserved outside DAW scan folders at `artifacts/Backup/Toyland KB-09-0.12.0-before-0.13.0/Toyland KB-09.vst3`.
 
@@ -81,11 +84,11 @@ The revised Windows VST3 and standalone are built. The tested VST3 is installed 
 
 Pluginval uses seed 9009, sample rates 44.1/48/88.2/96/192 kHz and blocks 1/17/64/257/1024/8192. The actual-module host covers MIDI timing, state/automation, external input and follower, 16 factory exports/disk round-trips, ten native editor lifecycles and eight additional instances. The 600-second render remained finite and audible: callback time 58.9363 seconds (9.82272% of realtime), maximum observed 128-sample callback 0.9209 ms against 2.66667 ms at 48 kHz. This is one offline workstation measurement, not a DAW CPU guarantee.
 
-The editor checks cover the common 18-degree projection, moving black top ticks with static-indicator negative controls, opaque overhead caps with displaced-cap negative controls, thin exposed blade geometry, S/M/L restoration, complete footers, held-key feedback, selector attachments, fixed/discrete wear events and bender spring return/damage. The actual compiled editor was visually inspected in its 3840 × 2160 export: tall knob barrels, overhead cap tops, white/gray screw oxidation, duller aged keys, fine textured lower rail, ivory POWER cap and the relocated coffee ring. ENV legends place GATE+TRIG above the actuator, GATE to its left and LFO below. The finite-resolution source textures and image-derived dimensions are not calibrated hardware CAD or physical-display equivalence.
+The editor checks cover the common 18-degree projection, moving black top ticks with static-indicator negative controls, opaque overhead caps with displaced-cap negative controls, thin exposed blade geometry, S/M/L restoration, complete footers, held-key feedback, selector attachments, fixed/discrete wear events and bender spring return/damage. The actual compiled editor was visually inspected in its 3840 Ã— 2160 export: tall knob barrels, overhead cap tops, white/gray screw oxidation, duller aged keys, fine textured lower rail, ivory POWER cap and the relocated coffee ring. ENV legends place GATE+TRIG above the actuator, GATE to its left and LFO below. The finite-resolution source textures and image-derived dimensions are not calibrated hardware CAD or physical-display equivalence.
 
 The feature-first consumer manual has the requested recreation subtitle, AGE GUI/circuit explanation, external filter and envelope-follower introduction. Its source and packaged dependencies/anchors pass the offline checker. The whole package check covers two HTML documents, 25 IDs, 44 fragment links, 18 local references and 14 external citations (`package-manual-0.13-final.txt`). The 0.13 browser layout review could not run because the browser runtime reported no available browser; no fresh desktop/mobile manual screenshots or PDF pagination are claimed. See `docs/manual/qa/consumer-review-0.13.md`. The earlier Live Auto-Scale confirmation is the owner's report, not a fresh 0.13 Live test. AU and AAX are not built or included.
 
-## Historical release — Toyland KB-09 0.12.0, 2026-10-07
+## Historical release â€” Toyland KB-09 0.12.0, 2026-10-07
 
 The photo-informed Windows VST3 and standalone are built and the VST3 is installed. The previous 0.11 bundle was verified and preserved outside DAW scan folders at `artifacts/Backup/Toyland KB-09-0.11.0-before-0.12.0/Toyland KB-09.vst3`.
 
@@ -113,7 +116,7 @@ The final endurance render processed 600 seconds with finite, audible output. Ca
 
 The revised editor fixture exercises S/M/L buttons and restore, complete wide/tall footers, opaque caps and metal posts, separate cap-loss events at normalized AGE .64/.88, the single hairline at .56, fixed envelope coffee ring at .60, held white/black-key feedback, selector attachments and configured value-bubble contrast. Bender crops and callbacks check both extremes, exact spring return, and the abrupt cosmetic tip break at .92, including opposing pitch bends before/after damage. Alpha-aware pixel comparisons prevent near-transparent antialiasing edges from creating false wear jumps.
 
-Ten principal images cover five conditions at 3840 × 2160 and 2880 × 1620, plus S and bender crops. `personal_age7_3840x2160.png` shows the actual compiled editor with no held keys. The photograph-based cap correction, black knob top ticks, hairline, gray screw heads, project notice and full footer were visually reviewed. The old generic wear atlas and both shaded crack bitmap attempts are excluded from runtime. Native microdust/grime has independent seeded positions; distinct final key samples are checked. This does not establish uniqueness under every transformation, exact hardware dimensions, material chemistry or sonic equivalence.
+Ten principal images cover five conditions at 3840 Ã— 2160 and 2880 Ã— 1620, plus S and bender crops. `personal_age7_3840x2160.png` shows the actual compiled editor with no held keys. The photograph-based cap correction, black knob top ticks, hairline, gray screw heads, project notice and full footer were visually reviewed. The old generic wear atlas and both shaded crack bitmap attempts are excluded from runtime. Native microdust/grime has independent seeded positions; distinct final key samples are checked. This does not establish uniqueness under every transformation, exact hardware dimensions, material chemistry or sonic equivalence.
 
 The user confirmed that disabling Live's Auto-Scale Plug-in Window fixed sharpness. That human report is recorded separately from our automated checks; it does not identify this new binary or establish a physical 4K/mixed-DPI test. New Live loading/Set recall, exhaustive mouse gestures and every DAW recipe remain owner/host checks. Previous native standalone measurements are historical below, not fresh observations of 0.12.
 
@@ -121,7 +124,7 @@ The HTML manual was reviewed at desktop/mobile sizes by the browser agent. Final
 
 The initial Windows macro build failure is retained in build-0.12.txt. The final logs above supersede the intermediate GUI/preset runs described here. The first preset run used a nonexistent bank path; the final run uses the bank exported by the final VST3. The first GUI comparison amplified unpremultiplied near-transparent edge rounding; the repaired check compares visible premultiplied channels. Neither intermediate failure is represented as a pass.
 
-## Historical release — Toyland KB-09 0.11.0, 2026-10-07
+## Historical release â€” Toyland KB-09 0.11.0, 2026-10-07
 
 Final VST3 module SHA-256: `46BE3DC797F48DCC1468AEF235CE2B1E40938E9ED885275F42397B443155DACC`.
 Final standalone SHA-256: `93F1660185E8C67781D0118DAED461598080580EB30976AB6D5C11D227E6216A`.
@@ -200,7 +203,7 @@ The coherent high-saw regression measured residual alias energy at **-57.8183 dB
 
 `artifacts/Validation/Render-fresh.txt` records **35 seconds across seven generated WAV examples**, with **0 solver failures** for each: bass, resonant lead, random modulation, self-oscillation, external follower, condition and an external-routing stimulus. Files are under `artifacts/Audio`. The renderer took 2.64311 seconds including stimulus and filesystem work; that timing is distinct from the actual-module callback benchmark below. Successful rendering does not constitute a listening comparison against hardware.
 
-The calibration-tool self-test passed frequency, RMS, harmonic, transfer-gain and PCM round-trip checks (`artifacts/Validation/calibration-tests.txt`). Generated calibration inputs at 48 kHz include 220 Hz bursts, a 20 Hz–18 kHz logarithmic sweep and seeded noise under `artifacts/Calibration/Stimuli`. The example analysis under `artifacts/Calibration/GeneratedBass` contains JSON metrics and a spectrum CSV for a generated bass excerpt. These demonstrate that the analysis pipeline operates; no imported physical SH-09 recording or measured reference-unit calibration is claimed.
+The calibration-tool self-test passed frequency, RMS, harmonic, transfer-gain and PCM round-trip checks (`artifacts/Validation/calibration-tests.txt`). Generated calibration inputs at 48 kHz include 220 Hz bursts, a 20 Hzâ€“18 kHz logarithmic sweep and seeded noise under `artifacts/Calibration/Stimuli`. The example analysis under `artifacts/Calibration/GeneratedBass` contains JSON metrics and a spectrum CSV for a generated bass excerpt. These demonstrate that the analysis pipeline operates; no imported physical SH-09 recording or measured reference-unit calibration is claimed.
 
 ## Bus metadata verified in the real module
 
@@ -216,7 +219,7 @@ Its Bus Activation test also identified input audio bus 0 as `kAux`. This verifi
 
 The final integration host verified `getLatencySamples() == 128` after preparation at all 35 sample-rate/block-size combinations. Its fresh log prints `latency=128` beside every matrix result. Pluginval's pre-preparation cache value is not a measurement of signal delay. The filter's frequency-dependent group delay also contributes to a measured impulse peak beyond the fixed oversampling latency.
 
-## Fresh Release rerun — final results
+## Fresh Release rerun â€” final results
 
 Final tested module: `C:\Dev\SH-09\build\SH09_artefacts\Release\VST3\SH-09.vst3\Contents\x86_64-win\SH-09.vst3`.
 

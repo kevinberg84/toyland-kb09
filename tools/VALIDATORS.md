@@ -2,7 +2,7 @@
 
 ## Current 0.13.2 release
 
-Validate the exact rebuilt bundle and confirm process exit. The final VST3 module SHA-256 is `EE8D267AE65D1035C4C098FA22E62F8A4876BE5D68A4A23DAF2B487C39F6209B`, matching the installed build. DSP 92, processor 20 (zero tracked allocations), presets 58, compiled-editor 347, Steinberg 47 and actual-VST3 host 75 checks pass with no failures. GUI-enabled Pluginval strictness 10 reports SUCCESS and confirmed process exit 0. Exact release logs and scope are in [VALIDATION.md](../docs/VALIDATION.md).
+Validate the exact rebuilt bundle and confirm process exit. The final VST3 module SHA-256 is `5257325EF38A733D716D85B303443D61BEDBAC833A202A0FC348B3E3E2C9F7BE`, matching the installed build. DSP 92, processor 20 (zero tracked allocations), presets 58, compiled-editor 347, Steinberg 47 and actual-VST3 host 75 checks pass with no failures. GUI-enabled Pluginval strictness 10 reports SUCCESS and confirmed process exit 0. Exact release logs and scope are in [VALIDATION.md](../docs/VALIDATION.md).
 
 On this workstation, invoking the GUI-subsystem pluginval with PowerShell's `&` did not populate `$LASTEXITCODE`. The confirmed run used `Start-Process -Wait -PassThru -WindowStyle Hidden` and recorded the returned `ExitCode`. A SUCCESS line alone is not process-completion evidence.
 
