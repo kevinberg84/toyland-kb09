@@ -34,7 +34,7 @@ updates = {
     'KB-09-source/SH-09/Source/GUI/Editor.cpp': root / 'Source/GUI/Editor.cpp',
     'KB-09-source/SH-09/Source/GUI/PowerDetails.h': root / 'Source/GUI/PowerDetails.h',
     'KB-09-source/SH-09/Tests/GUIRender.cpp': root / 'Tests/GUIRender.cpp',
-    'KB-09-source/SH-09/docs/manual/assets/panel-0.13.6.png': root / 'docs/manual/assets/panel-0.13.6.png',
+    'KB-09-source/SH-09/docs/manual/assets/panel-0.13.8.png': root / 'docs/manual/assets/panel-0.13.8.png',
 }
 # Ship the complete current source changes, including new headers and DSP tests.
 for folder in ('Source','Tests','Assets/Icons'):
