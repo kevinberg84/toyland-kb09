@@ -15,19 +15,19 @@ public:
         if(isThreadRunning()||!configured())return;
         settings->reload();
         const auto now=juce::Time::currentTimeMillis();
-        if(!manual&&(!enabled()||now-settings->getDoubleValue("lastSuccess",0)<365.0*86400000.0||now-settings->getDoubleValue("lastAttempt",0)<86400000.0))return;
+        if(!manual&&(!enabled()||now-settings->getDoubleValue("lastSuccess",0)<90.0*86400000.0||now-settings->getDoubleValue("lastAttempt",0)<86400000.0))return;
         manualCheck=manual;settings->setValue("lastAttempt",double(now));settings->saveIfNeeded();startThread();
     }
     void showMenu(juce::Component* target) {
         juce::PopupMenu m;m.addSectionHeader("Toyland KB-09 " JucePlugin_VersionString);
-        m.addItem(1,"Check for updates now");m.addItem(2,"Automatic checks (once a year)",true,enabled());
+        m.addItem(1,"Check for updates now");m.addItem(2,"Automatic checks (every 90 days)",true,enabled());
         m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(target),[](int item){auto& s=instance();if(item==1){if(s.configured())s.check(true);else juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates","Update announcements are not configured in this build yet.");}if(item==2)s.consent(!s.enabled());});
     }
     void opened() {
         if(!configured())return;
         if(!decided()) {
             if(prompting.exchange(true))return;
-            juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon,"KB-09 updates","Allow an update check when you open KB-09, at most once a year? Checks send no presets or personal information. Downloads always require your click.","Allow","No thanks",nullptr,juce::ModalCallbackFunction::create([](int yes){auto& s=instance();s.consent(yes!=0);s.prompting=false;if(yes)s.check(false);}));
+            juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon,"KB-09 updates","Allow an update check when you open KB-09, every 90 days? Checks send no presets or personal information. Downloads always require your click.","Allow","No thanks",nullptr,juce::ModalCallbackFunction::create([](int yes){auto& s=instance();s.consent(yes!=0);s.prompting=false;if(yes)s.check(false);}));
         } else check(false);
     }
     void deliver() {

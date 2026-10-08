@@ -25,7 +25,7 @@ void caption(juce::Graphics& g,const juce::String& text,juce::Rectangle<float> b
     g.setColour(colour);g.setFont(font(size,bold));
     g.drawFittedText(text,box.toNearestInt(),align,text.containsChar('\n')?2:1,.8f);
 }
-enum class PanelGlyph { sine, saw, square, pulse, envelope, invertedEnvelope, gate };
+enum class PanelGlyph { sine, doubleTriangle, saw, square, pulse, envelope, invertedEnvelope, gate };
 void panelGlyph(juce::Graphics& g,PanelGlyph shape,juce::Rectangle<float> box,
                 juce::Colour colour,float stroke=.9f) {
     juce::Path path;
@@ -37,16 +37,18 @@ void panelGlyph(juce::Graphics& g,PanelGlyph shape,juce::Rectangle<float> box,
             const float x=float(i)/32,y=.5f-.44f*std::sin(x*juce::MathConstants<float>::twoPi);
             if(i==0)start(x,y);else line(x,y);
         }
+    } else if(shape==PanelGlyph::doubleTriangle) {
+        start(0,1);line(.25f,0);line(.5f,1);line(.75f,0);line(1,1);
     } else if(shape==PanelGlyph::saw) {
-        start(0,.9f);line(.85f,.1f);line(.85f,.9f);line(1,.9f);
+        start(0,1);line(1,0);line(1,1);
     } else if(shape==PanelGlyph::envelope||shape==PanelGlyph::invertedEnvelope) {
         const bool inverted=shape==PanelGlyph::invertedEnvelope;
         const auto envelopeY=[&](float y) {return inverted?1-y:y;};
         start(0,envelopeY(.9f));line(.10f,envelopeY(.9f));line(.25f,envelopeY(.1f));
-        line(.47f,envelopeY(.55f));line(.70f,envelopeY(.55f));line(.94f,envelopeY(.9f));line(1,envelopeY(.9f));
+        path.cubicTo(point(.38f,envelopeY(.62f)),point(.57f,envelopeY(.83f)),point(1,envelopeY(.9f)));
     } else {
         const float end=shape==PanelGlyph::pulse?.36f:shape==PanelGlyph::gate?.74f:.65f;
-        start(0,.9f);line(.15f,.9f);line(.15f,.1f);line(end,.1f);line(end,.9f);line(1,.9f);
+        start(0,.9f);line(0,.1f);line(end,.1f);line(end,.9f);line(1,.9f);if(shape!=PanelGlyph::gate)line(1,.1f);
     }
     g.setColour(colour);g.strokePath(path,juce::PathStrokeType(stroke,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
 }
@@ -498,10 +500,10 @@ public:
                     const float xx=p.x*ca+p.y*sa,zz=p.y*ca-p.x*sa;
                     return juce::Point<float>(centre+xx,wheelBaseline-zz*panelViewSin+axleDepth*panelViewCos);
                 };
-                constexpr int circleSegments=256,vertexCapacity=circleSegments+16;
+                constexpr int circleSegments=256,vertexCapacity=circleSegments+24;
                 std::array<juce::Point<float>,vertexCapacity> outline{};
                 int count=0;
-                const float rootAngle=std::asin(rootWidth/radius),rootHeight=std::sqrt(radius*radius-rootWidth*rootWidth);
+                const float rootAngle=std::asin((broken?12.0f:rootWidth)/radius),rootHeight=std::sqrt(radius*radius-rootWidth*rootWidth);
                 for(int i=0;i<=circleSegments;++i) {
                     const float a=rootAngle+(juce::MathConstants<float>::twoPi-2*rootAngle)*float(i)/float(circleSegments);
                     outline[size_t(count++)]={radius*std::sin(a),radius*std::cos(a)};
@@ -509,18 +511,19 @@ public:
                 // The tab replaces the small crown arc, so there is no detached
                 // face or changing-width overlay sliding across the disk rim.
                 if(broken) {
-                    const std::array<juce::Point<float>,6> tab{{{-5.4f,62.6f},{-2.7f,64.5f},{-.7f,62.2f},
-                                                               {1.1f,63.8f},{3.0f,62.4f},{4.7f,63.0f}}};
+                    const std::array<juce::Point<float>,10> tab{{{-10.3f,57.5f},{-8.2f,59.2f},{-6.1f,54.5f},{-3.4f,53.2f},{-1.4f,56.4f},
+                                                               {1.1f,54.1f},{3.2f,58.0f},{5.9f,56.6f},{8.1f,60.3f},{10.4f,58.4f}}};
                     for(const auto p:tab)outline[size_t(count++)]=p;
                 } else {
-                    const std::array<juce::Point<float>,6> tab{{{-6.4f,rootHeight+1.2f},{-5.7f,82.8f},{-5.3f,85.0f},
-                                                               {5.3f,85.0f},{5.7f,82.8f},{6.4f,rootHeight+1.2f}}};
-                    for(const auto p:tab)outline[size_t(count++)]=p;
+                    outline[size_t(count++)]={-6.4f,rootHeight+1.2f};
+                    for(int i=0;i<=5;++i){const float a=juce::MathConstants<float>::pi-float(i)*juce::MathConstants<float>::halfPi/5;outline[size_t(count++)]={-2.9f+3.5f*std::cos(a),81.5f+3.5f*std::sin(a)};}
+                    for(int i=0;i<=5;++i){const float a=juce::MathConstants<float>::halfPi-float(i)*juce::MathConstants<float>::halfPi/5;outline[size_t(count++)]={2.9f+3.5f*std::cos(a),81.5f+3.5f*std::sin(a)};}
+                    outline[size_t(count++)]={6.4f,rootHeight+1.2f};
                 }
                 const auto section=[&](float z) {
                     juce::Path p;p.startNewSubPath(project(outline[0],z));
                     for(int i=1;i<count;++i)p.lineTo(project(outline[size_t(i)],z));
-                    p.closeSubPath();return broken?p:p.createPathWithRoundedCorners(1.15f);
+                    p.closeSubPath();return broken?p:p.createPathWithRoundedCorners(1.8f);
                 };
                 const auto rear=section(0),front=section(depth);
                 juce::Graphics::ScopedSaveState save(g);
@@ -572,6 +575,9 @@ public:
                         else if(axial>depth-bevel)ny=juce::jlimit(0.0f,1.0f,(axial-(depth-bevel))/bevel);
                         radial=std::sqrt(juce::jmax(0.0f,1-ny*ny));
                         float value=plasticLight(px/r*radial,ny,z/r*radial,axial);
+                        // Fine raised parting seam follows the molded disc around its circumference.
+                        const float seam=(axial-depth*.50f)/.16f;
+                        value+=(.055f*std::exp(-seam*seam)-.025f*std::exp(-(seam-1.1f)*(seam-1.1f)))*(1-age*.40f);
                         const auto grainKey=uint32_t(int((localAngle+juce::MathConstants<float>::pi)*380))
                                            +uint32_t(juce::jmax(0,int(axial*6)))*1177u;
                         value+=(surfaceNoise(0x3a71u+grainKey)-.5f)*(.005f+age*.007f);
@@ -601,7 +607,7 @@ public:
                     if(nz<=0)continue;
                     juce::Path wall;wall.startNewSubPath(project(a,0));wall.lineTo(project(b,0));
                     wall.lineTo(project(b,depth));wall.lineTo(project(a,depth));wall.closeSubPath();
-                    const bool fracture=broken&&a.y>61&&b.y>61;
+                    const bool fracture=broken&&i>=circleSegments;
                     const auto shade=[&](float axial) {
                         const float value=plasticLight(nx,0,nz,axial);
                         auto colour=juce::Colour::fromFloatRGBA(value,value*.99f,value*.96f,1);
@@ -611,7 +617,7 @@ public:
                     const auto middle=(a+b)*.5f,backPoint=project(middle,0),frontPoint=project(middle,depth);
                     juce::ColourGradient reflection(shade(0),backPoint.x,backPoint.y,shade(depth),frontPoint.x,frontPoint.y,false);
                     reflection.addColour(.22,shade(depth*.22f));reflection.addColour(.70,shade(depth*.70f));
-                    if(!broken)wall=wall.createPathWithRoundedCorners(.85f);
+                    if(!broken)wall=wall.createPathWithRoundedCorners(1.3f);
                     g.setGradientFill(reflection);g.fillPath(wall);
                     // Overlap the antialias coverage with the identical material.
                     g.strokePath(wall,juce::PathStrokeType(.16f));
@@ -758,7 +764,7 @@ public:
                 }
             } else if(id=="pwmMode") {
                 if(i==0) {
-                    panelGlyph(g,PanelGlyph::sine,{xx-7,labelY-14,15,8},ink);
+                    panelGlyph(g,PanelGlyph::doubleTriangle,{xx-7,labelY-14,15,10},ink);
                     caption(g,"LFO",axialText.translated(0,6),7.6f,juce::Justification::centred,true,ink);
                 } else if(i==1)caption(g,"MANUAL",textBox,6.9f,juce::Justification::centredLeft,true,ink);
                 else {
@@ -766,9 +772,9 @@ public:
                     panelGlyph(g,PanelGlyph::envelope,{xx-7,labelY+7,15,8},ink);
                 }
             } else if(id=="vcfEnvMode"||id=="vcaMode") {
-                if(i==0)caption(g,labels[0],axialText,7.3f,juce::Justification::centred,true,ink);
+                if(i==0)caption(g,labels[0],id=="vcfEnvMode"?textBox:axialText,7.3f,juce::Justification::centred,true,ink);
                 else {
-                    const auto words=i==1?textBox:axialText;
+                    const auto words=i==1||id=="vcfEnvMode"?textBox:axialText;
                     caption(g,id=="vcaMode"&&i==2?"GATE":"ENV",words.translated(0,-5),7.6f,juce::Justification::centred,true,ink);
                     const auto glyph=i==1?PanelGlyph::envelope:id=="vcaMode"?PanelGlyph::gate:PanelGlyph::invertedEnvelope;
                     panelGlyph(g,glyph,{words.getCentreX()-8,labelY+5,16,8},ink);
@@ -1140,17 +1146,17 @@ void arcLabels(juce::Graphics& g,juce::Point<float> centre,
     const auto ink=agedInk(age);
     for(const auto& [text,angle]:labels) {
         const auto p=centre+juce::Point<float>(std::sin(angle),-std::cos(angle))*radius;
-        const auto q=centre+juce::Point<float>(std::sin(angle),-std::cos(angle))*(radius-6);
+        const auto q=centre+juce::Point<float>(std::sin(angle),-std::cos(angle))*(radius-4);
         g.setColour(ink);g.drawLine({p,q},.75f);
-        auto label=centre+juce::Point<float>(std::sin(angle),-std::cos(angle))*(radius+10);
+        auto label=centre+juce::Point<float>(std::sin(angle),-std::cos(angle))*(radius+7);
         // The neighbouring 2-foot and NOISE detents share the space between
         // selectors. Place NOISE above its knob while preserving the tick.
-        if(text=="NOISE")label+=juce::Point<float>(6,-11.0f);
-        if(text=="2'")label+=juce::Point<float>(4,2);
+        if(text=="NOISE")label+=juce::Point<float>(-5,-12.0f);
+        if(text=="2'")label+=juce::Point<float>(3,0);
         if(text=="32'")label+=juce::Point<float>(5,2);
         if(text=="SAW"||text=="SQR"||text=="PULSE")
             panelGlyph(g,text=="SAW"?PanelGlyph::saw:text=="SQR"?PanelGlyph::square:PanelGlyph::pulse,
-                       {label.x-8,label.y-4,16,8},ink);
+                       {label.x-9,label.y-5,18,10},ink,1.15f);
         else caption(g,text,{label.x-21,label.y-7,42,14},8.4f,juce::Justification::centred,true,ink);
     }
 }
@@ -1221,9 +1227,9 @@ public:
         maximise.setBounds(1453,0,47,34);maximise.setComponentID("maximise");
         sizing.onChange=[this]{header.repaint();maximise.repaint();};
         addSwitch("lfoWave",116,104,49,121,{0,1,2},{"SINE","SQUARE","RANDOM\n(S/H)"},"Modulator: sine, square or random sample-and-hold.");
-        addFader("lfoRate","RATE",182,96,43,129);addFader("lfoDelay","DELAY",224,96,43,129);
+        addFader("lfoRate","RATE",182,96,43,129);controls.back()->label->setVisible(false);addFader("lfoDelay","DELAY",224,96,43,129);
         controls.back()->label->setVisible(false); // Sine + DELAY TIME is printed by the panel.
-        addAndMakeVisible(rateLamp);rateLamp.setBounds(193,headerH+104,8,8);rateLamp.setInterceptsMouseClicks(false,false);
+        addAndMakeVisible(rateLamp);rateLamp.setBounds(122,headerH+98,8,8);rateLamp.setInterceptsMouseClicks(false,false);
         addFader("vcoMod","MOD",284,96,45,129);
         controls.back()->slider->getProperties().set("scaleLeft",true);
         addKnob("range",356,169,87);addKnob("wave",450,169,87);addKnob("tune",356,86,22);
@@ -1233,7 +1239,7 @@ public:
         addSwitch("subMode",633,104,60,121,{0,1,2},{"1 OCT\nDOWN","2 OCT\nDOWN","2 OCT\nDOWN"},"Sub oscillator: one octave down square, two octaves down square, or two octaves down pulse.");
         addFader("vcoLevel","VCO",721,96,41,129);addFader("subLevel","SUB\nOSC",770,96,41,129);addFader("extLevel","EXT",819,96,41,129);
         addFader("cutoff","CUTOFF\nFREQ",880,96,43,129);addFader("resonance","RESONANCE",923,96,45,129);
-        addSwitch("vcfEnvMode",956,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"VCF envelope follower, positive envelope, or inverted envelope.");
+        addSwitch("vcfEnvMode",956,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"VCF envelope follower, positive envelope, or inverted envelope.",true);
         addFader("vcfEnv","ENV",1030,96,40,129);addFader("vcfMod","MOD",1075,96,40,129);
         addSwitch("vcaMode",1110,104,56,121,{0,1,2},{"HOLD","ENV","GATE"},"HOLD passes audio without MIDI; ENV uses ADSR; GATE follows held keys.");
         addSwitch("envMode",1175,104,55,121,{0,1,2},{"GATE +\nTRIG","GATE","LFO"},"Gate+Trigger re-attacks on low-note changes. Gate preserves legato. LFO repeats while held.",true);
@@ -1358,14 +1364,20 @@ public:
             module(g,697,146,"AUDIO MIXER",age);module(g,847,251,"VCF",age);module(g,1102,64,"VCA",age);module(g,1170,221,"ENV",age);
             caption(g,juce::String::fromUTF8("UNOFFICIAL PERSONAL PROJECT \xe2\x80\x94 NOT AFFILIATED WITH ROLAND CORPORATION \xe2\x80\x94 NOT FOR SALE"),
                     {107,24,1284,15},10.0f,juce::Justification::centred,true,ink);
+            g.setColour(ink);g.drawLine(132,102,151,102,.85f);
+            caption(g,"RATE",{154,96,29,12},8.4f,juce::Justification::centred,true,ink);
             panelGlyph(g,PanelGlyph::sine,{205,99,12,7},ink,.85f);
             caption(g,"DELAY\nTIME",{218,92,29,22},7.6f,juce::Justification::centred,true,ink);
             caption(g,"RANGE",{319,96,74,12},9,juce::Justification::centred,true,ink);
-            caption(g,"WAVEFORM",{408,88,84,17},9,juce::Justification::centred,true,ink);
+            caption(g,"WAVEFORM",{408,96,84,12},9,juce::Justification::centred,true,ink);
             caption(g,"TUNE",{315,75.5f,30,15},8.4f,juce::Justification::centred,true,ink);
-            arcLabels(g,{356,163},{{"32'",-1.134464f},{"16'",-.567232f},{"8'",0.0f},{"4'",.567232f},{"2'",1.134464f}},43,age);
-            arcLabels(g,{450,163},{{"NOISE",-1.047198f},{"SAW",-.349066f},{"SQR",.349066f},{"PULSE",1.047198f}},43,age);
-            caption(g,"PULSE WIDTH MOD",{522,90,87,12},7.6f,juce::Justification::centred,true,ink);
+            arcLabels(g,{356,163},{{"32'",-1.134464f},{"16'",-.567232f},{"8'",0.0f},{"4'",.567232f},{"2'",1.134464f}},40,age);
+            arcLabels(g,{450,163},{{"NOISE",-1.047198f},{"SAW",-.349066f},{"SQR",.349066f},{"PULSE",1.047198f}},40,age);
+            caption(g,"PULSE WIDTH MOD",{524,90,87,12},7.6f,juce::Justification::centred,true,ink);
+            juce::Path pwmLink;pwmLink.startNewSubPath(491,130);pwmLink.lineTo(491,102);pwmLink.quadraticTo(491,99,494,99);pwmLink.lineTo(522,99);
+            g.setColour(ink);g.strokePath(pwmLink,juce::PathStrokeType(.9f));
+            juce::Path vcfLink;vcfLink.startNewSubPath(1005,125);vcfLink.lineTo(1005,114);vcfLink.quadraticTo(1005,111,1008,111);vcfLink.lineTo(1062,111);
+            g.strokePath(vcfLink,juce::PathStrokeType(.85f));
             
             // Original user marks: split into manufacturer on right and instrument on left.
             const float printWear=age*age;
