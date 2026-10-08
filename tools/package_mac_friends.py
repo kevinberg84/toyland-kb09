@@ -8,9 +8,9 @@ dest=release/f'{name}.zip'
 prefix=name+'/'
 updates={prefix+'User Manual.html':(root/'docs/manual/User Manual.html').read_bytes(),
          prefix+'Support/User Guide/index.html':(root/'docs/manual/index.html').read_bytes(),
-         prefix+'Support/auval-system.txt':(root/'artifacts/Validation-KB09/controls-0133/Mac/auval-system.txt').read_bytes(),
-         prefix+'Support/auval-exit.txt':(root/'artifacts/Validation-KB09/controls-0133/Mac/auval-exit.txt').read_bytes(),
-         prefix+'Support/User Guide/assets/panel-0.13.3.png':(root/'docs/manual/assets/panel-0.13.3.png').read_bytes(),
+         prefix+'Support/auval-system.txt':(root/'artifacts/Validation-KB09/hover-0134/Mac/auval-system.txt').read_bytes(),
+         prefix+'Support/auval-exit.txt':(root/'artifacts/Validation-KB09/hover-0134/Mac/auval-exit.txt').read_bytes(),
+         prefix+'Support/User Guide/assets/panel-0.13.4.png':(root/'docs/manual/assets/panel-0.13.4.png').read_bytes(),
          prefix+'INSTALL KB-09.command':(root/'tools/install-mac.command').read_bytes().replace(b'\r\n',b'\n'),
          prefix+'START HERE.txt':'''Toyland KB-09 -- UNVERIFIED MAC TEST BUILD
 

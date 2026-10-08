@@ -29,7 +29,7 @@ updates = {
     'KB-09-source/SH-09/Source/GUI/Editor.cpp': root / 'Source/GUI/Editor.cpp',
     'KB-09-source/SH-09/Source/GUI/PowerDetails.h': root / 'Source/GUI/PowerDetails.h',
     'KB-09-source/SH-09/Tests/GUIRender.cpp': root / 'Tests/GUIRender.cpp',
-    'KB-09-source/SH-09/docs/manual/assets/panel-0.13.3.png': root / 'docs/manual/assets/panel-0.13.3.png',
+    'KB-09-source/SH-09/docs/manual/assets/panel-0.13.4.png': root / 'docs/manual/assets/panel-0.13.4.png',
 }
 # Ship the complete current source changes, including new headers and DSP tests.
 for folder in ('Source','Tests'):
@@ -48,8 +48,8 @@ dev_aax = support / 'Development/AAX unsigned Windows'
 for p in dev_aax.glob('*.aaxplugin'):
     shutil.rmtree(p)
 shutil.copytree(build / 'AAX/Toyland KB-09.aaxplugin', dev_aax / 'Toyland KB-09.aaxplugin')
-(support / 'Validation Summary.txt').write_text('KB-09 0.13.3 control and display fixes — 8 October 2026\nWindows VST3, standalone and unsigned AAX rebuilt.\nValidation results are recorded in the accompanying release record. Earlier Steinberg/actual-host evidence belongs to 0.13.2.\nMac AU/VST3 supplied separately as unverified test builds. AAX unsigned; Pro Tools untested.\n', encoding='utf-8')
-(support / 'Release Notes.txt').write_text('KB-09 0.13.3 — 8 October 2026\nUseful audio-taper VOLUME; existing intermediate volume settings now sound quieter.\nModern FREE/SYNC with 21 straight, dotted and triplet RATE divisions.\nReliable RATE display: half-cycle flashes below 8Hz, steady increasing glow above.\nSHIFT enables fine dragging; temporary switch value boxes replace focus outlines.\nAdded IN audio meter; removed OPTIONAL; refined aged fader strips and black-key sheen.\nHeld keys depress/darken; only the active key has an amber bar.\nRevised TUNE/NOISE labels and removed the PWM bracket.\nWindows floating title bars can request L by dragging to the top, with pull-down restore; host placement restrictions may require the internal header.\nHTML-only User Manual includes all changes and GarageBand setup instructions.\nPlease report bugs and manual corrections to Kevin.\n', encoding='utf-8')
+(support / 'Validation Summary.txt').write_text('KB-09 0.13.4 control and display fixes — 8 October 2026\nWindows VST3, standalone and unsigned AAX rebuilt.\nValidation results are recorded in the accompanying release record. Earlier Steinberg/actual-host evidence belongs to 0.13.2.\nMac AU/VST3 supplied separately as unverified test builds. AAX unsigned; Pro Tools untested.\n', encoding='utf-8')
+(support / 'Release Notes.txt').write_text('KB-09 0.13.4 — 8 October 2026\nOptional DESCRIPTION button (off by default); switch value boxes use readable dark text.\nFaster AGE drag material preview with exact full-detail restoration on release.\nUseful audio-taper VOLUME; existing intermediate volume settings now sound quieter.\nModern FREE/SYNC with 21 straight, dotted and triplet RATE divisions.\nReliable RATE display: half-cycle flashes below 8Hz, steady increasing glow above.\nSHIFT enables fine dragging; temporary switch value boxes replace focus outlines.\nAdded IN audio meter; removed OPTIONAL; refined aged fader strips and black-key sheen.\nHeld keys depress/darken; only the active key has an amber bar.\nRevised TUNE/NOISE labels and removed the PWM bracket.\nWindows floating title bars can request L by dragging to the top, with pull-down restore; host placement restrictions may require the internal header.\nHTML-only User Manual includes all changes and GarageBand setup instructions.\nPlease report bugs and manual corrections to Kevin.\n', encoding='utf-8')
 files = []
 for folder in ('VST3', 'Standalone', 'User Guide', 'Licenses', 'Factory Presets'):
     for path in sorted((support / folder).rglob('*')):
