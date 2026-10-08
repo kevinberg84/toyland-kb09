@@ -9,7 +9,6 @@ def embed(m):
     mime={'.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml'}[path.suffix]
     return m.group(1)+'="data:'+mime+';base64,'+base64.b64encode(path.read_bytes()).decode()+'"'
 text=re.sub(r'(src|href)="(assets/[^\"]+)"',embed,text)
-text=text.replace('Open <strong>User Manual.pdf</strong> in the main download folder to read or print this guide. An HTML copy is retained in Support.','This illustrated manual is a single file: <strong>User Manual.html</strong>. Its contents links, pictures and interactive sections work offline. Use Print / Save PDF for a printable copy, or open the included User Manual.pdf.')
 out=guide/'User Manual.html'
 out.write_text(text,encoding='utf-8')
 print(out)
