@@ -357,6 +357,18 @@ void checkFineGestures(SH09Processor& processor,juce::Component& editor,Checks& 
     checks.expect(rate&&rate->getTextFromValue(0)=="4 bars"&&rate->getTextFromValue(1)=="1/64 T","RATE value box presents SYNC divisions");
     setParameter(processor,"modern",0);settleEditor();
     checks.expect(rate&&rate->getTextFromValue(1)=="10.00","Authentic RATE value box keeps numeric scale");
+    if(auto* keyboard=findComponent(editor,"keyboard")) {
+        const auto snap=[&]{return keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);};
+        const auto authentic=snap();
+        setParameter(processor,"modern",1);settleEditor();const auto labelled=snap();
+        checks.expect(changedPixels(authentic,labelled,5)>60,"Modern C labels are legible on key top faces");
+        const float oldRange=processor.state.getRawParameterValue("range")->load();
+        setParameter(processor,"range",oldRange==0?1:0);settleEditor();
+        checks.expect(changedPixels(labelled,snap(),5)>15,"RANGE updates octave labels without touching the keyboard");
+        setParameter(processor,"range",oldRange);setParameter(processor,"modern",0);settleEditor();
+        checks.expect(changedPixels(authentic,snap())==0,"Authentic mode removes all Modern key-label pixels");
+    }
+
 }
 
 void checkOpaqueCaps(juce::Component& editor, Checks& checks) {
