@@ -43,9 +43,13 @@ void panelGlyph(juce::Graphics& g,PanelGlyph shape,juce::Rectangle<float> box,
         start(0,1);line(1,0);line(1,1);
     } else if(shape==PanelGlyph::envelope||shape==PanelGlyph::invertedEnvelope) {
         const bool inverted=shape==PanelGlyph::invertedEnvelope;
-        const auto envelopeY=[&](float y) {return inverted?1-y:y;};
-        start(0,envelopeY(.9f));line(.10f,envelopeY(.9f));line(.25f,envelopeY(.1f));
-        path.cubicTo(point(.38f,envelopeY(.62f)),point(.57f,envelopeY(.83f)),point(1,envelopeY(.9f)));
+        if(inverted) {
+            start(0,.05f);line(.18f,.95f);line(.30f,.61f);line(.45f,.66f);
+            line(.61f,.38f);line(.78f,.34f);line(1,.10f);
+        } else {
+            start(0,.9f);line(.10f,.9f);line(.25f,.1f);
+            path.cubicTo(point(.38f,.62f),point(.57f,.83f),point(1,.9f));
+        }
     } else {
         const float end=shape==PanelGlyph::pulse?.36f:shape==PanelGlyph::gate?.74f:.46f;
         start(0,.9f);line(0,.1f);line(end,.1f);line(end,.9f);line(1,.9f);if(shape!=PanelGlyph::gate)line(1,.1f);
@@ -493,7 +497,7 @@ public:
                 // hidden axle. Rotate object vertices first; the shared 9-degree
                 // camera then projects every face without screen-space reshaping.
                 const float angle=amount*.610865f,sa=std::sin(angle),ca=std::cos(angle);
-                constexpr float radius=60.0f,depth=10.5f,rootWidth=6.5f;
+                constexpr float radius=60.0f,depth=10.5f,rootWidth=9.0f;
                 const float wheelBaseline=13.0f+radius*panelViewSin;
                 const bool broken=age>=.92f;
                 const auto project=[centre,wheelBaseline,sa,ca](juce::Point<float> p,float axleDepth) {
@@ -503,7 +507,7 @@ public:
                 constexpr int circleSegments=256,vertexCapacity=circleSegments+24;
                 std::array<juce::Point<float>,vertexCapacity> outline{};
                 int count=0;
-                const float rootAngle=std::asin((broken?12.0f:rootWidth)/radius),rootHeight=std::sqrt(radius*radius-rootWidth*rootWidth);
+                const float rootAngle=std::asin((broken?17.0f:rootWidth)/radius),rootHeight=std::sqrt(radius*radius-rootWidth*rootWidth);
                 for(int i=0;i<=circleSegments;++i) {
                     const float a=rootAngle+(juce::MathConstants<float>::twoPi-2*rootAngle)*float(i)/float(circleSegments);
                     outline[size_t(count++)]={radius*std::sin(a),radius*std::cos(a)};
@@ -511,14 +515,15 @@ public:
                 // The tab replaces the small crown arc, so there is no detached
                 // face or changing-width overlay sliding across the disk rim.
                 if(broken) {
-                    const std::array<juce::Point<float>,10> tab{{{-10.3f,57.5f},{-8.2f,59.2f},{-6.1f,54.5f},{-3.4f,53.2f},{-1.4f,56.4f},
-                                                               {1.1f,54.1f},{3.2f,58.0f},{5.9f,56.6f},{8.1f,60.3f},{10.4f,58.4f}}};
+                    const std::array<juce::Point<float>,16> tab{{{-16.4f,57.0f},{-13.5f,59.2f},{-12.3f,54.5f},{-9.1f,55.6f},
+                        {-8.4f,50.1f},{-5.2f,52.0f},{-3.9f,44.0f},{-1.6f,48.4f},{.6f,47.2f},{2.1f,54.5f},
+                        {5.3f,51.7f},{6.9f,57.6f},{10.1f,54.9f},{11.3f,59.3f},{14.2f,56.7f},{16.4f,57.4f}}};
                     for(const auto p:tab)outline[size_t(count++)]=p;
                 } else {
-                    outline[size_t(count++)]={-6.4f,rootHeight+1.2f};
-                    for(int i=0;i<=5;++i){const float a=juce::MathConstants<float>::pi-float(i)*juce::MathConstants<float>::halfPi/5;outline[size_t(count++)]={-2.9f+3.5f*std::cos(a),81.5f+3.5f*std::sin(a)};}
-                    for(int i=0;i<=5;++i){const float a=juce::MathConstants<float>::halfPi-float(i)*juce::MathConstants<float>::halfPi/5;outline[size_t(count++)]={2.9f+3.5f*std::cos(a),81.5f+3.5f*std::sin(a)};}
-                    outline[size_t(count++)]={6.4f,rootHeight+1.2f};
+                    outline[size_t(count++)]={-9.0f,rootHeight+1.2f};
+                    for(int i=0;i<=5;++i){const float a=juce::MathConstants<float>::pi-float(i)*juce::MathConstants<float>::halfPi/5;outline[size_t(count++)]={-4.5f+4.5f*std::cos(a),80.5f+4.5f*std::sin(a)};}
+                    for(int i=0;i<=5;++i){const float a=juce::MathConstants<float>::halfPi-float(i)*juce::MathConstants<float>::halfPi/5;outline[size_t(count++)]={4.5f+4.5f*std::cos(a),80.5f+4.5f*std::sin(a)};}
+                    outline[size_t(count++)]={9.0f,rootHeight+1.2f};
                 }
                 const auto section=[&](float z) {
                     juce::Path p;p.startNewSubPath(project(outline[0],z));
@@ -611,13 +616,13 @@ public:
                     const auto shade=[&](float axial) {
                         const float value=plasticLight(nx,0,nz,axial);
                         auto colour=juce::Colour::fromFloatRGBA(value,value*.99f,value*.96f,1);
-                        if(fracture)colour=colour.interpolatedWith(juce::Colour(0xff77786e),.35f);
+                        if(fracture)colour=colour.interpolatedWith(juce::Colour(0xff77786e),.22f+.28f*surfaceNoise(0x49a7u+uint32_t(i)*191u));
                         return colour;
                     };
                     const auto middle=(a+b)*.5f,backPoint=project(middle,0),frontPoint=project(middle,depth);
                     juce::ColourGradient reflection(shade(0),backPoint.x,backPoint.y,shade(depth),frontPoint.x,frontPoint.y,false);
                     reflection.addColour(.22,shade(depth*.22f));reflection.addColour(.70,shade(depth*.70f));
-                    if(!broken)wall=wall.createPathWithRoundedCorners(1.3f);
+                    if(!broken)wall=wall.createPathWithRoundedCorners(2.6f);
                     g.setGradientFill(reflection);g.fillPath(wall);
                     // Overlap the antialias coverage with the identical material.
                     g.strokePath(wall,juce::PathStrokeType(.16f));
@@ -772,9 +777,9 @@ public:
                     panelGlyph(g,PanelGlyph::envelope,{xx-7,labelY+7,15,8},ink);
                 }
             } else if(id=="vcfEnvMode"||id=="vcaMode") {
-                if(i==0)caption(g,labels[0],id=="vcfEnvMode"?textBox:axialText,7.3f,juce::Justification::centred,true,ink);
+                if(i==0)caption(g,labels[0],axialText,7.3f,juce::Justification::centred,true,ink);
                 else {
-                    const auto words=i==1||id=="vcfEnvMode"?textBox:axialText;
+                    const auto words=i==1?textBox:axialText;
                     caption(g,id=="vcaMode"&&i==2?"GATE":"ENV",words.translated(0,-5),7.6f,juce::Justification::centred,true,ink);
                     const auto glyph=i==1?PanelGlyph::envelope:id=="vcaMode"?PanelGlyph::gate:PanelGlyph::invertedEnvelope;
                     panelGlyph(g,glyph,{words.getCentreX()-8,labelY+5,16,8},ink);
@@ -1151,9 +1156,7 @@ void arcLabels(juce::Graphics& g,juce::Point<float> centre,
         auto label=centre+juce::Point<float>(std::sin(angle),-std::cos(angle))*(radius+7);
         // The neighbouring 2-foot and NOISE detents share the space between
         // selectors. Place NOISE above its knob while preserving the tick.
-        if(text=="NOISE")label+=juce::Point<float>(-5,-12.0f);
-        if(text=="2'")label+=juce::Point<float>(3,0);
-        if(text=="32'")label+=juce::Point<float>(5,2);
+        if(text=="NOISE")label.y-=6;
         if(text=="SAW"||text=="SQR"||text=="PULSE")
             panelGlyph(g,text=="SAW"?PanelGlyph::saw:text=="SQR"?PanelGlyph::square:PanelGlyph::pulse,
                        {label.x-9,label.y-5,18,10},ink,1.15f);
@@ -1232,7 +1235,7 @@ public:
         addAndMakeVisible(rateLamp);rateLamp.setBounds(122,headerH+98,8,8);rateLamp.setInterceptsMouseClicks(false,false);
         addFader("vcoMod","MOD",284,96,45,129);
         controls.back()->slider->getProperties().set("scaleLeft",true);
-        addKnob("range",356,169,87);addKnob("wave",450,169,87);addKnob("tune",356,86,22);
+        addKnob("range",356,169,87);addKnob("wave",468,169,87);addKnob("tune",356,86,22);
         addFader("pulseWidth","PULSE\nWIDTH",536,96,45,129);
         controls.back()->label->setVisible(false); // Shared PULSE WIDTH MOD bracket replaces this caption.
         addSwitch("pwmMode",566,104,51,121,{1,0,2},{"LFO","MANUAL","ENV"},"Pulse width: LFO, manual or envelope. LFO uses the undelayed sine.");
@@ -1240,7 +1243,7 @@ public:
         addFader("vcoLevel","VCO",721,96,41,129);addFader("subLevel","SUB\nOSC",770,96,41,129);addFader("extLevel","EXT",819,96,41,129);
         addFader("cutoff","CUTOFF\nFREQ",880,96,43,129);addFader("resonance","RESONANCE",923,96,45,129);
         addSwitch("vcfEnvMode",956,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"VCF envelope follower, positive envelope, or inverted envelope.",true);
-        addFader("vcfEnv","ENV",1030,96,40,129);addFader("vcfMod","MOD",1075,96,40,129);
+        addFader("vcfEnv","ENV",1030,96,40,129);controls.back()->label->setVisible(false);addFader("vcfMod","MOD",1075,96,40,129);
         addSwitch("vcaMode",1110,104,56,121,{0,1,2},{"HOLD","ENV","GATE"},"HOLD passes audio without MIDI; ENV uses ADSR; GATE follows held keys.");
         addSwitch("envMode",1175,104,55,121,{0,1,2},{"GATE +\nTRIG","GATE","LFO"},"Gate+Trigger re-attacks on low-note changes. Gate preserves legato. LFO repeats while held.",true);
         addFader("attack","A",1249,96,35,129,true);addFader("decay","D",1288,96,35,129,true);
@@ -1369,14 +1372,14 @@ public:
             panelGlyph(g,PanelGlyph::sine,{205,99,12,7},ink,.85f);
             caption(g,"DELAY\nTIME",{218,92,29,22},7.6f,juce::Justification::centred,true,ink);
             caption(g,"RANGE",{319,96,74,12},9,juce::Justification::centred,true,ink);
-            caption(g,"WAVEFORM",{408,96,84,12},9,juce::Justification::centred,true,ink);
+            caption(g,"WAVEFORM",{426,96,84,12},9,juce::Justification::centred,true,ink);
             caption(g,"TUNE",{315,75.5f,30,15},8.4f,juce::Justification::centred,true,ink);
             arcLabels(g,{356,163},{{"32'",-1.134464f},{"16'",-.567232f},{"8'",0.0f},{"4'",.567232f},{"2'",1.134464f}},40,age);
-            arcLabels(g,{450,163},{{"NOISE",-1.047198f},{"SAW",-.349066f},{"SQR",.349066f},{"PULSE",1.047198f}},40,age);
+            arcLabels(g,{468,163},{{"NOISE",-1.047198f},{"SAW",-.349066f},{"SQR",.349066f},{"PULSE",1.047198f}},40,age);
             caption(g,"PULSE WIDTH MOD",{524,90,87,12},7.6f,juce::Justification::centred,true,ink);
-            juce::Path pwmLink;pwmLink.startNewSubPath(491,130);pwmLink.lineTo(491,102);pwmLink.quadraticTo(491,99,494,99);pwmLink.lineTo(522,99);
+            juce::Path pwmLink;pwmLink.startNewSubPath(509,130);pwmLink.lineTo(509,102);pwmLink.quadraticTo(509,99,512,99);pwmLink.lineTo(522,99);
             g.setColour(ink);g.strokePath(pwmLink,juce::PathStrokeType(.9f));
-            juce::Path vcfLink;vcfLink.startNewSubPath(1005,125);vcfLink.lineTo(1005,114);vcfLink.quadraticTo(1005,111,1008,111);vcfLink.lineTo(1062,111);
+            juce::Path vcfLink;vcfLink.startNewSubPath(1005,116);vcfLink.lineTo(1005,106);vcfLink.quadraticTo(1005,103,1008,103);vcfLink.lineTo(1047,103);vcfLink.quadraticTo(1050,103,1050,106);vcfLink.lineTo(1050,115);
             g.strokePath(vcfLink,juce::PathStrokeType(.85f));
             
             // Original user marks: split into manufacturer on right and instrument on left.
@@ -1388,39 +1391,51 @@ public:
                 g.drawImage(printed,1175,258,235,51,85,308,722,158,true);
             }
             g.setColour(ink.withAlpha(.94f));g.fillRect(60,312,1381,2);
+            // Move the original photographic lower screw row above the bender,
+            // replacing the old seats with neighbouring unoccupied panel material.
+            for(const auto p:{juce::Point<int>(98,799),{277,799}}) {
+                const float xx=float(p.x-2)*designW/1770,yy=float(p.y-7)*bodyH/873;
+                g.setOpacity(1);g.drawImage(art.chassis,juce::roundToInt(xx-13),juce::roundToInt(yy-13),26,26,p.x-15,p.y-60,30,30);
+                g.setOpacity(age*.94f);g.drawImage(art.chassisAged,juce::roundToInt(xx-13),juce::roundToInt(yy-13),26,26,p.x-15,p.y-60,30,30);
+            }
+            g.setOpacity(1);
             g.setColour(ink.withAlpha(.82f));g.drawRect(69,370,176,323,1);
-            caption(g,"VOLUME",{80,386,75,16},10,juce::Justification::centred,true,ink);
+            caption(g,"VOLUME",{80,376,75,13},10,juce::Justification::centred,true,ink);
             for(int i=0;i<=10;++i) {
                 const float a=juce::MathConstants<float>::pi*(1.25f+1.5f*float(i)/10);
                 const juce::Point<float> c(117,436),direction(std::sin(a),-std::cos(a));
-                if(i>=4&&i<=6)continue; // Leave the original gap beneath the VOLUME legend.
-                g.setColour(ink);g.drawLine({c+direction*42,c+direction*(i%5==0?47.0f:45.0f)},.7f);
+                g.setColour(ink);g.drawLine({c+direction*41,c+direction*47},1.0f);
                 if(i==0||i==10) {const auto p=c+direction*53;caption(g,juce::String(i),{p.x-10,p.y-5,20,10},7.5f,juce::Justification::centred,true,ink);}
             }
             kb09_gui::drawPowerLegend(g,ink,age);
             g.setColour(juce::Colour(0xff080b0e));g.fillEllipse(205,475,9,9);
             g.setColour(juce::Colour(processor.isPowerEnabled()?0xffe54c35:0xff491c16));g.fillEllipse(207,477,5,5);
             if(processor.isPowerEnabled()) {g.setColour(juce::Colour(0xffffaa6f).withAlpha(.65f));g.fillEllipse(207.5f,477.5f,1.8f,1.8f);}
-            g.setColour(ink.withAlpha(.76f));g.drawRect(77.0f,489.0f,91.0f,134.0f,.8f);g.drawRect(174.0f,489.0f,61.0f,134.0f,.8f);
-            caption(g,"BENDER",{81,623,151,16},10,juce::Justification::centred,true,ink);
-            g.setColour(ink.withAlpha(.8f));g.drawLine(93,686,220,686,.7f);
-            caption(g,"-",{86,680,16,12},9,juce::Justification::centred,true,ink);
-            caption(g,"0",{148,680,17,12},8,juce::Justification::centred,true,ink);
-            caption(g,"+",{211,680,17,12},9,juce::Justification::centred,true,ink);
+            g.setColour(ink.withAlpha(.76f));g.drawRect(174.0f,489.0f,61.0f,134.0f,.8f);
+            juce::Path bendLink;bendLink.startNewSubPath(98,600);bendLink.lineTo(98,614);bendLink.quadraticTo(98,617,101,617);bendLink.lineTo(153,617);bendLink.quadraticTo(156,617,156,620);bendLink.lineTo(156,624);
+            bendLink.startNewSubPath(142,600);bendLink.lineTo(142,617);
+            g.setColour(ink);g.strokePath(bendLink,juce::PathStrokeType(.9f));
+            caption(g,"BENDER",{105,628,103,13},10,juce::Justification::centred,true,ink);
+            g.setColour(ink);g.drawLine(104,682,150,682,.9f);g.drawLine(163,682,209,682,.9f);
+            juce::Path arrows;arrows.startNewSubPath(99,682);arrows.lineTo(105,679.5f);arrows.lineTo(105,684.5f);arrows.closeSubPath();arrows.startNewSubPath(214,682);arrows.lineTo(208,679.5f);arrows.lineTo(208,684.5f);arrows.closeSubPath();g.fillPath(arrows);
+            caption(g,"-",{86,676,12,12},10,juce::Justification::centred,true,ink);
+            caption(g,"0",{150,676,13,12},8,juce::Justification::centred,true,ink);
+            caption(g,"+",{215,676,12,12},10,juce::Justification::centred,true,ink);
             // Screw heads and contact shadows are a foreground layer over ink.
             // Repaint tightly clipped registered photographic heads after rules.
             for(const auto p: {juce::Point<float>(100,457),{98,799},{277,799}}) {
                 juce::Graphics::ScopedSaveState save(g);
-                const float xx=(p.x-2)*float(designW)/1770,yy=(p.y-7)*float(bodyH)/873;
+                const float shift=p.y>790?-40.0f:0.0f;
+                const float xx=(p.x-2)*float(designW)/1770,yy=(p.y-7)*float(bodyH)/873+shift;
                 juce::Path head;head.addEllipse(xx-11.5f,yy-11.5f,23,23);g.reduceClipRegion(head);
-                g.setOpacity(1);g.drawImage(art.chassis,0,0,designW,bodyH,2,7,1770,873);
-                g.setOpacity(age*.94f);g.drawImage(art.chassisAged,0,0,designW,bodyH,2,7,1770,873);
+                g.setOpacity(1);g.drawImage(art.chassis,0,juce::roundToInt(shift),designW,bodyH,2,7,1770,873);
+                g.setOpacity(age*.94f);g.drawImage(art.chassisAged,0,juce::roundToInt(shift),designW,bodyH,2,7,1770,873);
             }
             uint32_t screwSeed=5011;
             for(const auto p:{juce::Point<float>(88,37),{602,30},{1175,30},{1686,37},
                               {88,328},{1686,328},{83,399},{887,399},{1692,399},
                               {100,457},{98,799},{277,799}}) {
-                screwOxidation(g,{(p.x-2)*float(designW)/1770,(p.y-7)*float(bodyH)/873},age,screwSeed);
+                screwOxidation(g,{(p.x-2)*float(designW)/1770,(p.y-7)*float(bodyH)/873+(p.y>790?-40.0f:0.0f)},age,screwSeed);
                 screwSeed+=7717;
             }
             kb09_gui::drawPowerScrew(g,{209.5f,410},age,false);
