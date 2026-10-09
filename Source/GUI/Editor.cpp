@@ -1523,8 +1523,27 @@ public:
                 const float x=(side?1447.0f:5.0f)+45*surfaceNoise(seed),y=headerH+20+705*surfaceNoise(seed+31);
                 const float length=(i%7==0?9.0f:3.0f)+(i%7==0?20.0f:13.0f)*surfaceNoise(seed+53);
                 const float dy=(surfaceNoise(seed+71)-.5f)*(i%5==0?15.0f:3.0f);
-                g.setColour(juce::Colour(i%4?0xff858985:0xff16191a).withAlpha(age*age*(i%4?.38f:.35f)));
-                g.drawLine(x,y,x+length,y+dy,.45f+1.25f*std::pow(surfaceNoise(seed+97),1.6f));
+                const float width=.45f+1.25f*std::pow(surfaceNoise(seed+97),1.6f);
+                const float contrast=age*age*(.18f+.22f*surfaceNoise(seed+131));
+                // Abraded plastic has feathered, uneven edges and tapered ends,
+                // rather than a constant-width pen stroke. Keep its gray tone.
+                for(int layer=0;layer<3;++layer) {
+                    juce::Path scuff;
+                    const float spread=layer==0?1.8f:layer==1?1.3f:1.0f;
+                    for(int edge=0;edge<2;++edge)for(int step=0;step<=12;++step) {
+                        const int j=edge?12-step:step;
+                        const float t=float(j)/12;
+                        const float taper=std::pow(std::sin(juce::MathConstants<float>::pi*t),.55f);
+                        const float uneven=.65f+.35f*surfaceNoise(seed+uint32_t(j)*173);
+                        const float yy=y+dy*t+.28f*(surfaceNoise(seed+uint32_t(j)*307)-.5f);
+                        const float half=width*spread*.5f*taper*uneven;
+                        const juce::Point<float> p(x+length*t,yy+(edge?-half:half));
+                        if(edge==0&&step==0)scuff.startNewSubPath(p);else scuff.lineTo(p);
+                    }
+                    scuff.closeSubPath();
+                    g.setColour(juce::Colour(i%4?0xff858985:0xff16191a).withAlpha(contrast*(layer==0?.12f:layer==1?.25f:.75f)));
+                    g.fillPath(scuff);
+                }
             }
         }
         caseStains(g,age);
