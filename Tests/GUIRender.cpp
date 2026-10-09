@@ -1193,7 +1193,8 @@ int main(int argc, char** argv) {
                                    Fixture{"aged_modern",14,true,.82f,true,false},
                                    Fixture{"external_follower",12,false,0.0f,false,true},
                                    Fixture{"worn",14,true,1.0f,true,false},
-                                   Fixture{"personal_age7",14,true,.7f,false,false}})
+                                   Fixture{"personal_age7",14,true,.7f,false,false},
+                                   Fixture{"fully_aged",14,true,1.0f,false,false}})
             renderFixture(fixture, directory, checks);
     } catch (const std::exception& error) {
         checks.expect(false, juce::String("fixture exception: ") + error.what());

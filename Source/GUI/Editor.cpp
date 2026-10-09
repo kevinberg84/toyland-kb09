@@ -947,9 +947,9 @@ public:
             const float polishY=r.getBottom()-(pass==0?65.0f:48.0f)+float((serial*13)%(pass==0?41:30));
             g.setColour(juce::Colours::white.withAlpha((pass==0?.24f:.055f)*gloss));g.fillEllipse(polishX,polishY,.85f,1.5f);
             keySurfaceWear(g,r,serial,pass!=0,age);
-            const float crackOnset=n==60?.56f:n==65?.76f:n==74?.85f:2.0f;
+            const float crackOnset=n==60?.56f:n==65?.68f:n==74?.79f:2.0f;
             if(age>=crackOnset) {
-                const float progress=juce::jlimit(0.0f,1.0f,(age-crackOnset)/(1-crackOnset));
+                const float progress=juce::jlimit(0.0f,1.0f,(age-crackOnset)/(.90f-crackOnset));
                 const float width=r.getWidth()*.20f,height=r.getHeight()*.36f;
                 const auto trace=juce::Rectangle<float>(r.getX()+r.getWidth()*.32f,r.getBottom()-height-17,width,height);
                 juce::Graphics::ScopedSaveState save(g);
@@ -974,8 +974,8 @@ public:
                 }
                 const auto transform=juce::AffineTransform::scale(trace.getWidth(),trace.getHeight()).translated(trace.getX(),trace.getY());
                 hairline.applyTransform(transform);
-                g.setColour(juce::Colour(0xff6a5d46).withAlpha(.55f));
-                g.strokePath(hairline,juce::PathStrokeType(.32f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+                g.setColour(juce::Colour(0xff554835).withAlpha(.78f));
+                g.strokePath(hairline,juce::PathStrokeType(n==60?.32f:n==65?.62f:.56f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
             }
             if(down) {
                 g.setColour(juce::Colours::black.withAlpha(pass==0?.14f:.18f));g.fillRoundedRectangle(r.reduced(1),1.5f);
@@ -1251,7 +1251,7 @@ public:
         addFader("attack","A",1249,96,35,129,true);addFader("decay","D",1288,96,35,129,true);
         addFader("sustain","S",1327,96,35,129,true);addFader("release","R",1366,96,35,129,true);
         addKnob("volume",117,442,79);
-        addAndMakeVisible(power);power.setBounds(191,headerH+416,37,28);power.onPowerChanged=[this]{repaint();};
+        addAndMakeVisible(power);power.setBounds(186,headerH+416,38,28);power.onPowerChanged=[this]{repaint();};
         addFader("bendVco","VCO",98,496,37,112,true);addFader("bendVcf","VCF",142,496,37,112,true);
         addFader("portamento","PORTAMENTO",205,496,37,112,true);
         addAndMakeVisible(bender);bender.setBounds(85,headerH+638,143,48);bender.setComponentID("bender");
@@ -1365,8 +1365,8 @@ public:
             module(g,697,146,"AUDIO MIXER",age);module(g,847,251,"VCF",age);module(g,1102,64,"VCA",age);module(g,1170,221,"ENV",age);
             caption(g,juce::String::fromUTF8("UNOFFICIAL PERSONAL PROJECT \xe2\x80\x94 NOT AFFILIATED WITH ROLAND CORPORATION \xe2\x80\x94 NOT FOR SALE"),
                     {107,24,1284,15},10.0f,juce::Justification::centred,true,ink);
-            g.setColour(ink);g.drawLine(132,102,151,102,.85f);
-            caption(g,"RATE",{154,96,29,12},8.4f,juce::Justification::centred,true,ink);
+            g.setColour(ink);g.drawLine(132,102,165,102,.85f);
+            caption(g,"RATE",{167.5f,96,29,12},8.4f,juce::Justification::centred,true,ink);
             panelGlyph(g,PanelGlyph::sine,{205,99,12,7},ink,.85f);
             caption(g,"DELAY\nTIME",{218,92,29,22},7.6f,juce::Justification::centred,true,ink);
             caption(g,"RANGE",{319,96,74,12},9,juce::Justification::centred,true,ink);
@@ -1374,8 +1374,8 @@ public:
             caption(g,"TUNE",{315,75.5f,30,15},8.4f,juce::Justification::centred,true,ink);
             arcLabels(g,{356,163},{{"32'",-1.134464f},{"16'",-.567232f},{"8'",0.0f},{"4'",.567232f},{"2'",1.134464f}},40,age);
             arcLabels(g,{468,163},{{"NOISE",-1.047198f},{"SAW",-.349066f},{"SQR",.349066f},{"PULSE",1.047198f}},40,age);
-            caption(g,"PULSE WIDTH MOD",{524,90,87,12},7.6f,juce::Justification::centred,true,ink);
-            juce::Path pwmLink;pwmLink.startNewSubPath(509,130);pwmLink.lineTo(509,102);pwmLink.quadraticTo(509,99,512,99);pwmLink.lineTo(522,99);
+            caption(g,"PULSE WIDTH MOD",{515,96,100,12},7.6f,juce::Justification::centredLeft,true,ink);
+            juce::Path pwmLink;pwmLink.startNewSubPath(509,130);pwmLink.lineTo(509,105);pwmLink.quadraticTo(509,102,512,102);pwmLink.lineTo(513,102);
             g.setColour(ink);g.strokePath(pwmLink,juce::PathStrokeType(.9f));
             juce::Path vcfLink;vcfLink.startNewSubPath(999,116);vcfLink.lineTo(999,106);vcfLink.quadraticTo(999,103,1002,103);vcfLink.lineTo(1027,103);vcfLink.quadraticTo(1030,103,1030,106);vcfLink.lineTo(1030,115);
             g.strokePath(vcfLink,juce::PathStrokeType(.85f));
@@ -1406,9 +1406,9 @@ public:
                 if(i==0||i==10) {const auto p=c+direction*53;caption(g,juce::String(i),{p.x-10,p.y-5,20,10},7.5f,juce::Justification::centred,true,ink);}
             }
             kb09_gui::drawPowerLegend(g,ink,age);
-            g.setColour(juce::Colour(0xff080b0e));g.fillEllipse(205,475,9,9);
-            g.setColour(juce::Colour(processor.isPowerEnabled()?0xffe54c35:0xff491c16));g.fillEllipse(207,477,5,5);
-            if(processor.isPowerEnabled()) {g.setColour(juce::Colour(0xffffaa6f).withAlpha(.65f));g.fillEllipse(207.5f,477.5f,1.8f,1.8f);}
+            g.setColour(juce::Colour(0xff080b0e));g.fillEllipse(200.5f,475,9,9);
+            g.setColour(juce::Colour(processor.isPowerEnabled()?0xffe54c35:0xff491c16));g.fillEllipse(202.5f,477,5,5);
+            if(processor.isPowerEnabled()) {g.setColour(juce::Colour(0xffffaa6f).withAlpha(.65f));g.fillEllipse(203.0f,477.5f,1.8f,1.8f);}
             g.setColour(ink.withAlpha(.76f));g.drawRect(174.0f,489.0f,61.0f,134.0f,.8f);
             juce::Path bendLink;bendLink.startNewSubPath(98,600);bendLink.lineTo(98,614);bendLink.quadraticTo(98,617,101,617);bendLink.lineTo(153,617);bendLink.quadraticTo(156,617,156,620);bendLink.lineTo(156,624);
             bendLink.startNewSubPath(142,600);bendLink.lineTo(142,617);
@@ -1436,8 +1436,8 @@ public:
                 screwOxidation(g,{(p.x-2)*float(designW)/1770,(p.y-7)*float(bodyH)/873+(p.y>790?-40.0f:0.0f)},age,screwSeed);
                 screwSeed+=7717;
             }
-            kb09_gui::drawPowerScrew(g,{209.5f,410},age,false);
-            kb09_gui::drawPowerScrew(g,{209.5f,445},age,true);
+            kb09_gui::drawPowerScrew(g,{205,410},age,false);
+            kb09_gui::drawPowerScrew(g,{205,451},age,true);
         }
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xff222729),0,float(headerH+bodyH),
                                             juce::Colour(0xff121618),0,float(designH),false));
