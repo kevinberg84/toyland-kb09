@@ -923,7 +923,11 @@ void checkOptionalDescriptions(juce::Component& editor,Checks& checks) {
     const auto render=[&]{return bender->createComponentSnapshot(bender->getLocalBounds(),true,1.0f);};
     double start=juce::Time::getMillisecondCounterHiRes();
     auto before=render();const auto fullMs=juce::Time::getMillisecondCounterHiRes()-start;
-    age->onDragStart();start=juce::Time::getMillisecondCounterHiRes();auto preview=render();
+    age->onDragStart();start=juce::Time::getMillisecondCounterHiRes();
+    auto coldFrame=age->getParentComponent()->createComponentSnapshot(age->getParentComponent()->getLocalBounds(),true,.75f);
+    const auto coldMs=juce::Time::getMillisecondCounterHiRes()-start;
+    checks.expect(coldFrame.isValid()&&coldMs<60,"AGE remains responsive before preview caches are ready");
+    start=juce::Time::getMillisecondCounterHiRes();auto preview=render();
     const auto previewMs=juce::Time::getMillisecondCounterHiRes()-start;
     age->onDragEnd();auto after=render();
     bool same=before.getBounds()==after.getBounds();
@@ -931,6 +935,27 @@ void checkOptionalDescriptions(juce::Component& editor,Checks& checks) {
         same=before.getPixelAt(x,y)==after.getPixelAt(x,y);
     checks.expect(same,"AGE drag restores the exact full-detail material after release");
     std::cout<<"AGE bender material full_ms="<<fullMs<<" live_preview_ms="<<previewMs<<"\n";
+    auto* panel=age->getParentComponent();
+    panel->getProperties().set("renderConditionPreviews",true);
+    const double deadline=juce::Time::getMillisecondCounterHiRes()+2500;
+    while(!bool(panel->getProperties().getWithDefault("conditionPreviewReady",false))&&juce::Time::getMillisecondCounterHiRes()<deadline)
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(20);
+    checks.expect(bool(panel->getProperties().getWithDefault("conditionPreviewReady",false)),"AGE complete material frames warm during idle");
+    const auto original=age->getValue();
+    age->onDragStart();
+    checks.expect(!bender->isVisible(),"AGE drag uses cached hardware rather than expensive live child paints");
+    start=juce::Time::getMillisecondCounterHiRes();
+    age->setValue(.81,juce::sendNotificationSync);
+    auto live=panel->createComponentSnapshot(panel->getLocalBounds(),true,.75f);
+    const auto frameMs=juce::Time::getMillisecondCounterHiRes()-start;
+    checks.expect(std::abs(age->getValue()-.81)<.00001&&age->isVisible()&&live.isValid(),"AGE thumb and parameter update while gesture remains held");
+    checks.expect(frameMs<60,"AGE cached instrument preview renders within 60 ms");
+    age->onDragEnd();
+    checks.expect(bender->isVisible(),"AGE release restores all live hardware controls");
+    age->setValue(original,juce::sendNotificationSync);
+    panel->getProperties().set("renderConditionPreviews",false);
+    std::cout<<"AGE complete cached preview_ms="<<frameMs<<"\n";
+
 }
 
 void checkSwitchAttachment(SH09Processor& processor, juce::Component& editor, Checks& checks) {
