@@ -42,6 +42,8 @@ for folder in ('Source','Tests','Assets/Icons'):
     for file in (root/folder).rglob('*'):
         if file.is_file(): updates['KB-09-source/SH-09/'+file.relative_to(root).as_posix()]=file
 updates['KB-09-source/SH-09/CMakeLists.txt']=root/'CMakeLists.txt'
+updates['KB-09-source/SH-09/docs/open-me-first-mac.html']=root/'docs/open-me-first-mac.html'
+updates['KB-09-source/SH-09/docs/open-me-first.html']=root/'docs/open-me-first.html'
 updates['KB-09-source/SH-09/docs/manual/assets/kb09-icon.png']=root/'docs/manual/assets/kb09-icon.png'
 updates['KB-09-source/SH-09/docs/manual/User Manual.html']=root/'docs/manual/User Manual.html'
 
