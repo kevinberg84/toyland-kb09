@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")"
-echo 'Toyland KB-09 — UNVERIFIED Mac test build'
+echo 'Toyland KB-09 — Mac release 1.0.0'
 echo 'Close your music software before continuing.'
 read -r -p 'Press Return when ready. '
 echo 'Installation for this Mac needs your Mac login password. Typed characters stay hidden.'
@@ -20,6 +20,6 @@ for ext in component vst3; do
   fi
 done
 echo 'Installed for this Mac. Reopen your music software and rescan.'
-echo 'Please report bugs or guide mistakes to Kevin. This Mac build is unverified.'
+echo 'Please report bugs or guide mistakes to Kevin.'
 read -r -p 'Press Return to close. '
 

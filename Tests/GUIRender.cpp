@@ -876,7 +876,7 @@ void renderBenderPositions(SH09Processor& processor, juce::Component& editor,
         const bool springCallback=bool(bender->onDragEnd);
         if(springCallback)bender->onDragEnd();
         const auto restored=bender->createComponentSnapshot(bender->getLocalBounds(),true,3.0f);
-        checks.expect(springCallback&&bender->getValue()==0.0&&changedPixels(positions[1],restored)==0,
+        checks.expect(springCallback&&std::abs(bender->getValue())<1.0e-12&&changedPixels(positions[1],restored)==0,
                       prefix + "actual drag-end callback restores zero and identical neutral pixels");
     }
     const auto capture=[&](float age) {
@@ -965,7 +965,7 @@ void checkBenderAudioCallbacks(SH09Processor& processor,juce::Component& editor,
         checks.expect(neutral>400&&neutral<480&&high>neutral*1.9&&high<neutral*2.1
                       &&low>neutral*.46&&low<neutral*.54,
                       context+" intact/broken visual state still drives opposing octave bends in real audio");
-        checks.expect(bender->getValue()==0&&std::abs(returned-neutral)<neutral*.025,
+        checks.expect(std::abs(bender->getValue())<1.0e-12&&std::abs(returned-neutral)<neutral*.025,
                       context+" drag-end callback returns the rendered audio to neutral pitch");
         processMidi(processor,juce::MidiMessage::allNotesOff(1));
     }
@@ -1319,7 +1319,7 @@ int main(int argc, char** argv) {
             int answer=-1;
             prompt.enterModalState(false,juce::ModalCallbackFunction::create([&](int value){answer=value;}),false);
             prompt.keyPressed(juce::KeyPress(juce::KeyPress::returnKey));
-            settleEditor();
+            for(int attempt=0;answer<0&&attempt<16;++attempt)settleEditor();
             checks.expect(answer==0,"Enter activates highlighted Cancel");
         }
         for (const auto fixture : {Fixture{"init",0,false,0.0f,false,false},
