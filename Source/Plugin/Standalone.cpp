@@ -1,6 +1,7 @@
 #include "Processor.h"
 #include "../GUI/PresetFiles.h"
 #include "../GUI/Editor.h"
+#include "../GUI/ClosePrompt.h"
 #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
 #if JUCE_WINDOWS
 #include <windows.h>
@@ -27,47 +28,6 @@ public:
     void closeButtonPressed() override {
         if (auto* app = juce::JUCEApplicationBase::getInstance()) app->systemRequestedQuit();
     }
-};
-
-class ClosePrompt final : public juce::AlertWindow, private juce::KeyListener {
-public:
-    explicit ClosePrompt(juce::Component* owner)
-        : juce::AlertWindow("Save your KB-09 patch before closing?",
-            "Save opens this patch next time. Don't Save starts with Calibrated Init next time.",
-            juce::MessageBoxIconType::QuestionIcon, owner) {
-        addButton("Save", 1);
-        addButton("Don't Save", 2);
-        addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
-        for (int i = 0; i < getNumButtons(); ++i)
-            if (auto* button = getButton(i)) button->addKeyListener(this);
-        setWantsKeyboardFocus(true);
-        select(1); // The non-saving choice is the safe keyboard default.
-    }
-
-    bool keyPressed(const juce::KeyPress& key) override { return handleKey(key); }
-
-private:
-    bool keyPressed(const juce::KeyPress& key, juce::Component*) override { return handleKey(key); }
-    bool handleKey(const juce::KeyPress& key) {
-        if (key == juce::KeyPress::leftKey || key == juce::KeyPress::upKey) { select(0); return true; }
-        if (key == juce::KeyPress::rightKey || key == juce::KeyPress::downKey) { select(1); return true; }
-        if (key == juce::KeyPress::returnKey) {
-            if (auto* button = getButton(selected)) button->triggerClick();
-            return true;
-        }
-        if (key == juce::KeyPress::escapeKey) { triggerButtonClick("Cancel"); return true; }
-        return juce::AlertWindow::keyPressed(key);
-    }
-    void select(int index) {
-        selected = index;
-        for (int i = 0; i < 2; ++i) if (auto* button = getButton(i)) {
-            button->setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xffdbb572));
-            button->setColour(juce::TextButton::textColourOnId, juce::Colour(0xff151a1d));
-            button->setToggleState(i == selected, juce::dontSendNotification);
-        }
-        if (auto* button = getButton(selected)) button->grabKeyboardFocus();
-    }
-    int selected = 1;
 };
 
 class InstrumentApp final : public juce::JUCEApplication {
@@ -116,7 +76,7 @@ public:
         if (!window || !presets) { quit(); return; }
         if (closing || presets->isDialogOpen()) return;
         closing = true;
-        question = std::make_unique<ClosePrompt>(window.get());
+        question = std::make_unique<kb09_gui::ClosePrompt>(window.get());
         question->enterModalState(true, juce::ModalCallbackFunction::create([this](int answer) {
                 juce::MessageManager::callAsync([this, answer] {
                     question.reset();
@@ -168,7 +128,7 @@ private:
     juce::ApplicationProperties properties;
     std::unique_ptr<InstrumentWindow> window;
     std::unique_ptr<sh09::PresetFiles> presets;
-    std::unique_ptr<ClosePrompt> question;
+    std::unique_ptr<kb09_gui::ClosePrompt> question;
     bool closing = false;
 };
 }

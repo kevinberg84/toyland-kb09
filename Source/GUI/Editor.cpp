@@ -1297,7 +1297,7 @@ public:
         :processor(p),sizing(s),presetFiles(p,*this),keyboard(p),header(s),maximise(s),power(p) {
         setLookAndFeel(&look);setSize(designW,designH);
         addAndMakeVisible(header);header.setBounds(0,0,designW,headerH);
-        addAndMakeVisible(updates);updates.setBounds(4,5,132,24);updates.setButtonText("TOYLAND / KB-09");updates.setComponentID("updates");updates.onClick=[this]{kb09::Updates::instance().showMenu(&updates);};
+        addAndMakeVisible(updates);updates.setBounds(22,5,132,24);updates.setButtonText("TOYLAND / KB-09");updates.setComponentID("updates");updates.onClick=[this]{kb09::Updates::instance().showMenu(&updates);};
         addAndMakeVisible(keyboard);keyboard.setBounds(286,headerH+370,1142,325);
         for(int i=0;i<processor.getNumPrograms();++i)presets.addItem(processor.getProgramName(i),i+1);
         addAndMakeVisible(presets);presets.setBounds(438,5,336,24);presets.setComponentID("factoryPreset");
@@ -1319,24 +1319,24 @@ public:
             }
         };
         addAndMakeVisible(meter);meter.setBounds(1008,7,270,20);
-        addAndMakeVisible(small);small.setButtonText("S");small.setBounds(1324,5,35,24);small.setComponentID("sizeS");
+        addAndMakeVisible(small);small.setButtonText("S");small.setBounds(1296,5,35,24);small.setComponentID("sizeS");
         small.setTooltip("Small: fit within 65% of this screen's work-area width and height, with the complete instrument visible.");small.onClick=[this]{sizing.chooseSmall();};
-        addAndMakeVisible(medium);medium.setButtonText("M");medium.setBounds(1365,5,35,24);medium.setComponentID("sizeM");
+        addAndMakeVisible(medium);medium.setButtonText("M");medium.setBounds(1337,5,35,24);medium.setComponentID("sizeM");
         medium.setTooltip("Medium: fit within 90% of this screen's work-area width and height.");medium.onClick=[this]{sizing.chooseMedium();};
-        addAndMakeVisible(large);large.setButtonText("L");large.setBounds(1406,5,35,24);large.setComponentID("sizeL");
+        addAndMakeVisible(large);large.setButtonText("L");large.setBounds(1378,5,35,24);large.setComponentID("sizeL");
         large.setTooltip("Large: fill this screen's available work area. For sharpness in Live, disable Auto-Scale Plug-in Window if available, then create a fresh instance.");large.onClick=[this]{sizing.chooseLarge();};
         if(processor.wrapperType==juce::AudioProcessor::wrapperType_Standalone) {
             // The native caption owns maximise; end the visible row at the
-            // same four-unit inset as the Toyland button on the left.
-            small.setTopLeftPosition(1379,5);
-            medium.setTopLeftPosition(1420,5);
-            large.setTopLeftPosition(1461,5);
+            // same insets as the footer controls.
+            small.setTopLeftPosition(1355,5);
+            medium.setTopLeftPosition(1396,5);
+            large.setTopLeftPosition(1437,5);
             header.getProperties().set("standalone",true);
             addAndMakeVisible(audioMidi);audioMidi.setComponentID("audioMidiSettings");
-            audioMidi.setButtonText("AUDIO / MIDI");audioMidi.setBounds(268,5,115,24);
+            audioMidi.setButtonText("AUDIO / MIDI");audioMidi.setBounds(286,5,115,24);
             setWantsKeyboardFocus(true);addKeyListener(this);
             addAndMakeVisible(computerKeyboard);computerKeyboard.setComponentID("computerKeyboard");
-            computerKeyboard.setBounds(140,5,122,24);computerKeyboard.setClickingTogglesState(true);
+            computerKeyboard.setBounds(158,5,122,24);computerKeyboard.setClickingTogglesState(true);
             computerKeyboard.setWantsKeyboardFocus(false);
             computerKeyboard.setColour(juce::TextButton::buttonOnColourId,amber);
             computerKeyboard.setColour(juce::TextButton::textColourOnId,juce::Colour(0xff151a1d));
@@ -1349,7 +1349,7 @@ public:
             };
         }
         if(processor.wrapperType!=juce::AudioProcessor::wrapperType_Standalone)addAndMakeVisible(maximise);
-        maximise.setBounds(1453,0,47,34);maximise.setComponentID("maximise");
+        maximise.setBounds(1425,0,47,34);maximise.setComponentID("maximise");
         sizing.onChange=[this]{header.repaint();maximise.repaint();};
         addSwitch("lfoWave",116,104,49,121,{0,1,2},{"SINE","SQUARE","RANDOM\n(S/H)"},"Modulator: sine, square or random sample-and-hold.");
         addFader("lfoRate","RATE",182,96,43,129);controls.back()->label->setVisible(false);addFader("lfoDelay","DELAY",224,96,43,129);
@@ -1518,13 +1518,13 @@ public:
                     juce::Colours::transparentBlack,x+w,y+h,true);
                 g.setGradientFill(smear);g.fillEllipse(x-w,y-h,w*2,h*2);
             }
-            for(uint32_t i=0;i<140;++i) {
+            for(uint32_t i=0;i<70;++i) {
                 const uint32_t seed=surfaceHash(15077u+uint32_t(side)*191911u+i*7919u);
                 const float x=(side?1447.0f:5.0f)+45*surfaceNoise(seed),y=headerH+20+705*surfaceNoise(seed+31);
                 const float length=(i%7==0?9.0f:3.0f)+(i%7==0?20.0f:13.0f)*surfaceNoise(seed+53);
                 const float dy=(surfaceNoise(seed+71)-.5f)*(i%5==0?15.0f:3.0f);
                 g.setColour(juce::Colour(i%4?0xff858985:0xff16191a).withAlpha(age*age*(i%4?.38f:.35f)));
-                g.drawLine(x,y,x+length,y+dy,i%11==0?.9f:.55f);
+                g.drawLine(x,y,x+length,y+dy,.45f+1.25f*std::pow(surfaceNoise(seed+97),1.6f));
             }
         }
         caseStains(g,age);

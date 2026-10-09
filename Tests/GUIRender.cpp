@@ -1,4 +1,5 @@
 #include "../Source/Plugin/Processor.h"
+#include "../Source/GUI/ClosePrompt.h"
 #include <BinaryData.h>
 #include <algorithm>
 #include <array>
@@ -1255,10 +1256,30 @@ int main(int argc, char** argv) {
             auto* left=findComponent(*editor,"updates");
             auto* right=findComponent(*editor,"sizeL");
             checks.expect(left&&right&&left->getParentComponent()==right->getParentComponent()
-                &&left->getX()==right->getParentComponent()->getWidth()-right->getRight(),
-                "standalone top row has equal left and right outer margins");
+                &&left->getX()==22&&right->getParentComponent()->getWidth()-right->getRight()==28,
+                "standalone top row matches the footer's left and right insets");
             const auto image=editor->createComponentSnapshot(editor->getLocalBounds(),true,2.0f);
             checks.expect(writePNG(image,directory.getChildFile("standalone_header.png")),"actual standalone header export");
+        }
+        {
+            kb09_gui::ClosePrompt prompt(nullptr);
+            const auto selected=[&](int index){return prompt.getButton(index)->getToggleState();};
+            checks.expect(selected(1),"close prompt starts on Don't Save");
+            prompt.keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
+            checks.expect(selected(2),"Right includes Cancel in the close prompt");
+            prompt.keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
+            checks.expect(selected(0),"Right wraps Cancel to Save");
+            prompt.keyPressed(juce::KeyPress(juce::KeyPress::leftKey));
+            checks.expect(selected(2),"Left wraps Save to Cancel");
+            prompt.keyPressed(juce::KeyPress(juce::KeyPress::upKey));
+            checks.expect(selected(1),"Up steps Cancel to Don't Save");
+            prompt.keyPressed(juce::KeyPress(juce::KeyPress::downKey));
+            checks.expect(selected(2),"Down steps Don't Save to Cancel");
+            int answer=-1;
+            prompt.enterModalState(false,juce::ModalCallbackFunction::create([&](int value){answer=value;}),false);
+            prompt.keyPressed(juce::KeyPress(juce::KeyPress::returnKey));
+            settleEditor();
+            checks.expect(answer==0,"Enter activates highlighted Cancel");
         }
         for (const auto fixture : {Fixture{"init",0,false,0.0f,false,false},
                                    Fixture{"aged_modern",14,true,.82f,true,false},
