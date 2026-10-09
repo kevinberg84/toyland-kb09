@@ -1,5 +1,6 @@
 #include "../Source/Plugin/Processor.h"
 #include "../Source/GUI/ClosePrompt.h"
+#include "../Source/GUI/KeyboardFeedback.h"
 #include <BinaryData.h>
 #include <algorithm>
 #include <array>
@@ -292,6 +293,33 @@ void checkKeyboardFeedback(SH09Processor& processor, juce::Component& editor, co
     keyboard->mouseUp(mouseEvent(64));
     processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
     processMidi(processor,juce::MidiMessage::noteOff(1,60));
+    auto* computer=dynamic_cast<kb09_gui::KeyboardFeedback*>(keyboard);
+    checks.expect(computer!=nullptr,"real keyboard exposes direct computer performance feedback");
+    if(computer) {
+        const auto released=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+        for(const int note:{60,61}) {
+            computer->setComputerNote(note,true);
+            auto image=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+            checks.expect(processor.keyDisplay[size_t(note)].load()==0&&markerIs(image,note,amberBar),
+                "computer key is visibly pressed before the audio callback");
+            processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+            image=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+            checks.expect(processor.displayedNote.load()==note&&markerIs(image,note,amberBar),
+                "computer key stays visibly pressed after audio consumes it");
+            computer->setComputerNote(note,false);
+            image=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+            checks.expect(changedPixels(released,image)==0,
+                "computer key visibly releases before the next audio callback");
+            processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+        }
+        processMidi(processor,juce::MidiMessage::noteOn(1,60,juce::uint8(100)));
+        computer->setComputerNote(60,true);
+        processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+        computer->setComputerNote(60,false);
+        checks.expect(markerIs(keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f),60,amberBar),
+            "computer key release preserves same-pitch MIDI visual feedback");
+        processMidi(processor,juce::MidiMessage::noteOff(1,60));
+    }
     const auto unlatched=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
     setParameter(processor,"vcaMode",0);
     processMidi(processor,juce::MidiMessage::noteOn(1,60,juce::uint8(100)));
@@ -300,6 +328,14 @@ void checkKeyboardFeedback(SH09Processor& processor, juce::Component& editor, co
     checks.expect(processor.keyDisplay[60].load()==0&&processor.displayedHeldNote.load()==60
                   &&markerIs(latched,60,amberBar)&&changedPixels(unlatched,latched,12)>100,
                   "VCA HOLD keeps the last sounding key visibly depressed after key-up");
+    if(computer) {
+        computer->setComputerNote(61,true);
+        processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+        computer->setComputerNote(61,false);
+        processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
+        checks.expect(markerIs(keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f),61,amberBar),
+            "computer-key performance also latches the pressed key in HOLD");
+    }
     setParameter(processor,"vcaMode",1);
     checks.expect(changedPixels(unlatched,keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f))==0,
                   "leaving VCA HOLD restores the released key appearance");

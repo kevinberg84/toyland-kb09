@@ -46,6 +46,9 @@ public:
  std::atomic<bool> displayedModulatorLamp{false};
  std::atomic<float> displayedModulatorPhase{0},displayedModulatorFrequency{0},displayedInput{0};
  std::atomic<double> displayedModulatorTime{0};
+ // Computer-key contribution consumed by audio; replaced by the live GUI
+ // contribution during painting, just like the live mouse contribution.
+ std::array<std::atomic<int>,128> displayedComputerKeys{};
  std::array<std::atomic<int>,128> keyDisplay{};
 private:
  sh09::Controls readControls() const noexcept;

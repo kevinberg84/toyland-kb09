@@ -1,4 +1,5 @@
 #include "Editor.h"
+#include "KeyboardFeedback.h"
 #include "PresetFiles.h"
 #include "PowerDetails.h"
 #include "UpdateChecker.h"
@@ -956,7 +957,7 @@ private:
     }
 };
 bool isBlack(int n) {const int a=n%12;return a==1||a==3||a==6||a==8||a==10;}
-class Keyboard final : public juce::Component {
+class Keyboard final : public kb09_gui::KeyboardFeedback {
 public:
     explicit Keyboard(SH09Processor& p):processor(p) {
         setComponentID("keyboard");
@@ -964,6 +965,12 @@ public:
         setTitle("32-key low-note-priority keyboard");
     }
     ~Keyboard() override {release();}
+    void setComputerNote(int note,bool down) override {
+        if(note<0||note>=128||computerNotes[size_t(note)]==down)return;
+        computerNotes[size_t(note)]=down;
+        processor.queueKeyboard(note,down,false);
+        repaint();
+    }
     void paint(juce::Graphics& g) override {
         g.fillAll(juce::Colour(0xff06090b));
         const auto* material=dynamic_cast<const HardwareLook*>(&getLookAndFeel());
@@ -977,8 +984,9 @@ public:
         // mouse position. Subtract only one count: MIDI on the same pitch stays
         // held. Upward drags and releases then respond before the next callback.
         for(int n=0;n<128;++n) {
-            const int midiCount=processor.keyDisplay[size_t(n)].load(std::memory_order_relaxed)-(n==consumedMouseNote?1:0);
-            held[size_t(n)]=powered&&(midiCount>0||n==mouseNote);
+            const int midiCount=processor.keyDisplay[size_t(n)].load(std::memory_order_relaxed)-(n==consumedMouseNote?1:0)
+                -processor.displayedComputerKeys[size_t(n)].load(std::memory_order_relaxed);
+            held[size_t(n)]=powered&&(midiCount>0||n==mouseNote||computerNotes[size_t(n)]);
             if(effectiveNote<0&&held[size_t(n)])effectiveNote=n;
         }
         // HOLD keeps the oscillator on the last played pitch after key-up.
@@ -1104,7 +1112,7 @@ public:
     void focusLost(FocusChangeType) override {release();}
     void visibilityChanged() override {if(!isShowing())release();}
 private:
-    SH09Processor& processor;int mouseNote=-1;
+    SH09Processor& processor;int mouseNote=-1;std::array<bool,128> computerNotes{};
     juce::Rectangle<float> keyRect(int n) const {
         int whites=0;for(int i=53;i<n;++i)if(!isBlack(i))++whites;
         const float w=float(getWidth())/19;
@@ -1682,7 +1690,7 @@ private:
     void updateComputerLabel() {computerKeyboard.setButtonText(computerKeyboard.getToggleState()?"KEYBOARD C"+juce::String(computerOctave):"KEYBOARD");}
     void releaseComputerNotes() {
         for(size_t i=0;i<computerHeld.size();++i)if(computerHeld[i]) {
-            processor.queueKeyboard((computerOctave+1)*12+int(i),false,false);computerHeld[i]=false;
+            keyboard.setComputerNote((computerOctave+1)*12+int(i),false);computerHeld[i]=false;
         }
     }
     bool computerReady() const {
@@ -1697,7 +1705,7 @@ private:
         for(size_t i=0;i<computerHeld.size();++i) {
             const bool down=juce::KeyPress::isKeyCurrentlyDown(computerKeys[i]);
             consumed|=down||computerHeld[i];
-            if(down!=computerHeld[i]){computerHeld[i]=down;processor.queueKeyboard((computerOctave+1)*12+int(i),down,false);}
+            if(down!=computerHeld[i]){computerHeld[i]=down;keyboard.setComputerNote((computerOctave+1)*12+int(i),down);}
         }
         return consumed;
     }
@@ -1711,7 +1719,7 @@ private:
         if(processor.wrapperType!=juce::AudioProcessor::wrapperType_Undefined&&isShowing()&&getPeer()){if(!updateOpened){updateOpened=true;kb09::Updates::instance().opened();}kb09::Updates::instance().deliver();}
         if(!computerReady())releaseComputerNotes();
         else for(size_t i=0;i<computerHeld.size();++i)if(computerHeld[i]&&!juce::KeyPress::isKeyCurrentlyDown(computerKeys[i])) {
-            computerHeld[i]=false;processor.queueKeyboard((computerOctave+1)*12+int(i),false,false);
+            computerHeld[i]=false;keyboard.setComputerNote((computerOctave+1)*12+int(i),false);
         }
         const auto programRevision=processor.getProgramRevision();
         const int program=processor.getCurrentProgram();
