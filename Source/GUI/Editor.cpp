@@ -1399,17 +1399,21 @@ public:
         descriptions.onClick=[this]{descriptions.setButtonText(descriptions.getToggleState()?"DESCRIPTION ON":"DESCRIPTION");};
         tooltip=std::make_unique<DescriptionTips>(this,descriptions);
         addAndMakeVisible(help);help.setButtonText("EXT AUDIO");help.setBounds(1352,designH-35,120,24);
-        help.onClick=[this]{externalHelp.setVisible(!externalHelp.isVisible());};
-        addChildComponent(externalHelp);externalHelp.setBounds(390,headerH+418,900,225);
-        externalHelp.setText("EXTERNAL AUDIO + ENVELOPE FOLLOWER\n\nRoute DAW audio to the instrument's External Input and raise EXT in the mixer.\nWithout MIDI, set VCA to HOLD and lower VCO / SUB.\nSelect ENV FOL'R in VCF, lower CUTOFF and raise ENV for touch-sensitive filtering.\nThe follower listens before the EXT fader. Click EXT AUDIO again to close.",juce::dontSendNotification);
-        externalHelp.setFont(font(16));externalHelp.setJustificationType(juce::Justification::topLeft);
-        externalHelp.setBorderSize(juce::BorderSize<int>(24));
-        externalHelp.setColour(juce::Label::backgroundColourId,juce::Colour(0xf5101518));
-        externalHelp.setColour(juce::Label::outlineColourId,amber);externalHelp.setInterceptsMouseClicks(true,true);
+        help.onClick=[this] {
+            externalHelp.close();
+            externalHelp=juce::AlertWindow::showScopedAsync(
+                juce::MessageBoxOptions{}.withIconType(juce::MessageBoxIconType::InfoIcon)
+                    .withTitle("External audio + envelope follower")
+                    .withMessage("Route DAW audio to the instrument's External Input and raise EXT in the mixer.\n\n"
+                                 "Without MIDI, set VCA to HOLD and lower VCO / SUB.\n\n"
+                                 "Select ENV FOL'R in VCF, lower CUTOFF and raise ENV for touch-sensitive filtering.\n\n"
+                                 "The follower listens before the EXT fader.")
+                    .withButton("OK").withAssociatedComponent(getTopLevelComponent()),[](int){});
+        };
         updateModern();startTimerHz(60);
     }
     ~Panel() override {
-        stopTimer();releaseComputerNotes();removeKeyListener(this);sizing.onChange=nullptr;if(bendActive)processor.queuePitchBend(0);setLookAndFeel(nullptr);
+        externalHelp.close();stopTimer();releaseComputerNotes();removeKeyListener(this);sizing.onChange=nullptr;if(bendActive)processor.queuePitchBend(0);setLookAndFeel(nullptr);
     }
     void paint(juce::Graphics& g) override {
         if(!renderingCondition&&resizeBackdrop.isValid()&&resizeCacheUntil>0){g.drawImage(resizeBackdrop,getLocalBounds().toFloat());return;}
@@ -1622,7 +1626,7 @@ private:
     Keyboard keyboard;Header header;MaximiseButton maximise;PowerButton power;
     juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions,audioMidi,computerKeyboard,updates;bool updateOpened=false;
     std::unique_ptr<juce::TooltipWindow> tooltip;juce::Image conditionBackdrop,previousCondition,resizeBackdrop;std::array<juce::Image,5> agePreviews;std::vector<juce::Component::SafePointer<juce::Component>> hiddenForCondition;uint64_t previewParameters=0;double previewIdleAfter=0;float previewAge=-1;bool renderingCondition=false;double resizeCacheUntil=0;
-    FineSlider bender;juce::Label externalHelp;Meter meter;RateLamp rateLamp;
+    FineSlider bender;juce::ScopedMessageBox externalHelp;Meter meter;RateLamp rateLamp;
     std::vector<std::unique_ptr<Control>> controls;
     std::array<int,128> lastKeys{};float lastAge=-1;int lastLabelRange=-1;bool lastModern=false,bendActive=false,userPreset=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1;unsigned lastProgramRevision=0;double lastConditionPaint=0;
     std::array<bool,13> computerHeld{};
