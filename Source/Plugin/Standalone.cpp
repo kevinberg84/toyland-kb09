@@ -1,6 +1,9 @@
 #include "Processor.h"
 #include "../GUI/PresetFiles.h"
 #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
+#if JUCE_WINDOWS
+#include <windows.h>
+#endif
 
 namespace {
 class InstrumentWindow final : public juce::StandaloneFilterWindow {
@@ -18,12 +21,53 @@ public:
     }
 };
 
+class ClosePrompt final : public juce::AlertWindow, private juce::KeyListener {
+public:
+    explicit ClosePrompt(juce::Component* owner)
+        : juce::AlertWindow("Save your KB-09 patch before closing?",
+            "Save opens this patch next time. Don't Save starts with Calibrated Init next time.",
+            juce::MessageBoxIconType::QuestionIcon, owner) {
+        addButton("Save", 1);
+        addButton("Don't Save", 2);
+        addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+        for (int i = 0; i < getNumButtons(); ++i)
+            if (auto* button = getButton(i)) button->addKeyListener(this);
+        setWantsKeyboardFocus(true);
+        select(1); // The non-saving choice is the safe keyboard default.
+    }
+
+    bool keyPressed(const juce::KeyPress& key) override { return handleKey(key); }
+
+private:
+    bool keyPressed(const juce::KeyPress& key, juce::Component*) override { return handleKey(key); }
+    bool handleKey(const juce::KeyPress& key) {
+        if (key == juce::KeyPress::leftKey || key == juce::KeyPress::upKey) { select(0); return true; }
+        if (key == juce::KeyPress::rightKey || key == juce::KeyPress::downKey) { select(1); return true; }
+        if (key == juce::KeyPress::returnKey) {
+            if (auto* button = getButton(selected)) button->triggerClick();
+            return true;
+        }
+        if (key == juce::KeyPress::escapeKey) { triggerButtonClick("Cancel"); return true; }
+        return juce::AlertWindow::keyPressed(key);
+    }
+    void select(int index) {
+        selected = index;
+        for (int i = 0; i < 2; ++i) if (auto* button = getButton(i)) {
+            button->setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xffdbb572));
+            button->setColour(juce::TextButton::textColourOnId, juce::Colour(0xff151a1d));
+            button->setToggleState(i == selected, juce::dontSendNotification);
+        }
+        if (auto* button = getButton(selected)) button->grabKeyboardFocus();
+    }
+    int selected = 1;
+};
+
 class InstrumentApp final : public juce::JUCEApplication {
 public:
     const juce::String getApplicationName() override { return "Toyland KB-09 Standalone"; }
     const juce::String getApplicationVersion() override { return JucePlugin_VersionString; }
     bool moreThanOneInstanceAllowed() override { return false; }
-    void anotherInstanceStarted(const juce::String&) override { foreground(); }
+    void anotherInstanceStarted(const juce::String&) override { focusConfirmed = false; foreground(); }
 
     void initialise(const juce::String&) override {
         juce::PropertiesFile::Options options;
@@ -58,9 +102,12 @@ public:
         };
         window->setVisible(true);
         foreground();
-        // The editor installs a native title bar asynchronously, recreating its peer.
-        juce::Timer::callAfterDelay(150, [] {
-            if (auto* app = dynamic_cast<InstrumentApp*>(juce::JUCEApplicationBase::getInstance())) app->foreground();
+        // The editor installs a native title bar asynchronously, recreating its
+        // peer. Retry activation only until this window has actually gained it.
+        for (const int delay : {120, 350, 850}) juce::Timer::callAfterDelay(delay, [delay] {
+            if (auto* app = dynamic_cast<InstrumentApp*>(juce::JUCEApplicationBase::getInstance()))
+                if (app->window && (!app->focusConfirmed || app->window->getPeer() != app->activatedPeer
+                                    || (delay <= 350 && !app->window->isActiveWindow()))) app->foreground();
         });
     }
 
@@ -68,26 +115,22 @@ public:
         if (!window || !presets) { quit(); return; }
         if (closing || presets->isDialogOpen()) return;
         closing = true;
-        question = juce::AlertWindow::showScopedAsync(
-            juce::MessageBoxOptions{}.withIconType(juce::MessageBoxIconType::QuestionIcon)
-                .withTitle("Save your KB-09 patch before closing?")
-                .withMessage("Save opens this patch next time. Don't Save starts with Calibrated Init next time.")
-                .withButton("Save").withButton("Don't Save").withButton("Cancel")
-                .withAssociatedComponent(window.get()),
-            [this](int answer) {
+        question = std::make_unique<ClosePrompt>(window.get());
+        question->enterModalState(true, juce::ModalCallbackFunction::create([this](int answer) {
                 juce::MessageManager::callAsync([this, answer] {
-                    question.close();
+                    question.reset();
                     if (answer == 1) presets->savePreset();
                     else if (answer == 2) {
                         properties.getUserSettings()->removeValue("explicitStartupPreset");
                         properties.saveIfNeeded(); quit();
                     } else closing = false;
                 });
-            });
+            }), false);
+        question->grabKeyboardFocus();
     }
 
     void shutdown() override {
-        question.close(); presets.reset(); window.reset();
+        question.reset(); presets.reset(); window.reset();
         properties.getUserSettings()->removeValue("filterState");
         properties.saveIfNeeded();
     }
@@ -98,21 +141,38 @@ private:
         juce::Process::makeForegroundProcess();
         window->setMinimised(false);
        #if JUCE_WINDOWS
-        // A newly recreated native peer can lose Windows' foreground allowance.
-        // Raise once without leaving the instrument permanently above other apps.
-        window->setAlwaysOnTop(true);
         window->toFront(true);
-        window->setAlwaysOnTop(false);
+        if (auto* peer = window->getPeer()) {
+            const auto hwnd = static_cast<HWND>(peer->getNativeHandle());
+            if (hwnd != nullptr) {
+                ShowWindow(hwnd, SW_RESTORE);
+                const auto previous = GetForegroundWindow();
+                const auto foregroundThread = previous != nullptr ? GetWindowThreadProcessId(previous, nullptr) : 0;
+                const auto ownThread = GetCurrentThreadId();
+                const bool attached = foregroundThread != 0 && foregroundThread != ownThread
+                    && AttachThreadInput(ownThread, foregroundThread, TRUE) != 0;
+                SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                BringWindowToTop(hwnd);
+                SetForegroundWindow(hwnd);
+                SetActiveWindow(hwnd);
+                SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                if (attached) AttachThreadInput(ownThread, foregroundThread, FALSE);
+            }
+        }
        #else
         window->toFront(true);
        #endif
         window->grabKeyboardFocus();
+        activatedPeer = window->getPeer();
+        focusConfirmed = window->isActiveWindow();
     }
     juce::ApplicationProperties properties;
     std::unique_ptr<InstrumentWindow> window;
     std::unique_ptr<sh09::PresetFiles> presets;
-    juce::ScopedMessageBox question;
+    std::unique_ptr<ClosePrompt> question;
     bool closing = false;
+    bool focusConfirmed = false;
+    juce::ComponentPeer* activatedPeer = nullptr;
 };
 }
 JUCE_CREATE_APPLICATION_DEFINE(InstrumentApp)

@@ -37,6 +37,8 @@ public:
  void queuePitchBend(float value) noexcept { guiBend.store(juce::jlimit(-1.0f,1.0f,value),std::memory_order_relaxed); guiBendDirty.store(true,std::memory_order_release); }
  juce::AudioProcessorValueTreeState state;
  std::atomic<int> displayedNote{-1};
+ // Last oscillator pitch for the VCA HOLD keyboard latch.
+ std::atomic<int> displayedHeldNote{-1};
  // GUI contribution already consumed by the audio thread. The editor can
  // replace it with its current mouse note without hiding same-pitch MIDI.
  std::atomic<int> displayedKeyboardNote{-1};

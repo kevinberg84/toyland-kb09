@@ -8,7 +8,7 @@ dest=release/f'{name}.zip'
 prefix=name+'/'
 updates={prefix+'User Manual.html':(root/'docs/manual/User Manual.html').read_bytes(),
          prefix+'Support/User Guide/index.html':(root/'docs/manual/index.html').read_bytes(),
-         prefix+'Support/User Guide/assets/panel-0.13.20.png':(root/'docs/manual/assets/panel-0.13.20.png').read_bytes(),
+         prefix+'Support/User Guide/assets/panel-0.13.21.png':(root/'docs/manual/assets/panel-0.13.21.png').read_bytes(),
          prefix+'INSTALL KB-09.command':(root/'tools/install-mac.command').read_bytes().replace(b'\r\n',b'\n'),
          prefix+'OPEN ME FIRST!.html':(root/'docs/open-me-first-mac.html').read_bytes()}
 with zipfile.ZipFile(source) as old,zipfile.ZipFile(dest,'w',zipfile.ZIP_DEFLATED) as new:

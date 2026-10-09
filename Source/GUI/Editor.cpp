@@ -981,6 +981,13 @@ public:
             held[size_t(n)]=powered&&(midiCount>0||n==mouseNote);
             if(effectiveNote<0&&held[size_t(n)])effectiveNote=n;
         }
+        // HOLD keeps the oscillator on the last played pitch after key-up.
+        // Reflect that latched pitch on the keyboard until another note or
+        // VCA mode replaces it; physically held notes still take priority.
+        if(powered&&effectiveNote<0&&processor.state.getRawParameterValue("vcaMode")->load()<.5f) {
+            const int latched=processor.displayedHeldNote.load(std::memory_order_relaxed);
+            if(latched>=53&&latched<=84){held[size_t(latched)]=true;effectiveNote=latched;}
+        }
         for(int pass=0;pass<2;++pass)for(int n=53;n<=84;++n)if(int(isBlack(n))==pass) {
             auto r=keyRect(n);
             const bool down=held[size_t(n)];
@@ -1025,9 +1032,10 @@ public:
                     matte(juce::Colour(0xff202629),juce::Colour(0xff181915)),0,face.getBottom(),false));g.fillRoundedRectangle(face,1.8f);
                 g.setColour(juce::Colours::white.withAlpha(.24f*gloss));g.drawLine(top.getX()+3,top.getY()+2,top.getX()+3,top.getBottom()-2,.6f);
                 g.drawLine(face.getX()+2,face.getY(),face.getRight()-2,face.getY(),.7f);
-                // Black keys lose their broad photographic shine especially
-                // strongly, while their silhouette remains fully opaque.
-                g.setOpacity(1.0f-age*.89f);g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+                // Keep a little uneven photographic reflection at full age:
+                // the black plastic wears, but does not turn into flat paint.
+                const float reflected=.42f+.08f*surfaceNoise(uint32_t(n)*6197u);
+                g.setOpacity(1.0f-age*(1.0f-reflected));g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
                 g.drawImage(artwork().blackKey,r,juce::RectanglePlacement::stretchToFit);
                 g.setOpacity(1.0f);
                 // A worn surface spreads its reflected light across a wider area.
@@ -1075,7 +1083,7 @@ public:
                 g.setColour(juce::Colour(0xff554835).withAlpha(.78f));
                 g.strokePath(hairline,juce::PathStrokeType(n==60?.32f:n==65?.62f:.56f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
             }
-            if(pass==0&&n%12==0&&processor.state.getRawParameterValue("modern")->load()>.5f) {
+            if(pass==0&&n%12==0) {
                 const int octave=n/12-1+juce::roundToInt(processor.state.getRawParameterValue("range")->load())-2;
                 caption(g,"C"+juce::String(octave),{r.getX()+2,r.getBottom()-37,r.getWidth()-4,15},10.5f,
                     juce::Justification::centred,false,juce::Colour(0xff514d43).withAlpha(.87f));
@@ -1311,11 +1319,11 @@ public:
             }
         };
         addAndMakeVisible(meter);meter.setBounds(1008,7,270,20);
-        addAndMakeVisible(small);small.setButtonText("S");small.setBounds(1291,5,35,24);small.setComponentID("sizeS");
+        addAndMakeVisible(small);small.setButtonText("S");small.setBounds(1324,5,35,24);small.setComponentID("sizeS");
         small.setTooltip("Small: fit within 65% of this screen's work-area width and height, with the complete instrument visible.");small.onClick=[this]{sizing.chooseSmall();};
-        addAndMakeVisible(medium);medium.setButtonText("M");medium.setBounds(1332,5,35,24);medium.setComponentID("sizeM");
+        addAndMakeVisible(medium);medium.setButtonText("M");medium.setBounds(1365,5,35,24);medium.setComponentID("sizeM");
         medium.setTooltip("Medium: fit within 90% of this screen's work-area width and height.");medium.onClick=[this]{sizing.chooseMedium();};
-        addAndMakeVisible(large);large.setButtonText("L");large.setBounds(1373,5,35,24);large.setComponentID("sizeL");
+        addAndMakeVisible(large);large.setButtonText("L");large.setBounds(1406,5,35,24);large.setComponentID("sizeL");
         large.setTooltip("Large: fill this screen's available work area. For sharpness in Live, disable Auto-Scale Plug-in Window if available, then create a fresh instance.");large.onClick=[this]{sizing.chooseLarge();};
         if(processor.wrapperType==juce::AudioProcessor::wrapperType_Standalone) {
             header.getProperties().set("standalone",true);
@@ -1493,24 +1501,25 @@ public:
                 }
             }
         }
-        // Independent short scuffs and nicks on the molded cheeks, not rust.
+        // Sparse, individually sized plastic scuffs and faint handling smears.
         if(age>0)for(int side=0;side<2;++side) {
             juce::Graphics::ScopedSaveState cheek(g);
             g.reduceClipRegion(juce::Rectangle<int>(side?1447:5,headerH+12,45,bodyH-24));
-            for(int rub=0;rub<18;++rub) {
+            for(int rub=0;rub<2;++rub) {
                 const auto seed=uint32_t(side*971+rub*331+87);
-                const float x=(side?1448.0f:6.0f)+30*surfaceNoise(seed),y=headerH+25+690*surfaceNoise(seed+13);
-                const float w=4+10*surfaceNoise(seed+31),h=7+28*surfaceNoise(seed+71);
-                juce::ColourGradient smudge(juce::Colour(0xff8b8b87).withAlpha(age*age*.14f),x,y,
+                const float x=(side?1450.0f:8.0f)+30*surfaceNoise(seed),y=headerH+90+560*surfaceNoise(seed+13);
+                const float w=7+9*surfaceNoise(seed+31),h=14+24*surfaceNoise(seed+71);
+                juce::ColourGradient smear(juce::Colour(0xff777b79).withAlpha(age*age*.11f),x,y,
                     juce::Colours::transparentBlack,x+w,y+h,true);
-                g.setGradientFill(smudge);g.fillEllipse(x-w,y-h,w*2,h*2);
+                g.setGradientFill(smear);g.fillEllipse(x-w,y-h,w*2,h*2);
             }
-            for(uint32_t i=0;i<260;++i) {
+            for(uint32_t i=0;i<58;++i) {
                 const uint32_t seed=surfaceHash(15077u+uint32_t(side)*191911u+i*7919u);
                 const float x=(side?1447.0f:5.0f)+45*surfaceNoise(seed),y=headerH+20+705*surfaceNoise(seed+31);
-                const float length=2+15*surfaceNoise(seed+53),dy=(surfaceNoise(seed+71)-.5f)*6;
-                g.setColour(juce::Colour(i%4?0xff8b8b80:0xff111513).withAlpha(age*age*(i%4?.44f:.65f)));
-                g.drawLine(x,y,x+length,y+dy,i%9==0?1.05f:.45f);
+                const float length=(i%7==0?9.0f:1.0f)+(i%7==0?20.0f:9.0f)*surfaceNoise(seed+53);
+                const float dy=(surfaceNoise(seed+71)-.5f)*(i%5==0?15.0f:3.0f);
+                g.setColour(juce::Colour(i%4?0xff777a77:0xff16191a).withAlpha(age*age*(i%4?.26f:.35f)));
+                g.drawLine(x,y,x+length,y+dy,i%11==0?.8f:.4f);
             }
         }
         caseStains(g,age);
@@ -1556,6 +1565,14 @@ public:
                 g.drawImage(printed,1175,258,235,51,85,308,722,158,true);
             }
             g.setColour(ink.withAlpha(.94f));g.fillRect(60.0f,313.0f,1381.0f,3.6f);
+            // A shallow raised lip catches diffuse light below the printed
+            // stripe. It fades into the same continuous metal face, without
+            // reinstating the old hard divider or crossing the keyboard edge.
+            juce::ColourGradient raisedLip(juce::Colours::transparentWhite,0,317,
+                juce::Colours::transparentWhite,0,364,false);
+            raisedLip.addColour(.23,juce::Colour(0xffd0d0cc).withAlpha(.09f-.02f*age));
+            raisedLip.addColour(.47,juce::Colour(0xffbfc1bd).withAlpha(.065f-.01f*age));
+            g.setGradientFill(raisedLip);g.fillRect(60.0f,317.0f,1381.0f,47.0f);
             // Move the original photographic lower screw row above the bender,
             // replacing the old seats with neighbouring unoccupied panel material.
             for(const auto p:{juce::Point<int>(98,799),{277,799}}) {
@@ -1603,7 +1620,7 @@ public:
                 screwOxidation(g,{(p.x-2)*float(designW)/1770,(p.y-7)*float(bodyH)/873+(p.y>790?-40.0f:0.0f)},age,screwSeed);
                 screwSeed+=7717;
             }
-            kb09_gui::drawPowerScrew(g,{205,395},age,false);
+            kb09_gui::drawPowerScrew(g,{205,401},age,false);
             kb09_gui::drawPowerScrew(g,{205,449},age,true);
         }
         paintFooter(g);
@@ -1628,7 +1645,7 @@ private:
     std::unique_ptr<juce::TooltipWindow> tooltip;juce::Image conditionBackdrop,previousCondition,resizeBackdrop;std::array<juce::Image,5> agePreviews;std::vector<juce::Component::SafePointer<juce::Component>> hiddenForCondition;uint64_t previewParameters=0;double previewIdleAfter=0;float previewAge=-1;bool renderingCondition=false;double resizeCacheUntil=0;
     FineSlider bender;juce::ScopedMessageBox externalHelp;Meter meter;RateLamp rateLamp;
     std::vector<std::unique_ptr<Control>> controls;
-    std::array<int,128> lastKeys{};float lastAge=-1;int lastLabelRange=-1;bool lastModern=false,bendActive=false,userPreset=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1;unsigned lastProgramRevision=0;double lastConditionPaint=0;
+    std::array<int,128> lastKeys{};float lastAge=-1;int lastLabelRange=-1;bool lastModern=false,bendActive=false,userPreset=false,lastHoldMode=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1,lastHeldNote=-1;unsigned lastProgramRevision=0;double lastConditionPaint=0;
     std::array<bool,13> computerHeld{};
     int computerOctave=4;
     static constexpr const char* computerKeys="AWSEDFTGYHUJK";
@@ -1683,6 +1700,10 @@ private:
         if(displayedNote!=lastDisplayedNote){lastDisplayedNote=displayedNote;keysChanged=true;}
         const int displayedKeyboardNote=processor.displayedKeyboardNote.load(std::memory_order_relaxed);
         if(displayedKeyboardNote!=lastDisplayedKeyboardNote){lastDisplayedKeyboardNote=displayedKeyboardNote;keysChanged=true;}
+        const int heldNote=processor.displayedHeldNote.load(std::memory_order_relaxed);
+        if(heldNote!=lastHeldNote){lastHeldNote=heldNote;keysChanged=true;}
+        const bool holdMode=processor.state.getRawParameterValue("vcaMode")->load()<.5f;
+        if(holdMode!=lastHoldMode){lastHoldMode=holdMode;keysChanged=true;}
         if(keysChanged)keyboard.repaint();
         const float age=processor.state.getRawParameterValue("age")->load();
         // Coalesce full-instrument wear redraws while the AGE thumb remains live.

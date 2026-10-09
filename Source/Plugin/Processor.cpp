@@ -43,7 +43,7 @@ void SH09Processor::clearKeyDisplay() noexcept {
  displayedKeyboardNote.store(-1,std::memory_order_relaxed);
 }
 void SH09Processor::clearVoiceDisplay() noexcept {
- clearKeyDisplay();displayedNote.store(-1,std::memory_order_relaxed);
+ clearKeyDisplay();displayedNote.store(-1,std::memory_order_relaxed);displayedHeldNote.store(-1,std::memory_order_relaxed);
  displayedEnvelope.store(0,std::memory_order_relaxed);displayedFollower.store(0,std::memory_order_relaxed);
  displayedModulatorLamp.store(false,std::memory_order_relaxed);
  displayedInput.store(0,std::memory_order_relaxed);displayedModulatorFrequency.store(0,std::memory_order_relaxed);
@@ -131,6 +131,7 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  // Process end-of-block and zero-length flush events without losing note-offs.
  while(event!=end){const auto meta=*event;handleMidi(meta.data,meta.numBytes);++event;}
  midi.clear();displayedNote.store(engine.currentNote(),std::memory_order_relaxed);
+ displayedHeldNote.store(engine.lastPlayedNote(),std::memory_order_relaxed);
  displayedEnvelope.store(engine.envelopeLevel(),std::memory_order_relaxed);displayedFollower.store(engine.followerLevel(),std::memory_order_relaxed);
  displayedModulatorLamp.store(engine.modulatorLampOn(),std::memory_order_relaxed);
  displayedInput.store(juce::jmax(inputPeak,displayedInput.load(std::memory_order_relaxed)*float(std::exp(-buffer.getNumSamples()/(getSampleRate()*.15)))),std::memory_order_relaxed);

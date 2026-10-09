@@ -28,6 +28,7 @@ public:
  void setTempo(double bpm) noexcept;
  float process(float externalMono) noexcept;
  int currentNote() const noexcept {return selected;}
+ int lastPlayedNote() const noexcept {return pitchInitialized?lastNote:-1;}
  float envelopeLevel() const noexcept {return float(env);}
  float followerLevel() const noexcept {return float(follower[2]);}
  double currentPitch() const noexcept {return pitch;}

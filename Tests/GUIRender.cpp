@@ -291,6 +291,17 @@ void checkKeyboardFeedback(SH09Processor& processor, juce::Component& editor, co
     keyboard->mouseUp(mouseEvent(64));
     processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));
     processMidi(processor,juce::MidiMessage::noteOff(1,60));
+    const auto unlatched=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+    setParameter(processor,"vcaMode",0);
+    processMidi(processor,juce::MidiMessage::noteOn(1,60,juce::uint8(100)));
+    processMidi(processor,juce::MidiMessage::noteOff(1,60));
+    const auto latched=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);
+    checks.expect(processor.keyDisplay[60].load()==0&&processor.displayedHeldNote.load()==60
+                  &&markerIs(latched,60,amberBar)&&changedPixels(unlatched,latched,12)>100,
+                  "VCA HOLD keeps the last sounding key visibly depressed after key-up");
+    setParameter(processor,"vcaMode",1);
+    checks.expect(changedPixels(unlatched,keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f))==0,
+                  "leaving VCA HOLD restores the released key appearance");
 }
 
 void checkFineGestures(SH09Processor& processor,juce::Component& editor,Checks& checks) {
@@ -361,12 +372,12 @@ void checkFineGestures(SH09Processor& processor,juce::Component& editor,Checks& 
         const auto snap=[&]{return keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,1.0f);};
         const auto authentic=snap();
         setParameter(processor,"modern",1);settleEditor();const auto labelled=snap();
-        checks.expect(changedPixels(authentic,labelled,5)>60,"Modern C labels are legible on key top faces");
+        checks.expect(changedPixels(authentic,labelled)==0,"C octave labels remain visible in both Authentic and Modern modes");
         const float oldRange=processor.state.getRawParameterValue("range")->load();
         setParameter(processor,"range",oldRange==0?1:0);settleEditor();
         checks.expect(changedPixels(labelled,snap(),5)>15,"RANGE updates octave labels without touching the keyboard");
         setParameter(processor,"range",oldRange);setParameter(processor,"modern",0);settleEditor();
-        checks.expect(changedPixels(authentic,snap())==0,"Authentic mode removes all Modern key-label pixels");
+        checks.expect(changedPixels(authentic,snap())==0,"restoring RANGE keeps the same Authentic C key labels");
     }
 
 }

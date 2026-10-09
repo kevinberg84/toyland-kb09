@@ -35,7 +35,7 @@ updates = {
     'KB-09-source/SH-09/Source/GUI/Editor.cpp': root / 'Source/GUI/Editor.cpp',
     'KB-09-source/SH-09/Source/GUI/PowerDetails.h': root / 'Source/GUI/PowerDetails.h',
     'KB-09-source/SH-09/Tests/GUIRender.cpp': root / 'Tests/GUIRender.cpp',
-    'KB-09-source/SH-09/docs/manual/assets/panel-0.13.20.png': root / 'docs/manual/assets/panel-0.13.20.png',
+    'KB-09-source/SH-09/docs/manual/assets/panel-0.13.21.png': root / 'docs/manual/assets/panel-0.13.21.png',
 }
 # Ship the complete current source changes, including new headers and DSP tests.
 for folder in ('Source','Tests','Assets/Icons','Assets/Photoreal'):
@@ -57,7 +57,7 @@ with zipfile.ZipFile(kit) as old, zipfile.ZipFile(temporary, 'w', zipfile.ZIP_DE
             new.writestr(entry,data)
     for name, path in updates.items(): new.writestr(name.replace('KB-09-source/SH-09/','KB-09-source/KB-09/'), path.read_bytes())
 temporary.replace(kit)
-kit.rename(kit.with_name('KB-09-0.13.20-source.zip'))
+kit.rename(kit.with_name('KB-09-0.13.21-source.zip'))
 for note in (support/'Development').rglob('Read me.txt'):
     text=note.read_text(encoding='utf-8').replace('SH-09/','KB-09/').replace('-S SH-09 ','-S KB-09 ').replace('.sh09state','.kb09')
     note.write_text(text,encoding='utf-8')
@@ -65,8 +65,8 @@ dev_aax = support / 'Development/AAX unsigned Windows'
 for p in dev_aax.glob('*.aaxplugin'):
     shutil.rmtree(p)
 shutil.copytree(build / 'AAX/Toyland KB-09.aaxplugin', dev_aax / 'Toyland KB-09.aaxplugin')
-(support / 'Validation Summary.txt').write_text('KB-09 0.13.20 control and display fixes - 9 October 2026\nWindows VST3, standalone and unsigned AAX rebuilt.\nValidation results are recorded in the accompanying release record. Earlier Steinberg/actual-host evidence belongs to 0.13.2.\nMac AU/VST3 supplied separately as unverified test builds. AAX unsigned; Pro Tools untested.\n', encoding='utf-8')
-(support / 'Release Notes.txt').write_text('KB-09 0.13.20 - 9 October 2026\nEXT AUDIO uses the shared dialog style with an OK button. Ctrl+W (Cmd+W on Mac) closes the standalone through its save prompt.\nCleaned removed top screw sites in both panel artwork endpoints; removed obsolete procedural oxidation; shifted rail wear off-center. Organic dust density between collars, denser lower-rail powder, plastic-only side scuffs and smudges. Black keys develop uneven matte wear and fine abrasions. Bender seam follows light with muted shadow edges; fractured plastic has asymmetric geometry and neutral grey variation. Modern-only C labels are larger and on top faces; changing mode or RANGE refreshes them. POWER retains a raised ON cap with a taller OFF body, corrected placement, and irregular grey screw oxidation. Smaller instrument wordmark and full-width white stripe; recessed dusty TUNE top. Short memorial to Jaime Castillo (AKA Spliff Roland), 1982-2022.\nWindows standalone/VST3; unsigned AAX development build. Mac universal AU/VST3/standalone distributed separately and marked UNVERIFIED pending everyday host testing.\n', encoding='utf-8')
+(support / 'Validation Summary.txt').write_text('KB-09 0.13.21 panel and interaction refinement - 9 October 2026\nWindows VST3, standalone and unsigned AAX rebuilt.\nValidation results are recorded in the accompanying release record. Earlier Steinberg/actual-host evidence belongs to 0.13.2.\nMac AU/VST3 supplied separately as unverified test builds. AAX unsigned; Pro Tools untested.\n', encoding='utf-8')
+(support / 'Release Notes.txt').write_text('KB-09 0.13.21 - 9 October 2026\nThe continuous upper panel now has a shallow reflection beneath its printed stripe, with all screws retained. Plastic side cheeks show fewer, varied scuffs and soft smears. Worn black keys retain some uneven reflection. POWER screws are evenly spaced around the button; C octave labels remain in Authentic and Modern modes. HOLD keeps its last sounding key visibly depressed. Header size buttons have balanced spacing. Windows standalone makes a stronger foreground request after native peer creation. The closing save prompt accepts arrow keys to switch Save / Don\'t Save, Enter to choose, and Esc to cancel.\nWindows standalone/VST3; unsigned AAX development build. Mac universal AU/VST3/standalone distributed separately and marked UNVERIFIED pending everyday host testing.\n', encoding='utf-8')
 files = []
 for folder in ('VST3', 'User Guide', 'Licenses', 'Factory Presets'):
     for path in sorted((support / folder).rglob('*')):
