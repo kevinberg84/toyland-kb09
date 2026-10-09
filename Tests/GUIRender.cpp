@@ -709,10 +709,20 @@ void checkKnobMetalAging(SH09Processor& processor,juce::Component& editor,
             tintOnly.setPixelAt(x,y,juce::Colour(value,value,value));
         }
         const double negative=textureChange(images[0],tintOnly,area);
+        if(label=="top interior") {
         checks.expect(texture[2]>.8&&texture[2]>negative*3+.5,
                       label+" AGE 7 adds fine surface variation beyond a tint-only negative control ("+juce::String(texture[2],2)+" vs "+juce::String(negative,2)+")");
         checks.expect(texture[1]>.1&&texture[2]>texture[1]+.1&&texture[3]>texture[2]+.1,
                       label+" fine pitting grows gradually across AGE 3, 7 and 10 ("+juce::String(texture[1],2)+", "+juce::String(texture[2],2)+", "+juce::String(texture[3],2)+")");
+        } else {
+            double warmth=0;
+            for(int y=area.getY();y<area.getBottom();++y)for(int x=area.getX();x<area.getRight();++x) {
+                const auto c=images[3].getPixelAt(x,y);warmth+=std::abs(int(c.getRed())-int(c.getBlue()));
+            }
+            warmth/=double(area.getWidth()*area.getHeight());
+            checks.expect(warmth<5,"aged collar stays neutral metal without brown corrosion");
+            checks.expect(texture[3]<4,"aged collar dulls without the knob top's pitted corrosion texture");
+        }
     }
     checks.expect(changedPixels(capture(.6999f),capture(.7001f),2)==0,
                   "adjacent AGE values keep knob pit locations fixed without an abrupt damage event");
