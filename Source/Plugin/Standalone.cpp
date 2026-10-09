@@ -6,6 +6,13 @@ namespace {
 class InstrumentWindow final : public juce::StandaloneFilterWindow {
 public:
     using StandaloneFilterWindow::StandaloneFilterWindow;
+    bool keyPressed(const juce::KeyPress& key) override {
+        if (key.getModifiers().isCommandDown() && !key.getModifiers().isAltDown()
+            && (key.getKeyCode() == 'w' || key.getKeyCode() == 'W')) {
+            closeButtonPressed(); return true;
+        }
+        return StandaloneFilterWindow::keyPressed(key);
+    }
     void closeButtonPressed() override {
         if (auto* app = juce::JUCEApplicationBase::getInstance()) app->systemRequestedQuit();
     }
