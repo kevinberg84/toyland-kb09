@@ -1297,20 +1297,20 @@ public:
         :processor(p),sizing(s),presetFiles(p,*this),keyboard(p),header(s),maximise(s),power(p) {
         setLookAndFeel(&look);setSize(designW,designH);
         addAndMakeVisible(header);header.setBounds(0,0,designW,headerH);
-        addAndMakeVisible(updates);updates.setBounds(22,5,132,24);updates.setButtonText("TOYLAND / KB-09");updates.setComponentID("updates");updates.onClick=[this]{kb09::Updates::instance().showMenu(&updates);};
+        addAndMakeVisible(updates);updates.setBounds(25,5,132,24);updates.setButtonText("TOYLAND / KB-09");updates.setComponentID("updates");updates.onClick=[this]{kb09::Updates::instance().showMenu(&updates);};
         addAndMakeVisible(keyboard);keyboard.setBounds(286,headerH+370,1142,325);
         for(int i=0;i<processor.getNumPrograms();++i)presets.addItem(processor.getProgramName(i),i+1);
-        addAndMakeVisible(presets);presets.setBounds(438,5,336,24);presets.setComponentID("factoryPreset");
+        addAndMakeVisible(presets);presets.setBounds(441,5,336,24);presets.setComponentID("factoryPreset");
         presets.setTooltip("Factory patch. Loading replaces current sound settings.");
         presets.setSelectedId(processor.getCurrentProgram()+1,juce::dontSendNotification);
         presets.onChange=[this]{if(presets.getSelectedId()>0){userPreset=false;processor.setCurrentProgram(presets.getSelectedId()-1);}};
-        addAndMakeVisible(previous);previous.setButtonText("<");previous.setBounds(407,5,25,24);
+        addAndMakeVisible(previous);previous.setButtonText("<");previous.setBounds(410,5,25,24);
         previous.onClick=[this]{userPreset=false;processor.setCurrentProgram((processor.getCurrentProgram()+processor.getNumPrograms()-1)%processor.getNumPrograms());};
-        addAndMakeVisible(next);next.setButtonText(">");next.setBounds(780,5,25,24);
+        addAndMakeVisible(next);next.setButtonText(">");next.setBounds(783,5,25,24);
         next.onClick=[this]{userPreset=false;processor.setCurrentProgram((processor.getCurrentProgram()+1)%processor.getNumPrograms());};
-        addAndMakeVisible(savePreset);savePreset.setButtonText("SAVE");savePreset.setBounds(817,5,56,24);savePreset.setComponentID("savePreset");
+        addAndMakeVisible(savePreset);savePreset.setButtonText("SAVE");savePreset.setBounds(820,5,56,24);savePreset.setComponentID("savePreset");
         savePreset.setTooltip("Save the complete sound as a reusable .kb09 preset.");savePreset.onClick=[this]{presetFiles.savePreset();};
-        addAndMakeVisible(loadPreset);loadPreset.setButtonText("LOAD");loadPreset.setBounds(879,5,56,24);loadPreset.setComponentID("loadPreset");
+        addAndMakeVisible(loadPreset);loadPreset.setButtonText("LOAD");loadPreset.setBounds(882,5,56,24);loadPreset.setComponentID("loadPreset");
         loadPreset.setTooltip("Load a saved .kb09 preset.");loadPreset.onClick=[this]{presetFiles.loadPreset();};
         presetFiles.onCompleted=[this](const juce::Result& result,const juce::File& file,bool wasLoad) {
             if(result.wasOk()) {
@@ -1319,24 +1319,24 @@ public:
             }
         };
         addAndMakeVisible(meter);meter.setBounds(1008,7,270,20);
-        addAndMakeVisible(small);small.setButtonText("S");small.setBounds(1296,5,35,24);small.setComponentID("sizeS");
+        addAndMakeVisible(small);small.setButtonText("S");small.setBounds(1299,5,35,24);small.setComponentID("sizeS");
         small.setTooltip("Small: fit within 65% of this screen's work-area width and height, with the complete instrument visible.");small.onClick=[this]{sizing.chooseSmall();};
-        addAndMakeVisible(medium);medium.setButtonText("M");medium.setBounds(1337,5,35,24);medium.setComponentID("sizeM");
+        addAndMakeVisible(medium);medium.setButtonText("M");medium.setBounds(1340,5,35,24);medium.setComponentID("sizeM");
         medium.setTooltip("Medium: fit within 90% of this screen's work-area width and height.");medium.onClick=[this]{sizing.chooseMedium();};
-        addAndMakeVisible(large);large.setButtonText("L");large.setBounds(1378,5,35,24);large.setComponentID("sizeL");
+        addAndMakeVisible(large);large.setButtonText("L");large.setBounds(1381,5,35,24);large.setComponentID("sizeL");
         large.setTooltip("Large: fill this screen's available work area. For sharpness in Live, disable Auto-Scale Plug-in Window if available, then create a fresh instance.");large.onClick=[this]{sizing.chooseLarge();};
         if(processor.wrapperType==juce::AudioProcessor::wrapperType_Standalone) {
             // The native caption owns maximise; end the visible row at the
             // same insets as the footer controls.
-            small.setTopLeftPosition(1355,5);
-            medium.setTopLeftPosition(1396,5);
-            large.setTopLeftPosition(1437,5);
+            small.setTopLeftPosition(1358,5);
+            medium.setTopLeftPosition(1399,5);
+            large.setTopLeftPosition(1440,5);
             header.getProperties().set("standalone",true);
             addAndMakeVisible(audioMidi);audioMidi.setComponentID("audioMidiSettings");
-            audioMidi.setButtonText("AUDIO / MIDI");audioMidi.setBounds(286,5,115,24);
+            audioMidi.setButtonText("AUDIO / MIDI");audioMidi.setBounds(289,5,115,24);
             setWantsKeyboardFocus(true);addKeyListener(this);
             addAndMakeVisible(computerKeyboard);computerKeyboard.setComponentID("computerKeyboard");
-            computerKeyboard.setBounds(158,5,122,24);computerKeyboard.setClickingTogglesState(true);
+            computerKeyboard.setBounds(161,5,122,24);computerKeyboard.setClickingTogglesState(true);
             computerKeyboard.setWantsKeyboardFocus(false);
             computerKeyboard.setColour(juce::TextButton::buttonOnColourId,amber);
             computerKeyboard.setColour(juce::TextButton::textColourOnId,juce::Colour(0xff151a1d));
@@ -1349,7 +1349,7 @@ public:
             };
         }
         if(processor.wrapperType!=juce::AudioProcessor::wrapperType_Standalone)addAndMakeVisible(maximise);
-        maximise.setBounds(1425,0,47,34);maximise.setComponentID("maximise");
+        maximise.setBounds(1428,0,47,34);maximise.setComponentID("maximise");
         sizing.onChange=[this]{header.repaint();maximise.repaint();};
         addSwitch("lfoWave",116,104,49,121,{0,1,2},{"SINE","SQUARE","RANDOM\n(S/H)"},"Modulator: sine, square or random sample-and-hold.");
         addFader("lfoRate","RATE",182,96,43,129);controls.back()->label->setVisible(false);addFader("lfoDelay","DELAY",224,96,43,129);
@@ -1382,7 +1382,7 @@ public:
         bender.textFromValueFunction=[](double v){return (v>0?juce::String("+"):juce::String())+juce::String(v*100,1)+"%";};
         bender.onValueChange=[this]{bendActive=std::abs(bender.getValue())>.0001;processor.queuePitchBend(float(bender.getValue()));};
         bender.onDragEnd=[this]{bender.setValue(0,juce::sendNotificationSync);};
-        addSwitch("modern",22,designH-headerH-44,131,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
+        addSwitch("modern",25,designH-headerH-44,131,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
         // Keep a consistent 52-unit gap between bottom-row control groups.
         addUtility("age","CONDITION / AGE",290,170);
         controls.back()->slider->onDragStart=[this]{
@@ -1411,7 +1411,7 @@ public:
         descriptions.setColour(juce::TextButton::textColourOnId,juce::Colour(0xff151a1d));
         descriptions.onClick=[this]{descriptions.setButtonText(descriptions.getToggleState()?"DESCRIPTION ON":"DESCRIPTION");};
         tooltip=std::make_unique<DescriptionTips>(this,descriptions);
-        addAndMakeVisible(help);help.setButtonText("EXT AUDIO");help.setBounds(1352,designH-35,120,24);
+        addAndMakeVisible(help);help.setButtonText("EXT AUDIO");help.setBounds(1355,designH-35,120,24);help.setComponentID("externalAudioHelp");
         help.onClick=[this] {
             externalHelp.close();
             externalHelp=juce::AlertWindow::showScopedAsync(

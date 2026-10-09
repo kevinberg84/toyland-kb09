@@ -1256,8 +1256,13 @@ int main(int argc, char** argv) {
             auto* left=findComponent(*editor,"updates");
             auto* right=findComponent(*editor,"sizeL");
             checks.expect(left&&right&&left->getParentComponent()==right->getParentComponent()
-                &&left->getX()==22&&right->getParentComponent()->getWidth()-right->getRight()==28,
+                &&left->getX()==25&&right->getParentComponent()->getWidth()-right->getRight()==25,
                 "standalone top row matches the footer's left and right insets");
+            auto* footerLeft=findComponent(*editor,"modern");
+            auto* footerRight=findComponent(*editor,"externalAudioHelp");
+            checks.expect(footerLeft&&footerRight&&footerLeft->getX()==25
+                &&footerRight->getParentComponent()->getWidth()-footerRight->getRight()==25,
+                "footer has the same symmetric 25-unit insets as the header");
             const auto image=editor->createComponentSnapshot(editor->getLocalBounds(),true,2.0f);
             checks.expect(writePNG(image,directory.getChildFile("standalone_header.png")),"actual standalone header export");
         }
