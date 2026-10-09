@@ -13,7 +13,7 @@ updates={prefix+'User Manual.html':(root/'docs/manual/User Manual.html').read_by
          prefix+'OPEN ME FIRST!.html':(root/'docs/open-me-first-mac.html').read_bytes()}
 with zipfile.ZipFile(source) as old,zipfile.ZipFile(dest,'w',zipfile.ZIP_DEFLATED) as new:
     for entry in old.infolist():
-        if entry.filename.endswith(('User Manual.pdf','START HERE.txt','OPEN ME FIRST!.txt')): continue
+        if entry.filename.endswith(('User Manual.pdf','START HERE.txt','OPEN ME FIRST!.txt','README.md')) or '/User Guide/qa/' in entry.filename or '/User Guide/reference/' in entry.filename or entry.filename.endswith('/User Guide/User Manual.html'): continue
         if entry.filename not in updates: new.writestr(entry,old.read(entry))
         elif entry.filename.endswith('/INSTALL KB-09.command'):
             new.writestr(entry,updates.pop(entry.filename))

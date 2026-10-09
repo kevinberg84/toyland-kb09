@@ -15,7 +15,7 @@ for preset in (support/'Factory Presets').glob('*.sh09state'):
 for note in (support/'Factory Presets').glob('*.txt'):
     note.write_text(note.read_text(encoding='utf-8').replace('.sh09state','.kb09'),encoding='utf-8')
 build = Path('C:/Dev/SH-09/build-kb09/SH09_artefacts/Release')
-for folder in ('VST3', 'Standalone', 'AAX'):
+for folder in ('VST3', 'Standalone'):
     if (support / folder).exists(): shutil.rmtree(support / folder)
     shutil.copytree(build / folder, support / folder)
 shutil.move(support/'Standalone/Toyland KB-09.exe', package/'Toyland KB-09 Standalone.exe')
@@ -25,48 +25,14 @@ shutil.copy2(root / 'docs/manual/index.html', support / 'User Guide/index.html')
 shutil.copytree(root / 'docs/manual/assets', support / 'User Guide/assets', dirs_exist_ok=True)
 (support / 'START HERE.html').unlink()
 shutil.copy2(root / 'tools/install_friends.ps1', support / 'Install.ps1')
-# Keep the tucked-away source kit current with this packaging/manual revision.
-kit = next((support / 'Development/Mac AU build kit').glob('*.zip'))
-updates = {
-    'KB-09-source/SH-09/.github/workflows/build-macos.yml': root / 'tools/build-macos.yml',
-    'KB-09-source/SH-09/tools/install-mac.command': root / 'tools/install-mac.command',
-    'KB-09-source/SH-09/docs/manual/index.html': root / 'docs/manual/index.html',
-    'KB-09-source/SH-09/Source/GUI/PresetFiles.cpp': root / 'Source/GUI/PresetFiles.cpp',
-    'KB-09-source/SH-09/Source/GUI/Editor.cpp': root / 'Source/GUI/Editor.cpp',
-    'KB-09-source/SH-09/Source/GUI/PowerDetails.h': root / 'Source/GUI/PowerDetails.h',
-    'KB-09-source/SH-09/Tests/GUIRender.cpp': root / 'Tests/GUIRender.cpp',
-    'KB-09-source/SH-09/docs/manual/assets/panel-0.13.21.png': root / 'docs/manual/assets/panel-0.13.21.png',
-}
-# Ship the complete current source changes, including new headers and DSP tests.
-for folder in ('Source','Tests','Assets/Icons','Assets/Photoreal'):
-    for file in (root/folder).rglob('*'):
-        if file.is_file(): updates['KB-09-source/SH-09/'+file.relative_to(root).as_posix()]=file
-updates['KB-09-source/SH-09/CMakeLists.txt']=root/'CMakeLists.txt'
-updates['KB-09-source/SH-09/docs/open-me-first-mac.html']=root/'docs/open-me-first-mac.html'
-updates['KB-09-source/SH-09/docs/open-me-first.html']=root/'docs/open-me-first.html'
-updates['KB-09-source/SH-09/docs/manual/assets/kb09-icon.png']=root/'docs/manual/assets/kb09-icon.png'
-updates['KB-09-source/SH-09/docs/manual/User Manual.html']=root/'docs/manual/User Manual.html'
-
-temporary = kit.with_suffix('.new.zip')
-with zipfile.ZipFile(kit) as old, zipfile.ZipFile(temporary, 'w', zipfile.ZIP_DEFLATED) as new:
-    for entry in old.infolist():
-        if entry.filename.endswith(('User Manual.pdf', 'make_manual_pdf.py')): continue
-        if entry.filename not in updates:
-            data=old.read(entry.filename)
-            entry.filename=entry.filename.replace('KB-09-source/SH-09/','KB-09-source/KB-09/')
-            new.writestr(entry,data)
-    for name, path in updates.items(): new.writestr(name.replace('KB-09-source/SH-09/','KB-09-source/KB-09/'), path.read_bytes())
-temporary.replace(kit)
-kit.rename(kit.with_name('KB-09-0.13.21-source.zip'))
-for note in (support/'Development').rglob('Read me.txt'):
-    text=note.read_text(encoding='utf-8').replace('SH-09/','KB-09/').replace('-S SH-09 ','-S KB-09 ').replace('.sh09state','.kb09')
-    note.write_text(text,encoding='utf-8')
-dev_aax = support / 'Development/AAX unsigned Windows'
-for p in dev_aax.glob('*.aaxplugin'):
-    shutil.rmtree(p)
-shutil.copytree(build / 'AAX/Toyland KB-09.aaxplugin', dev_aax / 'Toyland KB-09.aaxplugin')
-(support / 'Validation Summary.txt').write_text('KB-09 0.13.21 panel and interaction refinement - 9 October 2026\nWindows VST3, standalone and unsigned AAX rebuilt.\nValidation results are recorded in the accompanying release record. Earlier Steinberg/actual-host evidence belongs to 0.13.2.\nMac AU/VST3 supplied separately as unverified test builds. AAX unsigned; Pro Tools untested.\n', encoding='utf-8')
-(support / 'Release Notes.txt').write_text('KB-09 0.13.21 - 9 October 2026\nThe continuous upper panel now has a shallow reflection beneath its printed stripe, with all screws retained. Plastic side cheeks show fewer, varied scuffs and soft smears. Worn black keys retain some uneven reflection. POWER screws are evenly spaced around the button; C octave labels remain in Authentic and Modern modes. HOLD keeps its last sounding key visibly depressed. Header size buttons have balanced spacing. Windows standalone makes a stronger foreground request after native peer creation. The closing save prompt accepts arrow keys to switch Save / Don\'t Save, Enter to choose, and Esc to cancel.\nWindows standalone/VST3; unsigned AAX development build. Mac universal AU/VST3/standalone distributed separately and marked UNVERIFIED pending everyday host testing.\n', encoding='utf-8')
+# Friend distributions contain only usable formats and their required notices.
+for folder in ('Development', 'AAX'):
+    shutil.rmtree(support / folder, ignore_errors=True)
+for name in ('AAX-SDK-LICENSE.txt', 'JUCE-9.0.2.spdx.json'):
+    (support / 'Licenses' / name).unlink(missing_ok=True)
+(support / 'Licenses/Read me.txt').write_text('This package uses JUCE 9.0.2 and the included VST3/AU notices. https://github.com/juce-framework/JUCE\n', encoding='utf-8')
+(support / 'Validation Summary.txt').write_text('KB-09 0.13.21 panel and interaction refinement - 9 October 2026\nWindows VST3 and standalone rebuilt.\nValidation results are recorded in the accompanying release record. Earlier Steinberg/actual-host evidence belongs to 0.13.2.\nMac AU/VST3 supplied separately as unverified test builds.\n', encoding='utf-8')
+(support / 'Release Notes.txt').write_text('KB-09 0.13.21 - 9 October 2026\nThe continuous upper panel now has a shallow reflection beneath its printed stripe, with all screws retained. Plastic side cheeks show fewer, varied scuffs and soft smears. Worn black keys retain some uneven reflection. POWER screws are evenly spaced around the button; C octave labels remain in Authentic and Modern modes. HOLD keeps its last sounding key visibly depressed. Header size buttons have balanced spacing. Windows standalone makes a stronger foreground request after native peer creation. The closing save prompt accepts arrow keys to switch Save / Don\'t Save, Enter to choose, and Esc to cancel.\nWindows standalone/VST3. Mac universal AU/VST3/standalone distributed separately and marked UNVERIFIED pending everyday host testing.\n', encoding='utf-8')
 files = []
 for folder in ('VST3', 'User Guide', 'Licenses', 'Factory Presets'):
     for path in sorted((support / folder).rglob('*')):
