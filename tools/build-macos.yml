@@ -1,0 +1,70 @@
+name: Build unverified Mac plug-ins
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get matching JUCE source
+        run: git clone --depth 1 --branch 9.0.2 https://github.com/juce-framework/JUCE.git "$RUNNER_TEMP/JUCE"
+      - name: Configure universal Mac build
+        run: cmake -S . -B build-mac -G Xcode -DJUCE_DIR="$RUNNER_TEMP/JUCE" -DKB09_BUILD_AU=ON -DKB09_BUILD_AAX=OFF '-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64' -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
+      - name: Build plug-ins and tests
+        run: cmake --build build-mac --config Release --target SH09_AU SH09_VST3 SH09_Standalone SH09DSPTests SH09ProcessorTests SH09PresetFilesTests KB09UpdateTests --parallel 3
+      - name: Test audio engine and presets
+        run: ctest --test-dir build-mac -C Release --output-on-failure
+      - name: Check architectures and sign for development testing
+        shell: bash
+        run: |
+          set -euo pipefail
+          for kind in AU VST3 Standalone; do
+            if [ "$kind" = AU ]; then ext=component; elif [ "$kind" = VST3 ]; then ext=vst3; else ext=app; fi
+            bundle="build-mac/SH09_artefacts/Release/$kind/Toyland KB-09.$ext"
+            lipo "$bundle/Contents/MacOS/Toyland KB-09" -verify_arch arm64 x86_64
+            codesign --force --deep --sign - "$bundle"
+            codesign --verify --deep --strict "$bundle"
+          done
+      - name: Run Apple AU validation on this runner
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo mkdir -p '/Library/Audio/Plug-Ins/Components'
+          sudo ditto 'build-mac/SH09_artefacts/Release/AU/Toyland KB-09.component' '/Library/Audio/Plug-Ins/Components/Toyland KB-09.component'
+          /usr/libexec/PlistBuddy -c 'Print :AudioComponents' "/Library/Audio/Plug-Ins/Components/Toyland KB-09.component/Contents/Info.plist"
+          sudo killall -9 AudioComponentRegistrar || true
+          for attempt in 1 2 3 4 5; do
+            auval -a > au-components.txt
+            if grep -q Sh09 au-components.txt; then break; fi
+            sleep 2
+          done
+          auval -v aumu Sh09 PrIv | tee auval.txt
+      - name: Package unverified Mac download
+        shell: bash
+        run: |
+          set -euo pipefail
+          folder='Toyland KB-09 for Mac - UNVERIFIED'
+          mkdir -p "$folder/Support"
+          sudo ditto 'build-mac/SH09_artefacts/Release/AU/Toyland KB-09.component' "$folder/Support/Toyland KB-09.component"
+          ditto 'build-mac/SH09_artefacts/Release/VST3/Toyland KB-09.vst3' "$folder/Support/Toyland KB-09.vst3"
+          ditto 'build-mac/SH09_artefacts/Release/Standalone/Toyland KB-09.app' "$folder/Toyland KB-09 Standalone.app"
+          ditto 'docs/manual' "$folder/Support/User Guide"
+          cp 'docs/manual/User Manual.html' "$folder/User Manual.html"
+          cp auval.txt "$folder/Support/auval.txt"
+          cp au-components.txt "$folder/Support/au-components.txt"
+          cp tools/install-mac.command "$folder/INSTALL KB-09.command"
+          chmod +x "$folder/INSTALL KB-09.command"
+          printf '%s\n' 'UNVERIFIED MAC BUILD — for testing with Kevin.' '1. Extract this ZIP.' '2. Close your music software.' '3. Double-click INSTALL KB-09.command.' '4. Reopen your music software and rescan plug-ins.' '' 'Built for macOS 12 or later, Intel and Apple Silicon. Ad-hoc signed, not Developer ID signed or notarized. If macOS blocks it, contact Kevin for help; do not disable system security.' 'Passing auval on the build runner is not a Logic/GarageBand test. Please report bugs or manual mistakes to Kevin with your Mac, macOS and host versions.' 'Open User Manual.html beside this file for installation, controls and troubleshooting.' > "$folder/OPEN ME FIRST!.txt"
+          ditto -c -k --sequesterRsrc --keepParent "$folder" 'Toyland KB-09 for Mac - UNVERIFIED.zip'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KB-09-Mac-UNVERIFIED
+          path: Toyland KB-09 for Mac - UNVERIFIED.zip
+          retention-days: 30
+
+
+

@@ -1,5 +1,6 @@
 #include "Processor.h"
 #include "../GUI/PresetFiles.h"
+#include "../GUI/Editor.h"
 #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
 #if JUCE_WINDOWS
 #include <windows.h>
@@ -8,7 +9,14 @@
 namespace {
 class InstrumentWindow final : public juce::StandaloneFilterWindow {
 public:
-    using StandaloneFilterWindow::StandaloneFilterWindow;
+    InstrumentWindow(const juce::String& title, juce::Colour colour,
+                     std::unique_ptr<juce::StandalonePluginHolder> holder)
+        : StandaloneFilterWindow(title, colour, std::move(holder)) {
+        setUsingNativeTitleBar(true);
+        setTitleBarButtonsRequired(juce::DocumentWindow::allButtons,false);
+        if(auto* editor=dynamic_cast<SH09Editor*>(getAudioProcessor()->getActiveEditor()))
+            editor->prepareStandaloneWindow();
+    }
     bool keyPressed(const juce::KeyPress& key) override {
         if (key.getModifiers().isCommandDown() && !key.getModifiers().isAltDown()
             && (key.getKeyCode() == 'w' || key.getKeyCode() == 'W')) {
@@ -67,7 +75,7 @@ public:
     const juce::String getApplicationName() override { return "Toyland KB-09 Standalone"; }
     const juce::String getApplicationVersion() override { return JucePlugin_VersionString; }
     bool moreThanOneInstanceAllowed() override { return false; }
-    void anotherInstanceStarted(const juce::String&) override { focusConfirmed = false; foreground(); }
+    void anotherInstanceStarted(const juce::String&) override { foreground(); }
 
     void initialise(const juce::String&) override {
         juce::PropertiesFile::Options options;
@@ -102,13 +110,6 @@ public:
         };
         window->setVisible(true);
         foreground();
-        // The editor installs a native title bar asynchronously, recreating its
-        // peer. Retry activation only until this window has actually gained it.
-        for (const int delay : {120, 350, 850}) juce::Timer::callAfterDelay(delay, [delay] {
-            if (auto* app = dynamic_cast<InstrumentApp*>(juce::JUCEApplicationBase::getInstance()))
-                if (app->window && (!app->focusConfirmed || app->window->getPeer() != app->activatedPeer
-                                    || (delay <= 350 && !app->window->isActiveWindow()))) app->foreground();
-        });
     }
 
     void systemRequestedQuit() override {
@@ -145,7 +146,7 @@ private:
         if (auto* peer = window->getPeer()) {
             const auto hwnd = static_cast<HWND>(peer->getNativeHandle());
             if (hwnd != nullptr) {
-                ShowWindow(hwnd, SW_RESTORE);
+                if(IsIconic(hwnd)) ShowWindow(hwnd, SW_RESTORE);
                 const auto previous = GetForegroundWindow();
                 const auto foregroundThread = previous != nullptr ? GetWindowThreadProcessId(previous, nullptr) : 0;
                 const auto ownThread = GetCurrentThreadId();
@@ -163,16 +164,12 @@ private:
         window->toFront(true);
        #endif
         window->grabKeyboardFocus();
-        activatedPeer = window->getPeer();
-        focusConfirmed = window->isActiveWindow();
     }
     juce::ApplicationProperties properties;
     std::unique_ptr<InstrumentWindow> window;
     std::unique_ptr<sh09::PresetFiles> presets;
     std::unique_ptr<ClosePrompt> question;
     bool closing = false;
-    bool focusConfirmed = false;
-    juce::ComponentPeer* activatedPeer = nullptr;
 };
 }
 JUCE_CREATE_APPLICATION_DEFINE(InstrumentApp)

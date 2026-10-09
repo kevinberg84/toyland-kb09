@@ -10,6 +10,7 @@ public:
     void paint(juce::Graphics&) override;
     void parentHierarchyChanged() override;
     void visibilityChanged() override;
+    void prepareStandaloneWindow();
 private:
     class Panel;
     sh09::WindowSizing sizing;

@@ -273,6 +273,9 @@ struct WindowSizing::Impl final : private juce::Timer, private juce::ComponentLi
     void finishInitialFit() {
         initialFitTimer.stop();initialFitComplete=true;
     }
+    void prepareStandaloneWindow() {
+        finishInitialFit();request(Mode::medium);stopTimer();settleTicks=0;
+    }
     void peerAttached() {
         assertMessageThread();
         if(initialFitComplete||initialFitTimer.active()||editor.getPeer()==nullptr||!editor.isShowing())return;
@@ -535,6 +538,9 @@ void WindowSizing::chooseLarge(){impl->request(Mode::large);}
 void WindowSizing::toggleMaximise(){if(isLarge())restore();else chooseLarge();}
 void WindowSizing::restore(){impl->restoreWindow();}
 void WindowSizing::peerAttached(){impl->peerAttached();}
+void WindowSizing::prepareStandaloneWindow(){
+    impl->prepareStandaloneWindow();
+}
 void WindowSizing::beginHeaderDrag(const juce::MouseEvent& e){impl->begin(e);}
 void WindowSizing::dragHeader(const juce::MouseEvent& e){impl->drag(e);}
 void WindowSizing::endHeaderDrag(const juce::MouseEvent& e){impl->end(e);}

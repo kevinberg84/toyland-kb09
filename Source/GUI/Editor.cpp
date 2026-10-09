@@ -1326,6 +1326,11 @@ public:
         addAndMakeVisible(large);large.setButtonText("L");large.setBounds(1406,5,35,24);large.setComponentID("sizeL");
         large.setTooltip("Large: fill this screen's available work area. For sharpness in Live, disable Auto-Scale Plug-in Window if available, then create a fresh instance.");large.onClick=[this]{sizing.chooseLarge();};
         if(processor.wrapperType==juce::AudioProcessor::wrapperType_Standalone) {
+            // The native caption owns maximise; end the visible row at the
+            // same four-unit inset as the Toyland button on the left.
+            small.setTopLeftPosition(1379,5);
+            medium.setTopLeftPosition(1420,5);
+            large.setTopLeftPosition(1461,5);
             header.getProperties().set("standalone",true);
             addAndMakeVisible(audioMidi);audioMidi.setComponentID("audioMidiSettings");
             audioMidi.setButtonText("AUDIO / MIDI");audioMidi.setBounds(268,5,115,24);
@@ -1513,13 +1518,13 @@ public:
                     juce::Colours::transparentBlack,x+w,y+h,true);
                 g.setGradientFill(smear);g.fillEllipse(x-w,y-h,w*2,h*2);
             }
-            for(uint32_t i=0;i<58;++i) {
+            for(uint32_t i=0;i<140;++i) {
                 const uint32_t seed=surfaceHash(15077u+uint32_t(side)*191911u+i*7919u);
                 const float x=(side?1447.0f:5.0f)+45*surfaceNoise(seed),y=headerH+20+705*surfaceNoise(seed+31);
-                const float length=(i%7==0?9.0f:1.0f)+(i%7==0?20.0f:9.0f)*surfaceNoise(seed+53);
+                const float length=(i%7==0?9.0f:3.0f)+(i%7==0?20.0f:13.0f)*surfaceNoise(seed+53);
                 const float dy=(surfaceNoise(seed+71)-.5f)*(i%5==0?15.0f:3.0f);
-                g.setColour(juce::Colour(i%4?0xff777a77:0xff16191a).withAlpha(age*age*(i%4?.26f:.35f)));
-                g.drawLine(x,y,x+length,y+dy,i%11==0?.8f:.4f);
+                g.setColour(juce::Colour(i%4?0xff858985:0xff16191a).withAlpha(age*age*(i%4?.38f:.35f)));
+                g.drawLine(x,y,x+length,y+dy,i%11==0?.9f:.55f);
             }
         }
         caseStains(g,age);
@@ -1528,12 +1533,19 @@ public:
         // different material from the smooth painted main panel.
         {
             juce::Graphics::ScopedSaveState save(g);
-            const juce::Rectangle<float> rail(59.0f,float(headerH+705),1382.0f,43.0f);
+            const juce::Rectangle<float> rail(59.0f,float(headerH+705),1382.0f,27.0f);
+            g.setGradientFill(juce::ColourGradient(juce::Colour(0xff101313),0,rail.getBottom(),
+                juce::Colour(0xff030506),0,float(headerH+bodyH),false));
+            g.fillRect(59.0f,rail.getBottom(),1382.0f,float(headerH+bodyH)-rail.getBottom());
             g.reduceClipRegion(rail.toNearestInt());
             g.drawImage(art.rail,rail.getX(),rail.getY(),rail.getWidth(),rail.getHeight(),0,0,art.rail.getWidth(),70);
             g.setColour(juce::Colours::black.withAlpha(.27f+age*.08f));g.fillRect(rail);
             g.setOpacity(std::pow(age,1.25f));g.drawImage(railDust(),rail);g.setOpacity(1);
             g.setColour(juce::Colour(0xff9b9c91).withAlpha(.12f-age*.06f));g.drawLine(rail.getX(),rail.getY(),rail.getRight(),rail.getY(),.7f);
+            juce::ColourGradient fold(juce::Colours::transparentWhite,0,rail.getBottom()-6,
+                juce::Colour(0xffbfc2b9).withAlpha(.25f-age*.05f),0,rail.getBottom()-1,false);
+            fold.addColour(.72,juce::Colour(0xffbfc2b9).withAlpha(.10f));
+            g.setGradientFill(fold);g.fillRect(rail.withTop(rail.getBottom()-6));
         }
         {
             juce::Graphics::ScopedSaveState save(g);g.addTransform(juce::AffineTransform::translation(0,float(headerH)));
@@ -1847,23 +1859,8 @@ slider.setDoubleClickReturnValue(true,spec.initial);}
 SH09Editor::SH09Editor(SH09Processor& p)
     :AudioProcessorEditor(p),sizing(*this,designW,designH),panel(std::make_unique<Panel>(p,sizing)) {
     setResizable(true,false);addAndMakeVisible(*panel);setSize(designW,designH);sizing.chooseMedium();
-#if JUCE_WINDOWS
-    if(p.wrapperType==juce::AudioProcessor::wrapperType_Standalone) {
-        juce::Component::SafePointer<SH09Editor> editor(this);
-        juce::MessageManager::callAsync([editor] {
-            if(editor==nullptr)return;
-            if(auto* window=editor->findParentComponentOfClass<juce::DocumentWindow>()) {
-                if(!window->isOnDesktop())return;
-                window->setName("Toyland KB-09 Standalone");
-                window->setUsingNativeTitleBar(true);
-                window->setTitleBarButtonsRequired(juce::DocumentWindow::allButtons,false);
-                editor->sizing.peerAttached();
-                window->toFront(true);
-            }
-        });
-    }
-#endif
 }
+void SH09Editor::prepareStandaloneWindow() { sizing.prepareStandaloneWindow(); }
 void SH09Editor::visibilityChanged() {sizing.peerAttached();}
 SH09Editor::~SH09Editor()=default;
 void SH09Editor::parentHierarchyChanged() {

@@ -50,6 +50,7 @@ public:
     void toggleMaximise();
     void restore();
     void peerAttached();
+    void prepareStandaloneWindow();
 
     void beginHeaderDrag(const juce::MouseEvent&);
     void dragHeader(const juce::MouseEvent&);

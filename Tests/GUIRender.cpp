@@ -1247,6 +1247,19 @@ int main(int argc, char** argv) {
         checks.expect(juce::MessageManager::getInstance()->isThisTheMessageThread(), "fixture runs on the JUCE message thread");
         checkPersonalArtwork(checks);
         checkCompatibility(checks);
+        {
+            juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Standalone);
+            SH09Processor standalone;
+            juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Undefined);
+            std::unique_ptr<juce::AudioProcessorEditor, EditorDeleter> editor(standalone.createEditorAndMakeActive(), {&standalone});
+            auto* left=findComponent(*editor,"updates");
+            auto* right=findComponent(*editor,"sizeL");
+            checks.expect(left&&right&&left->getParentComponent()==right->getParentComponent()
+                &&left->getX()==right->getParentComponent()->getWidth()-right->getRight(),
+                "standalone top row has equal left and right outer margins");
+            const auto image=editor->createComponentSnapshot(editor->getLocalBounds(),true,2.0f);
+            checks.expect(writePNG(image,directory.getChildFile("standalone_header.png")),"actual standalone header export");
+        }
         for (const auto fixture : {Fixture{"init",0,false,0.0f,false,false},
                                    Fixture{"aged_modern",14,true,.82f,true,false},
                                    Fixture{"external_follower",12,false,0.0f,false,true},
