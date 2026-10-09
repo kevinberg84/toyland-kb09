@@ -1226,7 +1226,6 @@ public:
     explicit Header(sh09::WindowSizing& s):sizing(s) {setComponentID("windowHeader");setTitle("Window header");setMouseCursor(juce::MouseCursor::DraggingHandCursor);}
     void paint(juce::Graphics& g) override {
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xff25292b),0,0,juce::Colour(0xff111517),0,float(getHeight()),false));g.fillAll();
-        caption(g,"TOYLAND / KB-09",{20,0,208,float(getHeight())},11,juce::Justification::centredLeft);
         if(!bool(getProperties().getWithDefault("standalone",false)))caption(g,"MONOPHONIC",{241,0,140,float(getHeight())},9,juce::Justification::centredLeft,false);
         if(sizing.isSnapArmed()){g.setColour(amber);g.drawRect(getLocalBounds(),2);}
     }
@@ -1533,7 +1532,7 @@ public:
                     for(int edge=0;edge<2;++edge)for(int step=0;step<=12;++step) {
                         const int j=edge?12-step:step;
                         const float t=float(j)/12;
-                        const float taper=std::pow(std::sin(juce::MathConstants<float>::pi*t),.55f);
+                        const float taper=std::pow(juce::jmax(0.0f,std::sin(juce::MathConstants<float>::pi*t)),.55f);
                         const float uneven=.65f+.35f*surfaceNoise(seed+uint32_t(j)*173);
                         const float yy=y+dy*t+.28f*(surfaceNoise(seed+uint32_t(j)*307)-.5f);
                         const float half=width*spread*.5f*taper*uneven;
