@@ -2,7 +2,7 @@ from pathlib import Path
 import zipfile, hashlib
 root=Path(__file__).resolve().parents[1]
 release=root/'artifacts/Release'
-name='Toyland KB-09 for Mac - UNVERIFIED'
+name='Toyland KB-09 for Mac'
 source=release/'Mac-artifact'/f'{name}.zip'
 dest=release/f'{name}.zip'
 prefix=name+'/'

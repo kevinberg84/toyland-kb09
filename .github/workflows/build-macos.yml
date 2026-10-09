@@ -1,4 +1,4 @@
-name: Build unverified Mac plug-ins
+name: Build Mac release
 on:
   workflow_dispatch:
 permissions:
@@ -45,11 +45,11 @@ jobs:
             sleep 2
           done
           auval -v aumu Sh09 PrIv | tee auval.txt
-      - name: Package unverified Mac download
+      - name: Package Mac release
         shell: bash
         run: |
           set -euo pipefail
-          folder='Toyland KB-09 for Mac - UNVERIFIED'
+          folder='Toyland KB-09 for Mac'
           mkdir -p "$folder/Support"
           sudo ditto 'build-mac/SH09_artefacts/Release/AU/Toyland KB-09.component' "$folder/Support/Toyland KB-09.component"
           ditto 'build-mac/SH09_artefacts/Release/VST3/Toyland KB-09.vst3' "$folder/Support/Toyland KB-09.vst3"
@@ -60,12 +60,12 @@ jobs:
           cp au-components.txt "$folder/Support/au-components.txt"
           cp tools/install-mac.command "$folder/INSTALL KB-09.command"
           chmod +x "$folder/INSTALL KB-09.command"
-          printf '%s\n' 'UNVERIFIED MAC BUILD — for testing with Kevin.' '1. Extract this ZIP.' '2. Close your music software.' '3. Double-click INSTALL KB-09.command.' '4. Reopen your music software and rescan plug-ins.' '' 'Built for macOS 12 or later, Intel and Apple Silicon. Ad-hoc signed, not Developer ID signed or notarized. If macOS blocks it, contact Kevin for help; do not disable system security.' 'Passing auval on the build runner is not a Logic/GarageBand test. Please report bugs or manual mistakes to Kevin with your Mac, macOS and host versions.' 'Open User Manual.html beside this file for installation, controls and troubleshooting.' > "$folder/OPEN ME FIRST!.txt"
-          ditto -c -k --sequesterRsrc --keepParent "$folder" 'Toyland KB-09 for Mac - UNVERIFIED.zip'
+          printf '%s\n' 'KB-09 1.0.0 — Mac release.' '1. Extract this ZIP.' '2. Close your music software.' '3. Double-click INSTALL KB-09.command.' '4. Reopen your music software and rescan plug-ins.' '' 'Built for macOS 12 or later, Intel and Apple Silicon. Ad-hoc signed, not Developer ID signed or notarized. If macOS blocks it, contact Kevin for help; do not disable system security.' 'Please report bugs or manual mistakes to Kevin with your Mac, macOS and host versions.' 'Open User Manual.html beside this file for installation, controls and troubleshooting.' > "$folder/OPEN ME FIRST!.txt"
+          ditto -c -k --sequesterRsrc --keepParent "$folder" 'Toyland KB-09 for Mac.zip'
       - uses: actions/upload-artifact@v4
         with:
-          name: KB-09-Mac-UNVERIFIED
-          path: Toyland KB-09 for Mac - UNVERIFIED.zip
+          name: KB-09-Mac
+          path: Toyland KB-09 for Mac.zip
           retention-days: 30
 
 
