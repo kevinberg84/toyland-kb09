@@ -8,12 +8,16 @@ dest=release/f'{name}.zip'
 prefix=name+'/'
 updates={prefix+'User Manual.html':(root/'docs/manual/User Manual.html').read_bytes(),
          prefix+'Support/User Guide/index.html':(root/'docs/manual/index.html').read_bytes(),
-         prefix+'Support/User Guide/assets/panel-0.13.13.png':(root/'docs/manual/assets/panel-0.13.13.png').read_bytes(),
+         prefix+'Support/User Guide/assets/panel-0.13.17.png':(root/'docs/manual/assets/panel-0.13.17.png').read_bytes(),
          prefix+'INSTALL KB-09.command':(root/'tools/install-mac.command').read_bytes().replace(b'\r\n',b'\n'),
          prefix+'OPEN ME FIRST!.txt':'''Toyland KB-09 -- UNVERIFIED MAC TEST BUILD
 
 1. Extract this ZIP. Keep the extracted folder together.
-2. Close your music software.
+2. Want to play immediately? Double-click Toyland KB-09 Standalone.app.
+   Use AUDIO / MIDI in its top bar to choose your speakers and MIDI controller.
+   No plug-in installation is needed for the standalone app.
+
+To install the AU and VST3 plug-ins, close your music software.
 3. Double-click INSTALL KB-09.command and press Return when prompted.
    Enter your Mac login password when asked; typing stays hidden.
 4. Reopen your music software and rescan plug-ins.

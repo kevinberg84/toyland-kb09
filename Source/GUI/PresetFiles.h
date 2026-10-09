@@ -35,6 +35,11 @@ public:
     // Copied when a dialog is opened. Called on success or error, not cancellation.
     // Errors also receive a readable async alert. This may update a status label.
     Completion onCompleted;
+    std::function<void()> onCancelled;
+
+    // Writable copies of the sixteen factory patches, shared by SAVE and LOAD.
+    static juce::File factoryDirectory();
+    static juce::File recentSaveDirectory();
 
     // Synchronous message-thread entry points for tests / explicit file actions.
     // The caller has already selected/confirmed any replacement at this layer.

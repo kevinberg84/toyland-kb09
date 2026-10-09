@@ -126,5 +126,20 @@ int main(){
   sh09::Engine free;free.prepare(48000);c=clean();c.lfoRate=1;c.lfoSync=1;c.modern=0;free.setControls(c);free.setTempo(180);free.process(0);
   check(std::abs(free.modulatorFrequency()-25)<1e-9,"Authentic retains free 25Hz endpoint despite saved SYNC setting");
  }
+ {
+  // Measure phase, not audio crossings: AGE=0 must have no clock drift or jitter.
+  for(double sr:{44100.,48000.,96000.}) for(float rate:{0.f,.5f,1.f}) {
+   sh09::Engine clock;clock.prepare(sr);auto c=clean();c.age=0;c.lfoRate=rate;clock.setControls(c);
+   const double hz=sh09::lfoFrequency(rate,false,120);
+   double previous=clock.modulatorPhase(),cycles=0,maxStepError=0;
+   for(int i=0;i<int(sr);++i) {
+    clock.process(0);const double phase=clock.modulatorPhase();
+    const double step=phase-previous+(phase<previous?1:0);
+    cycles+=step;maxStepError=std::max(maxStepError,std::abs(step-hz/sr));previous=phase;
+   }
+   check(std::abs(cycles-hz)<1e-8&&maxStepError<1e-12,
+         "fresh LFO has stable phase increments and no cumulative drift at "+std::to_string(int(sr))+" Hz rate="+std::to_string(hz));
+  }
+ }
  const auto elapsed=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();std::cout<<"RESULT "<<passed<<" passed "<<failed<<" failed wall_seconds="<<elapsed<<'\n';return failed?1:0;
 }

@@ -50,8 +50,10 @@ void panelGlyph(juce::Graphics& g,PanelGlyph shape,juce::Rectangle<float> box,
             start(0,.9f);line(.10f,.9f);line(.25f,.1f);
             path.cubicTo(point(.38f,.62f),point(.57f,.83f),point(1,.9f));
         }
+    } else if(shape==PanelGlyph::gate) {
+        start(0,.9f);line(.2f,.9f);line(.2f,.1f);line(.8f,.1f);line(.8f,.9f);line(1,.9f);
     } else {
-        const float end=shape==PanelGlyph::pulse?.36f:shape==PanelGlyph::gate?.74f:.46f;
+        const float end=shape==PanelGlyph::pulse?.27f:.46f;
         start(0,.9f);line(0,.1f);line(end,.1f);line(end,.9f);line(1,.9f);if(shape!=PanelGlyph::gate)line(1,.1f);
     }
     g.setColour(colour);g.strokePath(path,juce::PathStrokeType(stroke,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
@@ -581,8 +583,8 @@ public:
                         radial=std::sqrt(juce::jmax(0.0f,1-ny*ny));
                         float value=plasticLight(px/r*radial,ny,z/r*radial,axial);
                         // Fine raised parting seam follows the molded disc around its circumference.
-                        const float seam=(axial-depth*.50f)/.16f;
-                        value+=(.055f*std::exp(-seam*seam)-.025f*std::exp(-(seam-1.1f)*(seam-1.1f)))*(1-age*.40f);
+                        const float seam=(axial-depth*.50f)/.24f;
+                        value+=(.14f*std::exp(-seam*seam)-.065f*std::exp(-(seam-1.1f)*(seam-1.1f)))*(1-age*.40f);
                         const auto grainKey=uint32_t(int((localAngle+juce::MathConstants<float>::pi)*380))
                                            +uint32_t(juce::jmax(0,int(axial*6)))*1177u;
                         value+=(surfaceNoise(0x3a71u+grainKey)-.5f)*(.005f+age*.007f);
@@ -616,7 +618,7 @@ public:
                     const auto shade=[&](float axial) {
                         const float value=plasticLight(nx,0,nz,axial);
                         auto colour=juce::Colour::fromFloatRGBA(value,value*.99f,value*.96f,1);
-                        if(fracture)colour=colour.interpolatedWith(juce::Colour(0xff77786e),.22f+.28f*surfaceNoise(0x49a7u+uint32_t(i)*191u));
+                        if(fracture)colour=colour.interpolatedWith(juce::Colour(0xff77786e),.15f+.15f*surfaceNoise(0x49a7u+uint32_t(i)*191u));
                         return colour;
                     };
                     const auto middle=(a+b)*.5f,backPoint=project(middle,0),frontPoint=project(middle,depth);
@@ -1242,14 +1244,14 @@ public:
         addSwitch("subMode",633,104,60,121,{0,1,2},{"1 OCT\nDOWN","2 OCT\nDOWN","2 OCT\nDOWN"},"Sub oscillator: one octave down square, two octaves down square, or two octaves down pulse.");
         addFader("vcoLevel","VCO",721,96,41,129);addFader("subLevel","SUB\nOSC",770,96,41,129);addFader("extLevel","EXT",819,96,41,129);
         addFader("cutoff","CUTOFF\nFREQ",880,96,43,129);addFader("resonance","RESONANCE",923,96,45,129);
-        addSwitch("vcfEnvMode",956,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"VCF envelope follower, positive envelope, or inverted envelope.",true);
+        addSwitch("vcfEnvMode",950,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"VCF envelope follower, positive envelope, or inverted envelope.",true);
         addFader("vcfEnv","ENV",1030,96,40,129);controls.back()->label->setVisible(false);addFader("vcfMod","MOD",1075,96,40,129);
         addSwitch("vcaMode",1110,104,56,121,{0,1,2},{"HOLD","ENV","GATE"},"HOLD passes audio without MIDI; ENV uses ADSR; GATE follows held keys.");
         addSwitch("envMode",1175,104,55,121,{0,1,2},{"GATE +\nTRIG","GATE","LFO"},"Gate+Trigger re-attacks on low-note changes. Gate preserves legato. LFO repeats while held.",true);
         addFader("attack","A",1249,96,35,129,true);addFader("decay","D",1288,96,35,129,true);
         addFader("sustain","S",1327,96,35,129,true);addFader("release","R",1366,96,35,129,true);
         addKnob("volume",117,442,79);
-        addAndMakeVisible(power);power.setBounds(194,headerH+416,31,24);power.onPowerChanged=[this]{repaint();};
+        addAndMakeVisible(power);power.setBounds(191,headerH+416,37,28);power.onPowerChanged=[this]{repaint();};
         addFader("bendVco","VCO",98,496,37,112,true);addFader("bendVcf","VCF",142,496,37,112,true);
         addFader("portamento","PORTAMENTO",205,496,37,112,true);
         addAndMakeVisible(bender);bender.setBounds(85,headerH+638,143,48);bender.setComponentID("bender");
@@ -1264,10 +1266,7 @@ public:
         // Keep a consistent 52-unit gap between bottom-row control groups.
         addUtility("age","CONDITION / AGE",290,170);
         controls.back()->slider->onDragStart=[this]{
-            // Cache the expensive material layer once. Mouse movement and DSP
-            // remain live without repeatedly painting photographic wear.
-            conditionBackdrop=juce::Image(juce::Image::RGB,designW,designH,true);
-            juce::Graphics frame(conditionBackdrop);paint(frame);
+            // Begin the gesture immediately; never paint a full photograph in mouseDown.
             look.conditionDragging=true;
             for(auto& c:controls)if(c->slider&&c->slider->getComponentID()!="age")c->slider->setBufferedToImage(true);
             keyboard.setBufferedToImage(true);
@@ -1303,15 +1302,14 @@ public:
     }
     void paint(juce::Graphics& g) override {
         if(!renderingCondition&&resizeBackdrop.isValid()&&resizeCacheUntil>0){g.drawImage(resizeBackdrop,getLocalBounds().toFloat());return;}
-        if(look.conditionDragging&&!renderingCondition&&conditionBackdrop.isValid()) {
-            g.drawImage(conditionBackdrop,getLocalBounds().toFloat());
-            if(previousCondition.isValid()) {
-                g.setOpacity(float(juce::jlimit(0.0,1.0,1.0-(juce::Time::getMillisecondCounterHiRes()-lastConditionPaint)/110.0)));
-                g.drawImage(previousCondition,getLocalBounds().toFloat());
-            }
+        if(look.conditionDragging&&!renderingCondition&&agePreviews[0].isValid()&&agePreviews[4].isValid()) {
+            const float amount=juce::jlimit(0.0f,1.0f,processor.state.getRawParameterValue("age")->load())*4;
+            const int low=juce::jmin(3,int(amount));
+            g.drawImage(agePreviews[size_t(low)],getLocalBounds().toFloat());
+            g.setOpacity(amount-low);g.drawImage(agePreviews[size_t(low+1)],getLocalBounds().toFloat());
             return;
         }
-        look.age=processor.state.getRawParameterValue("age")->load();
+        look.age=previewAge>=0?previewAge:processor.state.getRawParameterValue("age")->load();
         const float age=look.age;
         const auto ink=agedInk(age);
         const auto& art=artwork();g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
@@ -1379,7 +1377,7 @@ public:
             caption(g,"PULSE WIDTH MOD",{524,90,87,12},7.6f,juce::Justification::centred,true,ink);
             juce::Path pwmLink;pwmLink.startNewSubPath(509,130);pwmLink.lineTo(509,102);pwmLink.quadraticTo(509,99,512,99);pwmLink.lineTo(522,99);
             g.setColour(ink);g.strokePath(pwmLink,juce::PathStrokeType(.9f));
-            juce::Path vcfLink;vcfLink.startNewSubPath(1005,116);vcfLink.lineTo(1005,106);vcfLink.quadraticTo(1005,103,1008,103);vcfLink.lineTo(1047,103);vcfLink.quadraticTo(1050,103,1050,106);vcfLink.lineTo(1050,115);
+            juce::Path vcfLink;vcfLink.startNewSubPath(999,116);vcfLink.lineTo(999,106);vcfLink.quadraticTo(999,103,1002,103);vcfLink.lineTo(1027,103);vcfLink.quadraticTo(1030,103,1030,106);vcfLink.lineTo(1030,115);
             g.strokePath(vcfLink,juce::PathStrokeType(.85f));
             
             // Original user marks: split into manufacturer on right and instrument on left.
@@ -1403,7 +1401,7 @@ public:
             caption(g,"VOLUME",{80,376,75,13},10,juce::Justification::centred,true,ink);
             for(int i=0;i<=10;++i) {
                 const float a=juce::MathConstants<float>::pi*(1.25f+1.5f*float(i)/10);
-                const juce::Point<float> c(117,436),direction(std::sin(a),-std::cos(a));
+                const juce::Point<float> c(117,442),direction(std::sin(a),-std::cos(a));
                 g.setColour(ink);g.drawLine({c+direction*41,c+direction*47},1.0f);
                 if(i==0||i==10) {const auto p=c+direction*53;caption(g,juce::String(i),{p.x-10,p.y-5,20,10},7.5f,juce::Justification::centred,true,ink);}
             }
@@ -1458,7 +1456,7 @@ private:
     SH09Processor& processor;sh09::WindowSizing& sizing;sh09::PresetFiles presetFiles;HardwareLook look;
     Keyboard keyboard;Header header;MaximiseButton maximise;PowerButton power;
     juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions,audioMidi,computerKeyboard,updates;bool updateOpened=false;
-    std::unique_ptr<juce::TooltipWindow> tooltip;juce::Image conditionBackdrop,previousCondition,resizeBackdrop;bool renderingCondition=false;double resizeCacheUntil=0;
+    std::unique_ptr<juce::TooltipWindow> tooltip;juce::Image conditionBackdrop,previousCondition,resizeBackdrop;std::array<juce::Image,5> agePreviews;float previewAge=-1;bool renderingCondition=false;double resizeCacheUntil=0;
     FineSlider bender;juce::Label externalHelp;Meter meter;RateLamp rateLamp;
     std::vector<std::unique_ptr<Control>> controls;
     std::array<int,128> lastKeys{};float lastAge=-1;bool lastModern=false,bendActive=false,userPreset=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1;unsigned lastProgramRevision=0;double lastConditionPaint=0;
@@ -1525,17 +1523,23 @@ private:
             for(auto& c:controls)if(c->label&&bool(c->label->getProperties().getWithDefault("hardwarePrint",false)))
                 c->label->setColour(juce::Label::textColourId,agedInk(age));
             if(look.conditionDragging) {
-                previousCondition=conditionBackdrop;
-                conditionBackdrop=juce::Image(juce::Image::RGB,designW*2/3,designH*2/3,true);
-                renderingCondition=true;
-                {juce::Graphics frame(conditionBackdrop);frame.addTransform(juce::AffineTransform::scale(2.0f/3));paint(frame);}
-                renderingCondition=false;
                 for(auto& c:controls)if(c->slider)c->slider->repaint();
                 keyboard.repaint();
             }
             repaint();keyboard.repaint();
         }
-        if(look.conditionDragging&&previousCondition.isValid())repaint();
+        // Generate one small static background per idle tick. Gestures just blend
+        // neighbouring cached conditions; detailed controls stay live independently.
+        if(!look.conditionDragging && isShowing() && getPeer()) {
+            for(size_t i=0;i<agePreviews.size();++i)if(!agePreviews[i].isValid()) {
+                const float originalAge=look.age;
+                previewAge=float(i)/4;renderingCondition=true;
+                agePreviews[i]=juce::Image(juce::Image::RGB,600,designH*600/designW,true);
+                {juce::Graphics frame(agePreviews[i]);frame.addTransform(juce::AffineTransform::scale(600.0f/designW));paint(frame);}
+                previewAge=-1;renderingCondition=false;look.age=originalAge;
+                break;
+            }
+        }
         if(resizeCacheUntil>0&&now>=resizeCacheUntil) {
             resizeCacheUntil=0;resizeBackdrop={};bender.setBufferedToImage(false);power.setBufferedToImage(false);
             for(auto& c:controls) {if(c->slider)c->slider->setBufferedToImage(false);if(c->selector)c->selector->setBufferedToImage(false);}
@@ -1595,7 +1599,7 @@ private:
         if(juce::String(id)=="bendVco")slider.setTooltip("Set how much the spring-return bender changes oscillator pitch.");
         if(juce::String(id)=="bendVcf")slider.setTooltip("Set how much the bender changes filter cutoff.");
         if(juce::String(id)=="volume")slider.setTooltip("Set instrument output volume, from silence to full level.");
-        if(juce::String(id)=="age")slider.setTooltip("Age the circuitry and appearance. Click anywhere on the track to jump there, or drag; SHIFT gives fine adjustment. Detailed visual wear refreshes on release.");
+        if(juce::String(id)=="age")slider.setTooltip("Age the circuitry and appearance. Click anywhere on the track to jump there, or drag; SHIFT gives fine adjustment. Appearance previews update while dragging; full visual detail returns on release.");
         if(juce::String(id)=="velocity")slider.setTooltip("In Modern mode, set how strongly playing velocity affects the sound.");
         if(juce::String(id)=="aftertouch")slider.setTooltip("In Modern mode, set the amount of pressure-controlled expression.");
         if(juce::String(id)=="extGain")slider.setTooltip("In Modern mode, adjust external input gain before the follower and mixer.");
@@ -1655,6 +1659,7 @@ SH09Editor::SH09Editor(SH09Processor& p)
                 window->setUsingNativeTitleBar(true);
                 window->setTitleBarButtonsRequired(juce::DocumentWindow::allButtons,false);
                 editor->sizing.peerAttached();
+                window->toFront(true);
             }
         });
     }

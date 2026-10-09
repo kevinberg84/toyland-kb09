@@ -149,14 +149,37 @@ bool supportedFile(const juce::File& file)
     return file.hasFileExtension("kb09;sh09state");
 }
 
-juce::File defaultDirectory()
+std::unique_ptr<juce::PropertiesFile> presetLocations()
 {
-    const auto documents = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory);
-    const auto presets = documents.getChildFile("Toyland KB-09 Presets");
-    return presets.isDirectory() ? presets : documents;
+    juce::PropertiesFile::Options options;
+    options.applicationName = "Toyland KB-09 Preset Locations";
+    options.filenameSuffix = ".settings";
+    options.osxLibrarySubFolder = "Application Support";
+    return std::make_unique<juce::PropertiesFile>(options);
 }
 
 } // namespace
+
+juce::File PresetFiles::factoryDirectory()
+{
+    auto folder = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                      .getChildFile("Toyland KB-09 Presets");
+    if (folder.createDirectory().failed())
+        return juce::File::getSpecialLocation(juce::File::userDocumentsDirectory);
+    SH09Processor factory;
+    for (int i = 0; i < factory.getNumPrograms(); ++i) {
+        auto file = folder.getChildFile(juce::File::createLegalFileName(factory.getProgramName(i).replace(" / ", " - ")) + ".kb09");
+        if (!file.exists()) { factory.setCurrentProgram(i); saveToFile(factory, file); }
+    }
+    return folder;
+}
+
+juce::File PresetFiles::recentSaveDirectory()
+{
+    const auto path = presetLocations()->getValue("lastSavedFolder");
+    if (path.isNotEmpty()) { juce::File folder(path); if (folder.isDirectory()) return folder; }
+    return factoryDirectory();
+}
 
 juce::Result PresetFiles::decodePresetData(const void* data, std::size_t size, juce::MemoryBlock& processorState)
 {
@@ -223,13 +246,14 @@ juce::Result PresetFiles::loadFromFile(SH09Processor& processor, const juce::Fil
 
 struct PresetFiles::Impl : std::enable_shared_from_this<Impl>
 {
-    Impl(SH09Processor& p, juce::Component& c) : processor(p), owner(&c), directory(defaultDirectory()) {}
+    Impl(SH09Processor& p, juce::Component& c) : processor(p), owner(&c) {}
     SH09Processor& processor;
     juce::Component::SafePointer<juce::Component> owner;
     juce::File directory;
     std::unique_ptr<juce::FileChooser> chooser;
     juce::ScopedMessageBox message;
     Completion completion;
+    std::function<void()> cancelled;
     bool active = true, busy = false;
 
     bool alive() const { return active && owner != nullptr; }
@@ -238,7 +262,11 @@ struct PresetFiles::Impl : std::enable_shared_from_this<Impl>
     {
         busy = false;
         if (!alive()) return;
-        if (result.wasOk()) directory = file.getParentDirectory();
+        if (result.wasOk() && !loading) {
+            auto settings = presetLocations();
+            settings->setValue("lastSavedFolder", file.getParentDirectory().getFullPathName());
+            settings->saveIfNeeded();
+        }
         else message = juce::AlertWindow::showScopedAsync(
             juce::MessageBoxOptions{}.withIconType(juce::MessageBoxIconType::WarningIcon)
                 .withTitle(loading ? "Preset not loaded" : "Preset not saved")
@@ -254,7 +282,7 @@ struct PresetFiles::Impl : std::enable_shared_from_this<Impl>
     {
         chooser.reset(); // Deferred from FileChooser's callback, so it is no longer on the stack.
         if (!alive()) return;
-        if (file == juce::File{}) { busy = false; return; }
+        if (file == juce::File{}) { cancel(); return; }
         if (loading) { completed(loadFromFile(processor, file), file, true); return; }
         const auto selectedFile = file;
         if (file.getFileExtension().isEmpty()) file = file.withFileExtension(".kb09");
@@ -280,7 +308,7 @@ struct PresetFiles::Impl : std::enable_shared_from_this<Impl>
                         {
                             self->message.close();
                             if (answer == 1) self->completed(saveToFile(self->processor, file), file, false);
-                            else self->busy = false;
+                            else self->cancel();
                         }
                     });
                 });
@@ -289,14 +317,17 @@ struct PresetFiles::Impl : std::enable_shared_from_this<Impl>
         completed(saveToFile(processor, file), file, false);
     }
 
-    void open(bool loading, Completion callback)
+    void cancel() { busy = false; const auto callback = cancelled; if (callback) callback(); }
+
+    void open(bool loading, Completion callback, std::function<void()> cancelCallback)
     {
         JUCE_ASSERT_MESSAGE_THREAD
         if (!alive() || busy) return;
         busy = true;
         completion = std::move(callback);
+        cancelled = std::move(cancelCallback);
         message.close();
-        if (!directory.isDirectory()) directory = defaultDirectory();
+        directory = loading ? recentSaveDirectory() : factoryDirectory();
         auto initial = directory;
         if (!loading)
         {
@@ -326,11 +357,12 @@ PresetFiles::~PresetFiles()
 {
     impl->active = false;
     impl->completion = {};
+    impl->cancelled = {};
     impl->chooser.reset();
     impl->message.close();
 }
-void PresetFiles::savePreset() { impl->open(false, onCompleted); }
-void PresetFiles::loadPreset() { impl->open(true, onCompleted); }
+void PresetFiles::savePreset() { impl->open(false, onCompleted, onCancelled); }
+void PresetFiles::loadPreset() { impl->open(true, onCompleted, onCancelled); }
 bool PresetFiles::isDialogOpen() const noexcept { return impl->busy; }
 
 } // namespace sh09
