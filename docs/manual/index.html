@@ -213,9 +213,10 @@
 <section id="feedback">
   <p class="section-number">12 / FEEDBACK</p><h2>Report a bug</h2>
   <p>Help Kevin track down a problem with KB-09 or this guide. Include the versions and exact steps that make it happen. For the standalone, enter <strong>Standalone</strong> under DAW / host.</p>
-  <p class="report-privacy">Only the answers you submit, including your optional contact email, are sent to the project owner. Leave out passwords and private session contents. No automatic diagnostics or files are collected. Filling in or saving this form works offline.</p>
-  <form id="bug-report-form" action="" method="post" target="_blank" rel="noopener noreferrer" accept-charset="UTF-8">
+  <p class="report-privacy">Only the answers you submit, your optional screenshot and any contact email are sent to the project owner. Leave out passwords and private session contents; crop or hide them in screenshots. No automatic diagnostics are collected. Filling in or saving this form works offline.</p>
+  <form id="bug-report-form" action="https://script.google.com/macros/s/AKfycbzUXYk82mWAw6mZ0FV98tDMAV-OZPXB88FRaJyVohhO_GdebQgs0L-R1IyZtDBfPBOnYg/exec" method="post" target="_blank" rel="noopener noreferrer" accept-charset="UTF-8">
     <input type="hidden" name="schema" value="1"><input type="hidden" name="startedAt" value="">
+    <input type="hidden" name="shotName" value=""><input type="hidden" name="shotType" value=""><input type="hidden" name="shotData" value="">
     <div class="report-trap" aria-hidden="true"><label>Leave this empty<input name="website" maxlength="80" tabindex="-1" autocomplete="off"></label></div>
     <div class="report-grid">
       <label>KB-09 version <span>(required)</span><input name="version" value="1.0.3" maxlength="40" required autocomplete="off"></label>
@@ -226,8 +227,11 @@
     <label>Steps to reproduce <span>(required · up to 3,000 characters)</span><textarea name="steps" rows="5" maxlength="3000" placeholder="1. Open KB-09…&#10;2. …" required></textarea></label>
     <label>Expected behavior <span>(required · up to 1,500 characters)</span><textarea name="expected" rows="3" maxlength="1500" required></textarea></label>
     <label>Actual behavior / exact error <span>(required · up to 3,000 characters)</span><textarea name="actual" rows="5" maxlength="3000" required></textarea></label>
+    <label>Screenshot of the problem <span>(optional · PNG or JPEG, up to 2 MB)</span><input id="report-screenshot" type="file" accept="image/png,image/jpeg" aria-describedby="screenshot-help"></label>
+    <p id="screenshot-help">If the problem is visible, please attach a screenshot showing it. Hide private information first. With an attachment, Save report locally downloads an HTML copy containing both your answers and the screenshot; otherwise it saves a text file.</p>
+    <div class="report-actions"><button id="report-remove-screenshot" type="button">Remove screenshot</button></div>
     <label>Contact email <span>(optional · only if you would like a reply)</span><input name="email" type="email" maxlength="254" autocomplete="email"></label>
-    <label class="report-consent"><input type="checkbox" name="consent" value="yes" required> I agree to send these answers and any contact email to the project owner.</label>
+    <label class="report-consent"><input type="checkbox" name="consent" value="yes" required> I agree to send these answers, any attached screenshot and any contact email to the project owner.</label>
     <p id="report-status" role="status" aria-live="polite">Online reporting is not connected yet. You can complete and save a report locally, then share it with Kevin.</p>
     <div class="report-actions"><button id="report-send" type="submit" disabled>Submit report ↗</button><button id="report-save" type="button">Save report locally</button></div>
     <noscript><p>Enable JavaScript to submit or download a report. You can still fill in these fields and use Print / Save PDF to keep a copy.</p></noscript>

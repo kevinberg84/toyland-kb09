@@ -8,7 +8,8 @@ function configureBugReporting() {
 const REPORT_FIELDS = {
   version: 40, os: 120, host: 160, category: 40,
   steps: 3000, expected: 1500, actual: 3000, email: 254,
-  website: 80, startedAt: 16, schema: 8, consent: 3
+  website: 80, startedAt: 16, schema: 8, consent: 3,
+  shotName: 200, shotType: 20, shotData: 2796204
 };
 const REPORT_CATEGORIES = ['Sound / MIDI', 'Interface / display', 'Installation / updates',
   'Crash / performance', 'Manual / documentation', 'Other'];
@@ -33,7 +34,7 @@ function doGet() {
   return reportPage_(false, 'Open the Bug Report questionnaire in your KB-09 User Manual to submit a report.');
 }
 function validateReport_(e) {
-  if (!e || !e.postData || e.postData.length > 100000 || e.queryString ||
+  if (!e || !e.postData || e.postData.length > 4500000 || e.queryString ||
       String(e.postData.type).split(';')[0] !== 'application/x-www-form-urlencoded')
     reportError_('This submission format is not supported. Please use the manual’s questionnaire.');
   const params = e.parameters || {}, report = {};
@@ -46,7 +47,7 @@ function validateReport_(e) {
     const raw = values[0];
     if (raw.length > REPORT_FIELDS[key] || /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(raw))
       reportError_('One answer is too long or contains unsupported characters. Please shorten or edit it.');
-    report[key] = raw.replace(/\r\n?/g, '\n').trim();
+    report[key] = key === 'shotData' ? raw : raw.replace(/\r\n?/g, '\n').trim();
   });
   ['version','os','host','category','steps','expected','actual'].forEach(key => {
     if (!report[key]) reportError_('Please complete every required answer.');
@@ -64,12 +65,25 @@ function reportText_(r) {
   return ['KB-09 bug report', 'Version: '+r.version, 'OS: '+r.os, 'DAW / host: '+r.host,
     'Category: '+r.category, 'Contact (optional): '+(r.email || 'Not provided'),
     '\nSteps to reproduce:\n'+r.steps, '\nExpected behavior:\n'+r.expected,
-    '\nActual behavior:\n'+r.actual].join('\n');
+    '\nActual behavior:\n'+r.actual, '\nScreenshot: '+(r.shotName || 'Not attached')].join('\n');
+}
+function screenshotAttachment_(r) {
+  if (!r.shotData && !r.shotName && !r.shotType) return null;
+  if (!r.shotName || !['image/png','image/jpeg'].includes(r.shotType) ||
+      !r.shotData || r.shotData.length % 4 || !/^[A-Za-z0-9+/]*={0,2}$/.test(r.shotData))
+    reportError_('Please choose a PNG or JPEG screenshot, no larger than 2 MB.');
+  const bytes = Utilities.base64Decode(r.shotData);
+  if (!bytes.length || bytes.length > 2097152 || Utilities.base64Encode(bytes) !== r.shotData)
+    reportError_('The screenshot could not be accepted. Choose a PNG or JPEG up to 2 MB.');
+  const signature = r.shotType === 'image/png' ? [137,80,78,71,13,10,26,10] : [255,216,255];
+  if (bytes.length < signature.length || signature.some((b,i)=>(bytes[i]&255)!==b))
+    reportError_('The screenshot format does not match its file type. Please use PNG or JPEG.');
+  return Utilities.newBlob(bytes, r.shotType, 'KB-09-screenshot.'+(r.shotType==='image/png'?'png':'jpg'));
 }
 function doPost(e) {
   try {
-    const report = validateReport_(e), body = reportText_(report);
-    const fingerprint = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, body, Utilities.Charset.UTF_8)
+    const report = validateReport_(e), body = reportText_(report), attachment = screenshotAttachment_(report);
+    const fingerprint = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, body+report.shotData, Utilities.Charset.UTF_8)
       .map(b => ('0'+((b+256)%256).toString(16)).slice(-2)).join('');
     const lock = LockService.getScriptLock();
     if (!lock.tryLock(5000)) reportError_('Reporting is busy. Please try again in a few minutes.');
@@ -91,8 +105,10 @@ function doPost(e) {
       state.daily = (state.daily || 0)+1; state.recent = (state.recent || 0)+1;
       properties.setProperty('RATE_STATE', JSON.stringify(state));
       const reference = Utilities.getUuid();
-      MailApp.sendEmail({to:recipient, subject:'KB-09 bug report — '+reference,
-        body:body+'\n\nReference: '+reference, name:'KB-09 Bug Reporting'});
+      const mail = {to:recipient, subject:'KB-09 bug report — '+reference,
+        body:body+'\n\nReference: '+reference, name:'KB-09 Bug Reporting'};
+      if (attachment) mail.attachments = [attachment];
+      MailApp.sendEmail(mail);
       cache.put(fingerprint, 'sent', 21600);
       return reportPage_(true, 'Your report was submitted. Reference: '+reference);
     } finally { lock.releaseLock(); }
