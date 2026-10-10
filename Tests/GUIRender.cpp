@@ -1,5 +1,6 @@
 #include "../Source/Plugin/Processor.h"
 #include "../Source/GUI/ClosePrompt.h"
+#include "../Source/GUI/UpdateInstructions.h"
 #include "../Source/GUI/KeyboardFeedback.h"
 #include <BinaryData.h>
 #include <algorithm>
@@ -1301,6 +1302,15 @@ int main(int argc, char** argv) {
                 "footer has the same symmetric 25-unit insets as the header");
             const auto image=editor->createComponentSnapshot(editor->getLocalBounds(),true,2.0f);
             checks.expect(writePNG(image,directory.getChildFile("standalone_header.png")),"actual standalone header export");
+        }
+        {
+            kb09::UpdateInstructions instructions("https://drive.google.com/drive/folders/test");
+            auto* copy=findText<juce::TextButton>(instructions,"Copy instructions");
+            auto* download=findText<juce::TextButton>(instructions,"Open download folder");
+            checks.expect(copy&&download,"update instructions offer copy and download actions");
+            checks.expect(copy&&download&&!copy->getBounds().intersects(download->getBounds()),"update instruction actions do not overlap");
+            const auto image=instructions.createComponentSnapshot(instructions.getLocalBounds(),true,1.0f);
+            checks.expect(writePNG(image,directory.getChildFile("update_instructions.png")),"update instruction dialog export");
         }
         {
             kb09_gui::ClosePrompt prompt(nullptr);

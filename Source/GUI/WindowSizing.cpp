@@ -278,6 +278,12 @@ struct WindowSizing::Impl final : private juce::Timer, private juce::ComponentLi
     }
     void peerAttached() {
         assertMessageThread();
+        // The host has already negotiated this editor's initial size and position.
+        // Re-fitting after its window is visible makes Live flash/recentre about
+        // a second later. Leave host placement alone until an explicit S/M/L action.
+        if(editor.getAudioProcessor()->wrapperType != juce::AudioProcessor::wrapperType_Standalone) {
+            finishInitialFit();return;
+        }
         if(initialFitComplete||initialFitTimer.active()||editor.getPeer()==nullptr||!editor.isShowing())return;
         if(mode==Mode::custom){finishInitialFit();return;}
         initialFitTicks=initialStableTicks=0;initialScale={};initialWork={};

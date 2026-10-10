@@ -1897,7 +1897,7 @@ void SH09Editor::parentHierarchyChanged() {
     if(auto* peer=getPeer()) {
         const auto engines=peer->getAvailableRenderingEngines();
         const auto software=engines.indexOf("Software Renderer");
-        if(software>=0)peer->setCurrentRenderingEngine(software);
+        if(software>=0&&peer->getCurrentRenderingEngine()!=software)peer->setCurrentRenderingEngine(software);
     }
 #endif
     sizing.peerAttached();

@@ -1,5 +1,6 @@
 #pragma once
 #include <juce_audio_utils/juce_audio_utils.h>
+#include "UpdateInstructions.h"
 
 namespace kb09 {
 // Public announcement endpoint only; release downloads remain user initiated.
@@ -35,8 +36,8 @@ public:
         juce::String v,link,message;bool manual=false,ok=false;
         {juce::ScopedLock lock(resultLock);v=newVersion;link=download;message=error;manual=resultManual;ok=success;}
         if(ok&&!manual){settings->setValue("lastSuccess",double(juce::Time::currentTimeMillis()));settings->saveIfNeeded();}
-        if(link.isNotEmpty())juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::InfoIcon,"KB-09 update available","Version "+v+" is available. Open its download page? Close your music software before installing.","Get update","Not now",nullptr,juce::ModalCallbackFunction::create([link](int yes){if(yes)juce::URL(link).launchInDefaultBrowser();}));
-        else if(manual)juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates",ok?"You're up to date.":"Could not check for updates. Please try again later.");
+        if(link.isNotEmpty())juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::InfoIcon,"KB-09 update available","Version "+v+" is available. Installation is manual and usually takes a few minutes, depending on your download speed. KB-09 will show you the steps.\n\nYour saved presets and audio/MIDI preferences are kept. Save your current patch before closing KB-09. Installing this update is optional.","Show update instructions","Not now",nullptr,juce::ModalCallbackFunction::create([link](int yes){if(yes)UpdateInstructions::show(link);}));
+        else if(manual)juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates",ok?"You're up to date!":"Could not check for updates. Please try again later.");
     }
     static bool validVersion(const juce::String& v) {
         auto parts=juce::StringArray::fromTokens(v,".","");if(parts.size()!=3)return false;for(auto& p:parts)if(p.isEmpty()||p.length()>6||!p.containsOnly("0123456789"))return false;return true;

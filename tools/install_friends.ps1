@@ -1,9 +1,10 @@
-﻿param([switch]$Elevated, [string]$TestRoot)
+﻿param([switch]$Elevated, [string]$TestRoot, [string]$ShortcutDesktop)
 $ErrorActionPreference = 'Stop'
 try {
   $support = $PSScriptRoot
   if (!$TestRoot -and !$Elevated) {
-    $arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $PSCommandPath + '" -Elevated'
+    $ShortcutDesktop = [Environment]::GetFolderPath('DesktopDirectory')
+    $arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $PSCommandPath + '" -Elevated -ShortcutDesktop "' + $ShortcutDesktop + '"'
     $child = Start-Process powershell.exe -Verb RunAs -ArgumentList $arguments -Wait -PassThru
     exit $child.ExitCode
   }
@@ -62,6 +63,15 @@ try {
       $shortcut.TargetPath = Join-Path $appBase $link.file
       $shortcut.IconLocation = (Join-Path $appBase 'Standalone/Toyland KB-09 Standalone.exe') + ',0'
       $shortcut.Save()
+    }
+    $desktopChoice = Read-Host 'Create a desktop shortcut for the standalone? [Y/n]'
+    if ($desktopChoice -notmatch '^(?i:n|no)$') {
+      if (!$ShortcutDesktop) { $ShortcutDesktop = [Environment]::GetFolderPath('DesktopDirectory') }
+      $desktopLink = $shell.CreateShortcut((Join-Path $ShortcutDesktop 'Toyland KB-09.lnk'))
+      $desktopLink.TargetPath = Join-Path $appBase 'Standalone/Toyland KB-09 Standalone.exe'
+      $desktopLink.WorkingDirectory = Join-Path $appBase 'Standalone'
+      $desktopLink.IconLocation = $desktopLink.TargetPath + ',0'
+      $desktopLink.Save()
     }
   }
   Write-Host 'Installed! Open your music software and look for Toyland KB-09 under Instruments.' -ForegroundColor Green
