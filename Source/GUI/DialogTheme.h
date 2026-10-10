@@ -55,6 +55,6 @@ public:
 class UpdateMenuTheme final : public DialogTheme {
 public:
     using DialogTheme::DialogTheme;
-    juce::Font getPopupMenuFont() override { return lettering(18).withExtraKerningFactor(0); }
+    juce::Font getPopupMenuFont() override { return lettering(21).withExtraKerningFactor(0); }
 };
 }

@@ -542,7 +542,7 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
         return images;
     };
     struct Event {const char* id;float onset;};
-    for(const auto event:{Event{"vcoLevel",.64f},Event{"release",.88f}}) {
+    for(const auto event:{Event{"lfoDelay",.60f},Event{"vcoLevel",.64f},Event{"release",.88f}}) {
         const auto before=capture(event.onset-.0001f),after=capture(event.onset+.0001f),later=capture(event.onset+.003f);
         juce::StringArray changed;
         bool targetFixed=false;
@@ -564,7 +564,7 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
     checks.expect(metadataSame&&soundSame,"cap loss preserves every fader identity, hit area, enablement and sound parameter value");
     // Compare two production positions at fixed Age: a slot alone must fail.
     setParameter(processor,"age",.95f);settleEditor();
-    for(const auto* id:{"vcoLevel","release"}) {
+    for(const auto* id:{"lfoDelay","vcoLevel","release"}) {
         auto* slider=dynamic_cast<juce::Slider*>(findComponent(editor,id));
         const auto at75=renderLinearControl(*slider,75,juce::Colour(0xff232927));
         const auto at100=renderLinearControl(*slider,100,juce::Colour(0xff232927));
@@ -594,7 +594,7 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
     bool roundTrips=true;
     for(const auto* id:legacyParameterIDs)
         roundTrips=roundTrips&&std::abs(processor.state.getParameter(id)->getValue()-restored.state.getParameter(id)->getValue())<1.e-6f;
-    checks.expect(roundTrips,"aged state with both missing caps round-trips all 35 existing parameters");
+    checks.expect(roundTrips,"aged state with three missing caps round-trips all 35 existing parameters");
     setParameter(processor,"age",initialAge);settleEditor();
 }
 

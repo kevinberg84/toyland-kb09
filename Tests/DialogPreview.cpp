@@ -29,7 +29,7 @@ int main(int argc,char** argv){
             kb09_gui::UpdateMenuTheme updateTheme(age);
             juce::PopupMenu menu;menu.setLookAndFeel(presets?&ownerTheme:&updateTheme);
             if(presets){int i=0;for(const auto& p:sh09::factoryPresets()){++i;menu.addItem(i,p.name,true,i==1);}}
-            else{menu.addSectionHeader("Toyland KB-09 1.1.0");menu.addItem(1,"Check for updates now");menu.addItem(2,"Automatic checks (every 90 days)",true,true);}
+            else{menu.addSectionHeader("Toyland KB-09 1.1.1");menu.addItem(1,"Check for updates now");menu.addItem(2,"Automatic checks (every 90 days)",true,true);}
             menu.showMenuAsync(juce::PopupMenu::Options().withParentComponent(&stage).withTargetScreenArea({10,10,1,1}).withMinimumWidth(presets?400:380).withStandardItemHeight(presets?36:34),[](int){});
             if(stage.getNumChildComponents()>0)png(*stage.getChildComponent(stage.getNumChildComponents()-1),out.getChildFile(juce::String(presets?"preset-menu":"update-menu")+"-"+juce::String(level)+".png"));
             juce::PopupMenu::dismissAllActiveMenus();
