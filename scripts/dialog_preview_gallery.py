@@ -2,9 +2,10 @@
 from pathlib import Path
 import json
 import base64
+import sys
 from PIL import Image, ImageDraw, ImageFont
 
-root = Path(__file__).resolve().parents[1] / 'output' / 'dialog-theme-preview'
+root = Path(sys.argv[1]).resolve() if len(sys.argv)>1 else Path(__file__).resolve().parents[1] / 'output' / 'dialog-theme-preview'
 windows = [
  ('update-menu', 'Toyland / KB-09 menu', 'Exact panel logo; update controls.'),
  ('external-audio', 'External audio help', 'The information window from EXT AUDIO.'),
@@ -13,7 +14,7 @@ windows = [
  ('close-1', 'Close — Don’t Save selected', 'Default selection.'),
  ('close-2', 'Close — Cancel selected', 'Third keyboard selection.'),
  ('update-consent', 'Automatic-update consent', 'First-run opt-in; no preferences are changed by this gallery.'),
- ('update-available', 'Update available', 'Example version 1.0.2 is preview data, not a release announcement.'),
+ ('update-available', 'Update available', 'Example update notification; preview data, not a release announcement.'),
  ('up-to-date', 'You’re up to date!', 'Current-version confirmation.'),
  ('update-error', 'Update check failed', 'Network/update-server failure.'),
  ('updates-unconfigured', 'Updates not configured', 'Fallback for builds without an announcement endpoint.'),

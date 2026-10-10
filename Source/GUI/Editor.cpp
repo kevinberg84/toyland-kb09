@@ -77,7 +77,7 @@ struct Artwork {
     juce::Image fader=load(BinaryData::faderpersonaloverhead_png,BinaryData::faderpersonaloverhead_pngSize);
     juce::Image rail=load(BinaryData::frontrailgrain_png,BinaryData::frontrailgrain_pngSize);
     juce::Image keys=load(BinaryData::keys_png,BinaryData::keys_pngSize);
-    juce::Image whiteKey=keys.getClippedImage({296,60,218,1080});
+    juce::Image whiteKey=keys.getClippedImage({318,70,174,1050});
     juce::Image blackKey=keys.getClippedImage({763,68,159,615});
     juce::Image marks,marksAged;
     Artwork() {
@@ -1014,8 +1014,9 @@ public:
                 juce::Path outline;outline.addRoundedRectangle(r.reduced(.65f,0),3.0f);g.reduceClipRegion(outline);
                 const auto ivory=juce::Colour(0xffefede6).interpolatedWith(juce::Colour(0xffd1bd86),age*.85f);
                 auto key=r.reduced(.65f,0);
-                auto face=key.withTrimmedTop(key.getHeight()-3);
-                auto top=key.withTrimmedBottom(3);
+                const float frontHeight=down?0.f:1.7f;
+                auto face=key.withTrimmedTop(key.getHeight()-frontHeight);
+                auto top=key.withTrimmedBottom(frontHeight);
                 juce::ColourGradient enamel(ivory.darker(.23f),0,top.getY(),ivory,0,top.getBottom(),false);
                 enamel.addColour(.07,ivory.darker(.09f));enamel.addColour(.55,ivory.brighter(.04f*gloss));
                 enamel.addColour(.975,ivory.brighter(.09f*gloss));g.setGradientFill(enamel);g.fillRect(top);
@@ -1028,8 +1029,20 @@ public:
                 // The photo contains fresh specular reflections. Reveal the
                 // matte native enamel underneath as its surface loses gloss.
                 g.setOpacity(1.0f-age*.64f);g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
-                g.drawImage(artwork().whiteKey,key,juce::RectanglePlacement::stretchToFit);
+                g.drawImage(artwork().whiteKey,top,juce::RectanglePlacement::stretchToFit);
                 g.setOpacity(1.0f);
+                // Symmetric top bevels border dark gaps. The photo supplies only
+                // enamel, never an oblique side or an exaggerated front face.
+                g.setColour(juce::Colours::white.withAlpha(.52f*gloss));
+                g.drawRoundedRectangle(top.reduced(1.1f),2.2f,.7f);
+                g.setColour(juce::Colours::black.withAlpha(.30f));
+                g.drawRoundedRectangle(key.reduced(.2f),2.8f,.65f);
+                if(!down) {
+                    g.setGradientFill(juce::ColourGradient(ivory.darker(.12f),0,face.getY(),ivory.darker(.27f),0,face.getBottom(),false));
+                    g.fillRect(face);
+                    g.setColour(ivory.brighter(.07f).withAlpha(.45f*gloss));
+                    g.drawLine(key.getX()+3,face.getY(),key.getRight()-3,face.getY(),.6f);
+                }
                 const float variation=float(n-53)/31;
                 // Polymer and printing age separately. Strong warm ivory at the
                 // endpoint follows the uneven cream keys in original-unit photos.
@@ -1104,13 +1117,13 @@ public:
             }
             if(pass==0&&n%12==0) {
                 const int octave=n/12-1+juce::roundToInt(processor.state.getRawParameterValue("range")->load())-2;
-                caption(g,"C"+juce::String(octave),{r.getX()+2,r.getBottom()-21,r.getWidth()-4,15},10.5f,
+                caption(g,"C"+juce::String(octave),{r.getX()+2,r.getBottom()-25,r.getWidth()-4,15},10.5f,
                     juce::Justification::centred,false,juce::Colour(0xff514d43).withAlpha(.87f));
             }
             if(down) {
                 g.setColour(juce::Colours::black.withAlpha(pass==0?.14f:.18f));g.fillRoundedRectangle(r.reduced(1),1.5f);
                 if(effectiveNote==n) {
-                    g.setColour(amber);g.fillRoundedRectangle(r.getX()+4,r.getBottom()-11,r.getWidth()-8,7,1.2f);
+                    g.setColour(amber);g.fillRoundedRectangle(r.getX()+9,r.getBottom()-7,r.getWidth()-18,3,1.0f);
                 }
             }
         }
@@ -1583,8 +1596,8 @@ public:
         {
             juce::Graphics::ScopedSaveState save(g);
             const juce::Rectangle<float> rail(59.0f,float(headerH+696),1382.0f,24.0f);
-            g.setGradientFill(juce::ColourGradient(juce::Colour(0xff101313),0,rail.getBottom(),
-                juce::Colour(0xff030506),0,float(headerH+bodyH),false));
+            // Unlit case below the rail must not read as a tall front face.
+            g.setColour(juce::Colour(0xff070909));
             g.fillRect(59.0f,rail.getBottom(),1382.0f,float(headerH+bodyH)-rail.getBottom());
             g.reduceClipRegion(rail.toNearestInt());
             g.drawImage(art.rail,rail.getX(),rail.getY(),rail.getWidth(),rail.getHeight(),0,0,art.rail.getWidth(),70);
@@ -1594,10 +1607,10 @@ public:
             // the old gap left by the exaggerated vertical key faces.
             g.setGradientFill(juce::ColourGradient(juce::Colours::black.withAlpha(.42f),0,rail.getY(),juce::Colours::transparentBlack,0,rail.getY()+3,false));
             g.fillRect(rail.withHeight(3));
-            juce::ColourGradient fold(juce::Colours::transparentWhite,0,rail.getBottom()-6,
-                juce::Colour(0xffbfc2b9).withAlpha(.25f-age*.05f),0,rail.getBottom()-1,false);
-            fold.addColour(.72,juce::Colour(0xffbfc2b9).withAlpha(.10f));
-            g.setGradientFill(fold);g.fillRect(rail.withTop(rail.getBottom()-6));
+            juce::ColourGradient fold(juce::Colours::transparentWhite,0,rail.getBottom()-1.7f,
+                juce::Colour(0xffbfc2b9).withAlpha(.25f-age*.05f),0,rail.getBottom()-.3f,false);
+            fold.addColour(.72,juce::Colour(0xffbfc2b9).withAlpha(.08f));
+            g.setGradientFill(fold);g.fillRect(rail.withTop(rail.getBottom()-1.7f));
         }
         {
             juce::Graphics::ScopedSaveState save(g);g.addTransform(juce::AffineTransform::translation(0,float(headerH)));

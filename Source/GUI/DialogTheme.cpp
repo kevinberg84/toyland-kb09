@@ -60,13 +60,13 @@ void DialogTheme::wear(juce::Graphics& g,juce::Rectangle<int> bounds,int seed) c
 void DialogTheme::brand(juce::Graphics& g,juce::Rectangle<float> area) const {
     static auto mask=logoMask();g.setColour(paper());g.drawImage(mask,area,juce::RectanglePlacement::centred,true);wear(g,area.toNearestInt(),83);
 }
-juce::Font DialogTheme::getAlertWindowTitleFont(){return lettering(22,true);}
-juce::Font DialogTheme::getAlertWindowMessageFont(){return lettering(17);}
-juce::Font DialogTheme::getAlertWindowFont(){return lettering(17);}
-juce::Font DialogTheme::getTextButtonFont(juce::TextButton&,int){return lettering(16);}
-juce::Font DialogTheme::getComboBoxFont(juce::ComboBox&){return lettering(16);}
-juce::Font DialogTheme::getLabelFont(juce::Label&){return lettering(16);}
-juce::Font DialogTheme::getPopupMenuFont(){return lettering(17);}
+juce::Font DialogTheme::getAlertWindowTitleFont(){return lettering(22*textScale,true);}
+juce::Font DialogTheme::getAlertWindowMessageFont(){return lettering(17*textScale);}
+juce::Font DialogTheme::getAlertWindowFont(){return lettering(17*textScale);}
+juce::Font DialogTheme::getTextButtonFont(juce::TextButton&,int){return lettering(16*textScale);}
+juce::Font DialogTheme::getComboBoxFont(juce::ComboBox&){return lettering(16*textScale);}
+juce::Font DialogTheme::getLabelFont(juce::Label&){return lettering(16*textScale);}
+juce::Font DialogTheme::getPopupMenuFont(){return lettering(17*textScale);}
 void DialogTheme::drawAlertBox(juce::Graphics& g,juce::AlertWindow& alert,const juce::Rectangle<int>&,juce::TextLayout& layout){
     g.fillAll(black);g.setColour(paper().withAlpha(.65f));g.drawRoundedRectangle(alert.getLocalBounds().toFloat().reduced(1),6,1);
     int inset=0;
@@ -88,7 +88,7 @@ void DialogTheme::drawButtonText(juce::Graphics& g,juce::TextButton& b,bool,bool
 void DialogTheme::drawToggleButton(juce::Graphics& g,juce::ToggleButton& b,bool,bool){
     g.setColour(paper());g.drawRoundedRectangle(3,float(b.getHeight())*.5f-7,14,14,2,1);
     if(b.getToggleState()){juce::Path check;const float y=float(b.getHeight())*.5f;check.startNewSubPath(5,y);check.lineTo(9,y+4);check.lineTo(15,y-5);g.strokePath(check,juce::PathStrokeType(1.5f));}
-    g.setFont(lettering(16));g.drawFittedText(b.getButtonText(),b.getLocalBounds().withTrimmedLeft(24),juce::Justification::centredLeft,2);wear(g,b.getLocalBounds());
+    g.setFont(lettering(16*textScale));g.drawFittedText(b.getButtonText(),b.getLocalBounds().withTrimmedLeft(24),juce::Justification::centredLeft,2);wear(g,b.getLocalBounds());
 }
 void DialogTheme::drawLabel(juce::Graphics& g,juce::Label& label){juce::LookAndFeel_V4::drawLabel(g,label);wear(g,label.getLocalBounds());}
 void DialogTheme::drawComboBox(juce::Graphics& g,int w,int h,bool down,int x,int y,int bw,int bh,juce::ComboBox& box){
@@ -96,17 +96,17 @@ void DialogTheme::drawComboBox(juce::Graphics& g,int w,int h,bool down,int x,int
 }
 void DialogTheme::drawPopupMenuBackground(juce::Graphics& g,int w,int h){g.fillAll(black);g.setColour(paper().withAlpha(.65f));g.drawRect(0,0,w,h);}
 void DialogTheme::getIdealPopupMenuSectionHeaderSizeWithOptions(const juce::String& text,int,int& width,int& height,const juce::PopupMenu::Options&){
-    width=text.startsWithIgnoreCase("Toyland")?590:juce::GlyphArrangement::getStringWidthInt(lettering(18,true),text)+28;
-    height=text.startsWithIgnoreCase("Toyland")?66:44;
+    width=text.startsWithIgnoreCase("Toyland")?380:juce::GlyphArrangement::getStringWidthInt(lettering(18,true),text)+28;
+    height=text.startsWithIgnoreCase("Toyland")?44:44;
 }
 void DialogTheme::drawPopupMenuSectionHeader(juce::Graphics& g,const juce::Rectangle<int>& a,const juce::String& text){
     if(text.startsWithIgnoreCase("Toyland")){
-        constexpr float width=200;
+        constexpr float width=130;
         brand(g,{float(a.getX()+20),float(a.getY()),width,float(a.getHeight())});
-        g.setColour(paper());g.setFont(lettering(50,true).withExtraKerningFactor(0));
+        g.setColour(paper());g.setFont(lettering(24,true).withExtraKerningFactor(0));
         g.drawText(text.substring(7).trim(),a.withTrimmedLeft(int(width)+32).withTrimmedRight(14),juce::Justification::centredLeft);
     }else{g.setColour(paper());g.setFont(lettering(18,true));g.drawText(text,a.reduced(14,0),juce::Justification::centredLeft);}
-    wear(g,text.startsWithIgnoreCase("Toyland")?a.withTrimmedLeft(232):a);
+    wear(g,text.startsWithIgnoreCase("Toyland")?a.withTrimmedLeft(162):a);
 }
 void DialogTheme::drawPopupMenuItem(juce::Graphics& g,const juce::Rectangle<int>& a,bool sep,bool active,bool hot,bool tick,bool sub,const juce::String& text,const juce::String& shortcut,const juce::Drawable* icon,const juce::Colour*){
     juce::ignoreUnused(icon);if(hot){g.setColour(paper());g.fillRect(a.reduced(2));}
@@ -120,7 +120,10 @@ void DialogTheme::drawPopupMenuItem(juce::Graphics& g,const juce::Rectangle<int>
     wear(g,a);
 }
 ThemedAlert::ThemedAlert(const juce::String& title,const juce::String& message,juce::MessageBoxIconType icon,juce::Component* owner,float condition)
-    : AlertWindow(title,message,icon,owner),theme(condition<0?DialogTheme::conditionOf(owner):condition){setLookAndFeel(&theme);}
+    : AlertWindow(title,message,icon,owner),theme(condition<0?DialogTheme::conditionOf(owner):condition){
+    if(title=="External audio + envelope follower" || title=="Audio / MIDI settings")theme.textScale=1.2f;
+    setLookAndFeel(&theme);
+}
 juce::AlertWindow* DialogTheme::createAlertWindow(const juce::String& title,const juce::String& msg,const juce::String& b1,const juce::String& b2,const juce::String& b3,juce::MessageBoxIconType icon,int n,juce::Component* owner){
     auto* a=new ThemedAlert(title,msg,icon,owner,conditionProvider?conditionProvider():age);
     if(n==1)a->addButton(b1,0,juce::KeyPress(juce::KeyPress::escapeKey),juce::KeyPress(juce::KeyPress::returnKey));

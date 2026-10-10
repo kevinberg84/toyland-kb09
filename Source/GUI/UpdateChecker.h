@@ -24,7 +24,7 @@ public:
         auto theme=std::make_shared<kb09_gui::UpdateMenuTheme>(kb09_gui::DialogTheme::conditionOf(target));
         juce::PopupMenu m;m.setLookAndFeel(theme.get());m.addSectionHeader("Toyland KB-09 " JucePlugin_VersionString);
         m.addItem(1,"Check for updates now");m.addItem(2,"Automatic checks (every 90 days)",true,enabled());
-        m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(target).withMinimumWidth(590).withStandardItemHeight(52),[theme,owner=juce::Component::SafePointer<juce::Component>(target)](int item){auto& s=instance();if(item==1){if(s.configured())s.check(true);else juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates","Update announcements are not configured in this build yet.","OK",owner.getComponent());}if(item==2)s.consent(!s.enabled());});
+        m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(target).withMinimumWidth(380).withStandardItemHeight(34),[theme,owner=juce::Component::SafePointer<juce::Component>(target)](int item){auto& s=instance();if(item==1){if(s.configured())s.check(true);else juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates","Update announcements are not configured in this build yet.","OK",owner.getComponent());}if(item==2)s.consent(!s.enabled());});
     }
     void opened(juce::Component* owner = nullptr) {
         if(!configured())return;

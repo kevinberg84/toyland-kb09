@@ -10,6 +10,7 @@ public:
         : ThemedAlert("Audio / MIDI settings", "Choose your audio device and MIDI inputs.",
                       juce::MessageBoxIconType::NoIcon, owner, condition),
           selector(manager,0,2,0,2,true,false,true,false) {
+        selector.setItemHeight(32);
         contents.setSize(540,450);
         contents.addAndMakeVisible(selector);
         selector.setBounds(0,40,540,400);

@@ -1,0 +1,17 @@
+# Connect KB-09 bug reporting
+
+1. Open your existing **KB-09 Bug Reporting** project at https://script.google.com/. Replace the contents of `Code.gs` with the complete adjacent **Code.gs**, then save.
+2. Select **configureBugReporting** from the function list and click **Run**. Complete Google's authorization for sending email as your account. This setup function does not send a test email. Only authorize the project/code you control.
+3. Choose **Deploy → New deployment → Select type → Web app**. Set **Execute as: Me** and **Who has access: Anyone** (not “Anyone with a Google account”). Click **Deploy** and complete any owner authorization requested. If your account does not offer anonymous access, tell Kevin before distributing the form.
+4. Copy the **Web app URL**, ending in `/exec`. Do not use a `/dev` test URL or the project editor URL. Send that deployment URL to Codex so it can connect and repackage both manuals. Alternatively run `python tools/configure_bug_report.py --deployment-url "YOUR_EXEC_URL"` from the project root. This updates the source questionnaire and the self-contained **User Manual.html**. Existing distributed manuals need to be replaced too.
+5. Open the regenerated **User Manual.html** directly from disk (`file:///`), complete a report marked “deployment test,” and submit. Confirm both the success tab and receipt of exactly one email in your inbox. Try an invalid field and an identical resubmission. The latter should confirm the existing report without sending another email. No successful live submission is claimed until this is done.
+
+Future backend edits: **Deploy → Manage deployments → Edit (pencil) → Version: New version → Deploy**. Keep the existing deployment URL. Merely saving edited code does not update a versioned deployment.
+
+The destination exists only in server code/script properties. Never distribute Code.gs with the synth. End users do not authorize email access: the app runs as you. Google controls its own hosting/permission notices; this code cannot control those notices or guarantee they reveal no account identity.
+
+The manual makes a normal HTTPS form POST in a new tab, with no fetch and no dependency on a local server. It retains the completed form and offers a plain-text download/copy fallback, including incomplete drafts. Nothing is sent while filling in the form. Reports and optional contact details are emailed to the project owner; users should omit passwords and private session contents.
+
+Server controls: whitelist and single-value fields; strict sizes/types/categories; contact-email checks; a honeypot and a three-second fill-time check; duplicate suppression for up to six hours; a script-wide lock, five attempts per ten minutes, thirty per UTC day, and a MailApp quota check. These are modest abuse controls, not authentication or bot-proof protection. Apps Script does not supply client IP addresses to doPost. Cache eviction can shorten duplicate suppression. Failed mail attempts consume rate slots conservatively; anonymous attackers can exhaust the reporting allowance. Keep **Save report locally** available. Retained server state contains only rate counts/timestamps and temporary report hashes, not copies of answers; inbox retention is controlled by you.
+
+Official references: [Web apps and deployment](https://developers.google.com/apps-script/guides/web), [MailApp](https://developers.google.com/apps-script/reference/mail/mail-app), [service quotas](https://developers.google.com/apps-script/guides/services/quotas).

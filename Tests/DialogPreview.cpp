@@ -29,15 +29,15 @@ int main(int argc,char** argv){
             kb09_gui::UpdateMenuTheme updateTheme(age);
             juce::PopupMenu menu;menu.setLookAndFeel(presets?&ownerTheme:&updateTheme);
             if(presets){int i=0;for(const auto& p:sh09::factoryPresets()){++i;menu.addItem(i,p.name,true,i==1);}}
-            else{menu.addSectionHeader("Toyland KB-09 1.0.1");menu.addItem(1,"Check for updates now");menu.addItem(2,"Automatic checks (every 90 days)",true,true);}
-            menu.showMenuAsync(juce::PopupMenu::Options().withParentComponent(&stage).withTargetScreenArea({10,10,1,1}).withMinimumWidth(presets?400:590).withStandardItemHeight(presets?36:52),[](int){});
+            else{menu.addSectionHeader("Toyland KB-09 1.0.3");menu.addItem(1,"Check for updates now");menu.addItem(2,"Automatic checks (every 90 days)",true,true);}
+            menu.showMenuAsync(juce::PopupMenu::Options().withParentComponent(&stage).withTargetScreenArea({10,10,1,1}).withMinimumWidth(presets?400:380).withStandardItemHeight(presets?36:34),[](int){});
             if(stage.getNumChildComponents()>0)png(*stage.getChildComponent(stage.getNumChildComponents()-1),out.getChildFile(juce::String(presets?"preset-menu":"update-menu")+"-"+juce::String(level)+".png"));
             juce::PopupMenu::dismissAllActiveMenus();
         };
         menuCapture(false);menuCapture(true);
         alert("external-audio","External audio + envelope follower",kb09_gui::externalAudioMessage,I::InfoIcon,{"OK"});
         alert("update-consent","KB-09 updates",kb09_gui::updateConsentMessage,I::QuestionIcon,{"Allow","No thanks"});
-        alert("update-available","KB-09 update available",kb09_gui::updateAvailableMessage("1.0.2"),I::InfoIcon,{"Show update instructions","Not now"});
+        alert("update-available","KB-09 update available",kb09_gui::updateAvailableMessage("1.0.4"),I::InfoIcon,{"Show update instructions","Not now"});
         alert("up-to-date","KB-09 updates","You're up to date!",I::InfoIcon,{"OK"});
         alert("update-error","KB-09 updates","Could not check for updates. Please try again later.",I::InfoIcon,{"OK"});
         alert("updates-unconfigured","KB-09 updates","Update announcements are not configured in this build yet.",I::InfoIcon,{"OK"});
