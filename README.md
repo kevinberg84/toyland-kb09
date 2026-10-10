@@ -57,3 +57,7 @@ The signal path uses fixed 4x oversampling and reports **128 samples of resampli
 GUI assertions exercise button-selected S/M/L sizes and restoration, transformed footer bounds, held white/black key feedback, bender positions, configured value-popup contrast, individual aging events, cap opacity outside the slot, visible thin blades and moving black top ticks. They do not establish every host gesture or physical-display condition. The renderer combines **nine runtime PNG inputs** with native geometry and wear; a 3840-pixel compiled-editor export does not create additional photographic detail. [Artwork inventory and provenance](Assets/Photoreal/README.md) records current asset sources and dimensions.
 
 Primary-document facts and inferred DSP are distinguished in `docs/SH09_RESEARCH.md`, `docs/DSP_DESIGN.md` and `docs/DSP_DESIGN_DSP.md`. No physical SH-09 audio capture set or completed listening A/B is claimed. `tools/calibrate.py` supports future recording analysis; WAV files under `artifacts/Audio` are software renders.
+
+## Release process
+
+Follow [Kevin's release workflow](docs/RELEASE-WORKFLOW.md). Fixes advance the patch version, new backward-compatible features advance the minor version, and incompatible changes advance the major version. Verify the same version across binaries, manuals, packages and the update feed before publication.
