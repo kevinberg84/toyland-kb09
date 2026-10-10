@@ -1099,7 +1099,7 @@ public:
             }
             if(pass==0&&n%12==0) {
                 const int octave=n/12-1+juce::roundToInt(processor.state.getRawParameterValue("range")->load())-2;
-                caption(g,"C"+juce::String(octave),{r.getX()+2,r.getBottom()-37,r.getWidth()-4,15},10.5f,
+                caption(g,"C"+juce::String(octave),{r.getX()+2,r.getBottom()-21,r.getWidth()-4,15},10.5f,
                     juce::Justification::centred,false,juce::Colour(0xff514d43).withAlpha(.87f));
             }
             if(down) {
