@@ -2,10 +2,17 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 namespace kb09_gui {
+struct DialogFonts {
+    DialogFonts();
+    juce::Typeface::Ptr regular, semibold;
+};
 // Per-window ownership keeps this theme out of the host's own windows.
 class DialogTheme : public juce::LookAndFeel_V4 {
 public:
     explicit DialogTheme(float condition = 0);
+private:
+    juce::SharedResourcePointer<DialogFonts> fonts;
+public:
     float age = 0;
     std::function<float()> conditionProvider;
     juce::Colour paper() const;

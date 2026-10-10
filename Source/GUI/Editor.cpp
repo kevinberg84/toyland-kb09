@@ -1007,7 +1007,11 @@ public:
             const bool down=held[size_t(n)];
             const float depressed=down?3.5f:0;
             r=r.withTrimmedTop(depressed);
+            juce::Graphics::ScopedSaveState keyClip(g);
             if(pass==0) {
+                // The photographed edge is oblique; use symmetric physical
+                // corner geometry instead of inheriting its cropped left corner.
+                juce::Path outline;outline.addRoundedRectangle(r.reduced(.65f,0),3.0f);g.reduceClipRegion(outline);
                 const auto ivory=juce::Colour(0xffefede6).interpolatedWith(juce::Colour(0xffd1bd86),age*.85f);
                 auto key=r.reduced(.65f,0);
                 auto face=key.withTrimmedTop(key.getHeight()-3);
@@ -1033,6 +1037,7 @@ public:
                 g.fillRoundedRectangle(key.reduced(.5f),1.4f);
             } else {
                 for(int i=5;i>0;--i){g.setColour(juce::Colours::black.withAlpha(.07f));g.fillRoundedRectangle(r.expanded(float(i)*.45f).translated(2,3),1.8f);}
+                juce::Path outline;outline.addRoundedRectangle(r,2.5f);g.reduceClipRegion(outline);
                 auto face=r.withTrimmedTop(r.getHeight()-3),top=r.withTrimmedBottom(3);
                 const auto matte=[age](juce::Colour fresh,juce::Colour worn) {return fresh.interpolatedWith(worn,age);};
                 juce::ColourGradient plastic(matte(juce::Colour(0xff111517),juce::Colour(0xff151614)),top.getX(),top.getY(),
@@ -1577,7 +1582,7 @@ public:
         // different material from the smooth painted main panel.
         {
             juce::Graphics::ScopedSaveState save(g);
-            const juce::Rectangle<float> rail(59.0f,float(headerH+705),1382.0f,27.0f);
+            const juce::Rectangle<float> rail(59.0f,float(headerH+696),1382.0f,24.0f);
             g.setGradientFill(juce::ColourGradient(juce::Colour(0xff101313),0,rail.getBottom(),
                 juce::Colour(0xff030506),0,float(headerH+bodyH),false));
             g.fillRect(59.0f,rail.getBottom(),1382.0f,float(headerH+bodyH)-rail.getBottom());
@@ -1585,7 +1590,10 @@ public:
             g.drawImage(art.rail,rail.getX(),rail.getY(),rail.getWidth(),rail.getHeight(),0,0,art.rail.getWidth(),70);
             g.setColour(juce::Colours::black.withAlpha(.27f+age*.08f));g.fillRect(rail);
             g.setOpacity(std::pow(age,1.25f));g.drawImage(railDust(),rail);g.setOpacity(1);
-            g.setColour(juce::Colour(0xff9b9c91).withAlpha(.12f-age*.06f));g.drawLine(rail.getX(),rail.getY(),rail.getRight(),rail.getY(),.7f);
+            // A shallow key-front shadow meets the textured surface without
+            // the old gap left by the exaggerated vertical key faces.
+            g.setGradientFill(juce::ColourGradient(juce::Colours::black.withAlpha(.42f),0,rail.getY(),juce::Colours::transparentBlack,0,rail.getY()+3,false));
+            g.fillRect(rail.withHeight(3));
             juce::ColourGradient fold(juce::Colours::transparentWhite,0,rail.getBottom()-6,
                 juce::Colour(0xffbfc2b9).withAlpha(.25f-age*.05f),0,rail.getBottom()-1,false);
             fold.addColour(.72,juce::Colour(0xffbfc2b9).withAlpha(.10f));

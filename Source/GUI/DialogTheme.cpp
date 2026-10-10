@@ -16,12 +16,16 @@ juce::Image logoMask() {
     return mask;
 }
 }
+DialogFonts::DialogFonts()
+    : regular(juce::Typeface::createSystemTypefaceFor(BinaryData::JostRegular_ttf, BinaryData::JostRegular_ttfSize)),
+      semibold(juce::Typeface::createSystemTypefaceFor(BinaryData::JostSemibold_ttf, BinaryData::JostSemibold_ttfSize)) {}
 DialogTheme::DialogTheme(float condition):age(juce::jlimit(0.f,1.f,condition)){setUsingNativeAlertWindows(false);refreshColours();}
 juce::Colour DialogTheme::paper() const { return juce::Colours::white.interpolatedWith(juce::Colour(0xffd1bd86),age*.86f); }
 juce::Font DialogTheme::lettering(float height,bool bold) {
-    static auto regular=juce::Typeface::createSystemTypefaceFor(BinaryData::JostRegular_ttf, BinaryData::JostRegular_ttfSize);
-    static auto semibold=juce::Typeface::createSystemTypefaceFor(BinaryData::JostSemibold_ttf, BinaryData::JostSemibold_ttfSize);
-    return juce::Font(juce::FontOptions(bold?semibold:regular).withHeight(height)).withExtraKerningFactor(.015f);
+    // Keep native font ownership scoped to active windows, avoiding
+    // typeface ownership in DLL-static destructors.
+    juce::SharedResourcePointer<DialogFonts> resources;
+    return juce::Font(juce::FontOptions(bold?resources->semibold:resources->regular).withHeight(height)).withExtraKerningFactor(.015f);
 }
 float DialogTheme::conditionOf(juce::Component* owner) {
     if(owner) if(auto* look=dynamic_cast<DialogTheme*>(&owner->getLookAndFeel())) return look->age;
