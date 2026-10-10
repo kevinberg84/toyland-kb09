@@ -13,7 +13,7 @@
 #include <array>
 
 namespace {
-constexpr int designW=1500, bodyH=750, headerH=34, designH=834;
+constexpr int designW=1500, bodyH=750, visibleBodyH=720, headerH=34, designH=804;
 constexpr float panelViewSin=.156434f,panelViewCos=.987688f;
 const juce::Colour ink(0xffe9e7dd), muted(0xffb4b7b5), amber(0xffdbb572);
 juce::Colour agedInk(float age) {
@@ -605,9 +605,24 @@ public:
                     for(int i=0;i<=5;++i){const float a=juce::MathConstants<float>::halfPi-float(i)*juce::MathConstants<float>::halfPi/5;outline[size_t(count++)]={4.5f+4.5f*std::cos(a),80.5f+4.5f*std::sin(a)};}
                     outline[size_t(count++)]={9.0f,rootHeight+1.2f};
                 }
+                // Each shared fracture edge leans by a different fixed amount
+                // through the plastic. Keep both neighboring facets connected,
+                // and keep the pattern rigid as the wheel turns.
+                const auto fractureOffset=[&](int i) {
+                    if(!broken||i<=circleSegments)return juce::Point<float>();
+                    const float taper=juce::jlimit(0.0f,1.0f,float(juce::jmin(i-circleSegments,count-1-i))/3.0f);
+                    const auto seed=uint32_t(i-circleSegments)*7919u+0x5b31u;
+                    return juce::Point<float>((surfaceNoise(seed)-.5f)*4.0f*taper,
+                                              (surfaceNoise(seed+137u)-.5f)*1.7f*taper);
+                };
+                const auto surfacePoint=[&](int i,float t) {
+                    const auto local=outline[size_t(i)];
+                    return project(local+fractureOffset(i)*t,frontDepth(local)*t);
+                };
                 const auto section=[&](float z) {
-                    juce::Path p;p.startNewSubPath(project(outline[0],z==0?0:frontDepth(outline[0])));
-                    for(int i=1;i<count;++i)p.lineTo(project(outline[size_t(i)],z==0?0:frontDepth(outline[size_t(i)])));
+                    const float t=z==0?0.0f:1.0f;
+                    juce::Path p;p.startNewSubPath(surfacePoint(0,t));
+                    for(int i=1;i<count;++i)p.lineTo(surfacePoint(i,t));
                     p.closeSubPath();return broken?p:p.createPathWithRoundedCorners(1.8f);
                 };
                 const auto rear=section(0),front=section(depth);
@@ -691,13 +706,16 @@ public:
                     if(length<.0001f)continue;
                     const float nx=(-dz*ca+dx*sa)/length,nz=(dx*ca+dz*sa)/length;
                     if(nz<=0)continue;
-                    juce::Path wall;wall.startNewSubPath(project(a,0));wall.lineTo(project(b,0));
-                    wall.lineTo(project(b,frontDepth(b)));wall.lineTo(project(a,frontDepth(a)));wall.closeSubPath();
+                    const int next=(i+1)%count;
+                    juce::Path wall;wall.startNewSubPath(surfacePoint(i,0));wall.lineTo(surfacePoint(next,0));
+                    wall.lineTo(surfacePoint(next,1));wall.lineTo(surfacePoint(i,1));wall.closeSubPath();
                     const bool fracture=broken&&i>=circleSegments;
                     const auto shade=[&](float axial) {
-                        // Fractured plastic scatters light; glossy face-by-face
-                        // highlights made the old break look like metal teeth.
-                        const float value=fracture?.065f+.055f*juce::jmax(0.0f,nz)+.075f*surfaceNoise(uint32_t(i)*917u)+.028f*(1-axial/depth):plasticLight(nx,0,nz,axial);
+                        // Matte fracture facets have distinct plane lighting;
+                        // a broad reflection would soften the jagged cut.
+                        const float diffuse=juce::jmax(0.0f,-.54f*nx+.842f*nz);
+                        const float value=fracture?.029f+.185f*diffuse*diffuse
+                            +.024f*surfaceNoise(uint32_t(i)*917u):plasticLight(nx,0,nz,axial);
                         auto colour=juce::Colour::fromFloatRGBA(value,value*.99f,value*.96f,1);
                         if(fracture)colour=colour.interpolatedWith(juce::Colour(0xff777777),.08f);
                         return colour;
@@ -706,23 +724,28 @@ public:
                     juce::ColourGradient reflection(shade(0),backPoint.x,backPoint.y,shade(depth),frontPoint.x,frontPoint.y,false);
                     reflection.addColour(.22,shade(depth*.22f));reflection.addColour(.70,shade(depth*.70f));
                     if(!broken)wall=wall.createPathWithRoundedCorners(2.6f);
-                    g.setGradientFill(reflection);g.fillPath(wall);
+                    if(fracture)g.setColour(shade(depth*.45f));else g.setGradientFill(reflection);
+                    g.fillPath(wall);
                     if(fracture) {
                         juce::Graphics::ScopedSaveState rough(g);g.reduceClipRegion(wall);
                         for(uint32_t grain=0;grain<18;++grain) {
                             const auto key=uint32_t(i)*7919u+grain*113u;
-                            const auto local=a+(b-a)*surfaceNoise(key+13);
-                            const auto point=project(local,frontDepth(local)*surfaceNoise(key+31));
+                            const float along=surfaceNoise(key+13),across=surfaceNoise(key+31);
+                            const auto local=a+(b-a)*along;
+                            const auto shift=fractureOffset(i)+(fractureOffset(next)-fractureOffset(i))*along;
+                            const auto point=project(local+shift*across,frontDepth(local)*across);
                             g.setColour(juce::Colour(grain%3?0xffa1a1a0:0xff080909).withAlpha(.20f));
                             g.fillEllipse(point.x,point.y,.27f,.20f);
                         }
                     }
                     // Overlap the antialias coverage with the identical material.
+                    if(fracture)g.setColour(shade(depth*.45f));else g.setGradientFill(reflection);
                     g.strokePath(wall,juce::PathStrokeType(.16f));
-                    g.setColour(juce::Colour(0xff8c9087).withAlpha((fracture?.12f:.32f)*(1-age*.45f)));
-                    g.drawLine({project(a,.15f),project(b,.15f)},.45f);
+                    const float fractureEdge=.12f+.32f*juce::jmax(0.0f,-.54f*nx+.842f*nz);
+                    g.setColour(juce::Colour(0xff8c9087).withAlpha((fracture?fractureEdge:.32f)*(1-age*.45f)));
+                    g.drawLine({surfacePoint(i,.15f/depth),surfacePoint(next,.15f/depth)},.45f);
                     g.setColour(juce::Colour(0xff010202).withAlpha(.55f));
-                    g.drawLine({project(a,depth),project(b,depth)},.35f);
+                    g.drawLine({surfacePoint(i,1),surfacePoint(next,1)},.35f);
                 }
                 const auto channel=[&](float r,float axle) {
                     juce::Path p;
@@ -844,7 +867,7 @@ public:
     void paint(juce::Graphics& g) override {
         const auto* look=dynamic_cast<const HardwareLook*>(&getLookAndFeel());
         const float age=look!=nullptr?look->age:0;
-        const auto ink=agedInk(getY()<headerH+bodyH?age:0);
+        const auto ink=agedInk(getY()<headerH+visibleBodyH?age:0);
         const float xx=actuatorX();
         const auto id=getComponentID();
         const bool middleOnLeft=labelsLeft||id=="lfoWave"||id=="vcaMode";
@@ -1436,7 +1459,7 @@ public:
             // All expensive hardware is already in small pre-rendered frames.
             // Keep the footer and its AGE thumb live on every mouse event.
             {
-                for(auto* c:getChildren())if(c->isVisible()&&c->getY()>=headerH&&c->getBottom()<=headerH+bodyH) {
+                for(auto* c:getChildren())if(c->isVisible()&&c->getY()>=headerH&&c->getBottom()<=headerH+visibleBodyH) {
                     hiddenForCondition.emplace_back(c);c->setVisible(false);
                 }
             }
@@ -1476,7 +1499,7 @@ public:
         if(look.conditionDragging&&!renderingCondition) {
             const float amount=juce::jlimit(0.0f,1.0f,processor.state.getRawParameterValue("age")->load())*4;
             const int low=juce::jmin(3,int(amount));
-            const juce::Rectangle<float> body(0,float(headerH),float(designW),float(bodyH));
+            const juce::Rectangle<float> body(0,float(headerH),float(designW),float(visibleBodyH));
             if(agePreviews[0].isValid()&&agePreviews[4].isValid()) {
                 g.drawImage(agePreviews[size_t(low)],body);
                 g.setOpacity(amount-low);g.drawImage(agePreviews[size_t(low+1)],body);g.setOpacity(1);
@@ -1497,7 +1520,7 @@ public:
         const auto& art=artwork();g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
         {
             juce::Graphics::ScopedSaveState save(g);
-            juce::Path outline;outline.addRoundedRectangle(0,float(headerH),float(designW),float(bodyH),14);
+            juce::Path outline;outline.addRoundedRectangle(0,float(headerH),float(designW),float(visibleBodyH),14);
             g.reduceClipRegion(outline);
             // Crop the empty photo border; the rounded chassis sits against the editor's dark surround.
             const auto source=juce::Rectangle<int>(juce::roundToInt(art.chassis.getWidth()*2.0/1774),
@@ -1598,7 +1621,7 @@ public:
             const juce::Rectangle<float> rail(59.0f,float(headerH+696),1382.0f,24.0f);
             // Unlit case below the rail must not read as a tall front face.
             g.setColour(juce::Colour(0xff070909));
-            g.fillRect(59.0f,rail.getBottom(),1382.0f,float(headerH+bodyH)-rail.getBottom());
+            g.fillRect(59.0f,rail.getBottom(),1382.0f,float(headerH+visibleBodyH)-rail.getBottom());
             g.reduceClipRegion(rail.toNearestInt());
             g.drawImage(art.rail,rail.getX(),rail.getY(),rail.getWidth(),rail.getHeight(),0,0,art.rail.getWidth(),70);
             g.setColour(juce::Colours::black.withAlpha(.27f+age*.08f));g.fillRect(rail);
@@ -1704,10 +1727,10 @@ public:
     }
 private:
     void paintFooter(juce::Graphics& g) {
-        g.setGradientFill(juce::ColourGradient(juce::Colour(0xff222729),0,float(headerH+bodyH),
+        g.setGradientFill(juce::ColourGradient(juce::Colour(0xff222729),0,float(headerH+visibleBodyH),
                                             juce::Colour(0xff121618),0,float(designH),false));
-        g.fillRect(0,headerH+bodyH,designW,designH-headerH-bodyH);
-        g.setColour(juce::Colour(0xff58605f));g.drawLine(0,float(headerH+bodyH),float(designW),float(headerH+bodyH),.65f);
+        g.fillRect(0,headerH+visibleBodyH,designW,designH-headerH-visibleBodyH);
+        g.setColour(juce::Colour(0xff58605f));g.drawLine(0,float(headerH+visibleBodyH),float(designW),float(headerH+visibleBodyH),.65f);
     }
     using SliderAttachment=juce::AudioProcessorValueTreeState::SliderAttachment;
     struct Control {
@@ -1806,7 +1829,7 @@ private:
                 look.conditionDragging=true; // Low-cost material rasterisation while caching.
                 keyboard.setBufferedToImage(false);bender.setBufferedToImage(false);power.setBufferedToImage(false);
                 for(auto& c:controls)if(c->slider)c->slider->setBufferedToImage(false);
-                agePreviews[i]=createComponentSnapshot({0,headerH,designW,bodyH},true,900.0f/designW);
+                agePreviews[i]=createComponentSnapshot({0,headerH,designW,visibleBodyH},true,900.0f/designW);
                 look.conditionDragging=false;look.renderingPreview=false;
                 previewAge=-1;renderingCondition=false;look.age=originalAge;
                 getProperties().set("conditionPreviewReady",agePreviews[0].isValid()&&agePreviews[4].isValid());
@@ -1901,7 +1924,7 @@ slider.setDoubleClickReturnValue(true,spec.initial);}
         c.label=std::make_unique<juce::Label>();c.label->setText(text,juce::dontSendNotification);
         c.label->setBounds(x,headerH+y,w,h);c.label->setFont(font(size,true));c.label->setJustificationType(juce::Justification::centred);
         c.label->setBorderSize(juce::BorderSize<int>(0));c.label->setInterceptsMouseClicks(false,false);addAndMakeVisible(*c.label);
-        const bool hardware=headerH+y<headerH+bodyH;
+        const bool hardware=headerH+y<headerH+visibleBodyH;
         c.label->getProperties().set("hardwarePrint",hardware);
         if(hardware)c.label->setColour(juce::Label::textColourId,agedInk(processor.state.getRawParameterValue("age")->load()));
     }
