@@ -1,6 +1,7 @@
 #pragma once
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "UpdateInstructions.h"
+#include "DialogMessages.h"
 
 namespace kb09 {
 // Public announcement endpoint only; release downloads remain user initiated.
@@ -20,24 +21,25 @@ public:
         manualCheck=manual;settings->setValue("lastAttempt",double(now));settings->saveIfNeeded();startThread();
     }
     void showMenu(juce::Component* target) {
-        juce::PopupMenu m;m.addSectionHeader("Toyland KB-09 " JucePlugin_VersionString);
+        auto theme=std::make_shared<kb09_gui::UpdateMenuTheme>(kb09_gui::DialogTheme::conditionOf(target));
+        juce::PopupMenu m;m.setLookAndFeel(theme.get());m.addSectionHeader("Toyland KB-09 " JucePlugin_VersionString);
         m.addItem(1,"Check for updates now");m.addItem(2,"Automatic checks (every 90 days)",true,enabled());
-        m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(target),[](int item){auto& s=instance();if(item==1){if(s.configured())s.check(true);else juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates","Update announcements are not configured in this build yet.");}if(item==2)s.consent(!s.enabled());});
+        m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(target).withMinimumWidth(590).withStandardItemHeight(52),[theme,owner=juce::Component::SafePointer<juce::Component>(target)](int item){auto& s=instance();if(item==1){if(s.configured())s.check(true);else juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates","Update announcements are not configured in this build yet.","OK",owner.getComponent());}if(item==2)s.consent(!s.enabled());});
     }
-    void opened() {
+    void opened(juce::Component* owner = nullptr) {
         if(!configured())return;
         if(!decided()) {
             if(prompting.exchange(true))return;
-            juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon,"KB-09 updates","Allow an update check when you open KB-09, every 90 days? Checks send no presets or personal information. Downloads always require your click.","Allow","No thanks",nullptr,juce::ModalCallbackFunction::create([](int yes){auto& s=instance();s.consent(yes!=0);s.prompting=false;if(yes)s.check(false);}));
+            juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon,"KB-09 updates",kb09_gui::updateConsentMessage,"Allow","No thanks",owner,juce::ModalCallbackFunction::create([](int yes){auto& s=instance();s.consent(yes!=0);s.prompting=false;if(yes)s.check(false);}));
         } else check(false);
     }
-    void deliver() {
+    void deliver(juce::Component* owner = nullptr) {
         if(!ready.exchange(false))return;
         juce::String v,link,message;bool manual=false,ok=false;
         {juce::ScopedLock lock(resultLock);v=newVersion;link=download;message=error;manual=resultManual;ok=success;}
         if(ok&&!manual){settings->setValue("lastSuccess",double(juce::Time::currentTimeMillis()));settings->saveIfNeeded();}
-        if(link.isNotEmpty())juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::InfoIcon,"KB-09 update available","Version "+v+" is available. Installation is manual and usually takes a few minutes, depending on your download speed. KB-09 will show you the steps.\n\nYour saved presets and audio/MIDI preferences are kept. Save your current patch before closing KB-09. Installing this update is optional.","Show update instructions","Not now",nullptr,juce::ModalCallbackFunction::create([link](int yes){if(yes)UpdateInstructions::show(link);}));
-        else if(manual)juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates",ok?"You're up to date!":"Could not check for updates. Please try again later.");
+        if(link.isNotEmpty())juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::InfoIcon,"KB-09 update available",kb09_gui::updateAvailableMessage(v),"Show update instructions","Not now",owner,juce::ModalCallbackFunction::create([link, safe=juce::Component::SafePointer<juce::Component>(owner)](int yes){if(yes)UpdateInstructions::show(link,safe.getComponent());}));
+        else if(manual)juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates",ok?"You're up to date!":"Could not check for updates. Please try again later.","OK",owner);
     }
     static bool validVersion(const juce::String& v) {
         auto parts=juce::StringArray::fromTokens(v,".","");if(parts.size()!=3)return false;for(auto& p:parts)if(p.isEmpty()||p.length()>6||!p.containsOnly("0123456789"))return false;return true;

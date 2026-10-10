@@ -1,10 +1,10 @@
 #pragma once
-#include <juce_gui_basics/juce_gui_basics.h>
+#include "DialogTheme.h"
 namespace kb09_gui {
-class ClosePrompt final : public juce::AlertWindow, private juce::KeyListener {
+class ClosePrompt final : public ThemedAlert, private juce::KeyListener {
 public:
     explicit ClosePrompt(juce::Component* owner)
-        : juce::AlertWindow("Save your KB-09 patch before closing?",
+        : ThemedAlert("Save your KB-09 patch before closing?",
             "Save opens this patch next time. Don't Save starts with Calibrated Init next time.",
             juce::MessageBoxIconType::QuestionIcon, owner) {
         addButton("Save", 1);
@@ -33,8 +33,8 @@ private:
     void select(int index) {
         selected = index;
         for (int i = 0; i < 3; ++i) if (auto* button = getButton(i)) {
-            button->setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xffdbb572));
-            button->setColour(juce::TextButton::textColourOnId, juce::Colour(0xff151a1d));
+            button->setColour(juce::TextButton::buttonOnColourId, theme.paper());
+            button->setColour(juce::TextButton::textColourOnId, juce::Colour(0xff090909));
             button->setToggleState(i == selected, juce::dontSendNotification);
         }
         if (auto* button = getButton(selected)) button->grabKeyboardFocus();

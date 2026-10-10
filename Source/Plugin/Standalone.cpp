@@ -38,6 +38,14 @@ public:
     void anotherInstanceStarted(const juce::String&) override { foreground(); }
 
     void initialise(const juce::String&) override {
+        // JUCE's device-error alerts have no associated component. This default
+        // applies only inside the standalone process, never inside a DAW.
+        juce::LookAndFeel::setDefaultLookAndFeel(&windowTheme);
+        windowTheme.conditionProvider=[this] {
+            if(window)if(auto* p=dynamic_cast<SH09Processor*>(window->getAudioProcessor()))
+                return p->state.getRawParameterValue("age")->load();
+            return 0.f;
+        };
         juce::PropertiesFile::Options options;
         // Retain audio/MIDI preferences from earlier standalone versions.
         options.applicationName = JucePlugin_Name;
@@ -76,6 +84,11 @@ public:
         if (!window || !presets) { quit(); return; }
         if (closing || presets->isDialogOpen()) return;
         closing = true;
+        if(auto* processor=dynamic_cast<SH09Processor*>(window->getAudioProcessor())) {
+            windowTheme.age=processor->state.getRawParameterValue("age")->load();
+            windowTheme.refreshColours();
+            window->setLookAndFeel(&windowTheme);
+        }
         question = std::make_unique<kb09_gui::ClosePrompt>(window.get());
         question->enterModalState(true, juce::ModalCallbackFunction::create([this](int answer) {
                 juce::MessageManager::callAsync([this, answer] {
@@ -92,6 +105,7 @@ public:
 
     void shutdown() override {
         question.reset(); presets.reset(); window.reset();
+        juce::LookAndFeel::setDefaultLookAndFeel(nullptr);
         properties.getUserSettings()->removeValue("filterState");
         properties.saveIfNeeded();
     }
@@ -129,6 +143,7 @@ private:
     std::unique_ptr<InstrumentWindow> window;
     std::unique_ptr<sh09::PresetFiles> presets;
     std::unique_ptr<kb09_gui::ClosePrompt> question;
+    kb09_gui::DialogTheme windowTheme;
     bool closing = false;
 };
 }

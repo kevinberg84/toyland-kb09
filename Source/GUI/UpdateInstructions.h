@@ -1,5 +1,5 @@
 #pragma once
-#include <juce_gui_basics/juce_gui_basics.h>
+#include "DialogTheme.h"
 
 namespace kb09 {
 #if JUCE_MAC
@@ -30,11 +30,11 @@ inline juce::String updateInstructions(bool mac) {
 
 // Uses the same AlertWindow styling as the other KB-09 dialogs. The two
 // custom buttons deliberately leave instructions open while copying/browsing.
-class UpdateInstructions final : public juce::AlertWindow {
+class UpdateInstructions final : public kb09_gui::ThemedAlert {
 public:
-    explicit UpdateInstructions(const juce::String& link)
-        : AlertWindow("How to update KB-09", updateInstructions(macUpdateInstructions),
-                      juce::MessageBoxIconType::InfoIcon), downloadLink(link) {
+    explicit UpdateInstructions(const juce::String& link, juce::Component* owner = nullptr, bool mac = macUpdateInstructions, float age = -1)
+        : ThemedAlert("How to update KB-09", updateInstructions(mac),
+                      juce::MessageBoxIconType::InfoIcon, owner, age), downloadLink(link) {
         controls.setSize(450, 36);
         controls.addAndMakeVisible(download);
         controls.addAndMakeVisible(copy);
@@ -52,8 +52,8 @@ public:
         addButton("Close", 0, juce::KeyPress(juce::KeyPress::escapeKey));
     }
     ~UpdateInstructions() override { removeCustomComponent(0); }
-    static void show(const juce::String& link) {
-        auto* dialog = new UpdateInstructions(link);
+    static void show(const juce::String& link, juce::Component* owner = nullptr) {
+        auto* dialog = new UpdateInstructions(link, owner);
         dialog->enterModalState(true, nullptr, true);
     }
 private:

@@ -3,6 +3,8 @@
 #include "PresetFiles.h"
 #include "PowerDetails.h"
 #include "UpdateChecker.h"
+#include "AudioSettingsDialog.h"
+#include "DialogMessages.h"
 #include "../Plugin/Processor.h"
 #include "BinaryData.h"
 #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
@@ -494,9 +496,9 @@ void screwOxidation(juce::Graphics& g,juce::Point<float> c,float age,uint32_t se
         g.fillEllipse(p.x,p.y,size,size*(.5f+surfaceNoise(seed+i*41)));
     }
 }
-class HardwareLook final : public juce::LookAndFeel_V4 {
+class HardwareLook final : public kb09_gui::DialogTheme {
 public:
-    float age=0;bool conditionDragging=false,renderingPreview=false;
+    bool conditionDragging=false,renderingPreview=false;
     HardwareLook() {
         setColour(juce::ComboBox::backgroundColourId,juce::Colour(0xff202326));
         setColour(juce::ComboBox::textColourId,ink);
@@ -514,9 +516,13 @@ public:
         setColour(juce::BubbleComponent::outlineColourId,juce::Colour(0xff756850));
     }
     juce::Font getComboBoxFont(juce::ComboBox&) override {return font(11);}
-    juce::Font getTextButtonFont(juce::TextButton&,int) override {return font(11,true);}
+    juce::Font getTextButtonFont(juce::TextButton& b,int h) override {return b.findParentComponentOfClass<juce::AlertWindow>() ? DialogTheme::getTextButtonFont(b,h) : font(11,true);}
+    void drawButtonBackground(juce::Graphics& g,juce::Button& b,const juce::Colour& c,bool over,bool down) override { if(b.findParentComponentOfClass<juce::AlertWindow>()) DialogTheme::drawButtonBackground(g,b,c,over,down); else juce::LookAndFeel_V4::drawButtonBackground(g,b,c,over,down); }
+    void drawButtonText(juce::Graphics& g,juce::TextButton& b,bool over,bool down) override { if(b.findParentComponentOfClass<juce::AlertWindow>()) DialogTheme::drawButtonText(g,b,over,down); else juce::LookAndFeel_V4::drawButtonText(g,b,over,down); }
     juce::Font getSliderPopupFont(juce::Slider&) override {return font(15,true);}
     juce::Font getLabelFont(juce::Label& l) override {return l.getFont();}
+    void drawLabel(juce::Graphics& g,juce::Label& l) override {juce::LookAndFeel_V4::drawLabel(g,l);}
+    void drawComboBox(juce::Graphics& g,int w,int h,bool d,int x,int y,int bw,int bh,juce::ComboBox& c) override {juce::LookAndFeel_V4::drawComboBox(g,w,h,d,x,y,bw,bh,c);}
     void drawLinearSlider(juce::Graphics& g,int x,int y,int w,int h,float pos,float,float,
                           const juce::Slider::SliderStyle style,juce::Slider& slider) override {
         const auto ink=agedInk(age);
@@ -1351,8 +1357,10 @@ public:
             computerKeyboard.onClick=[this]{releaseComputerNotes();updateComputerLabel();if(computerKeyboard.getToggleState())grabKeyboardFocus();};
             updateComputerLabel();
             audioMidi.setTooltip("Choose your audio output device and enable your MIDI controller.");
-            audioMidi.onClick=[] {
-                if(auto* holder=juce::StandalonePluginHolder::getInstance())holder->showAudioSettingsDialog();
+            audioMidi.onClick=[this] {
+                if(auto* holder=juce::StandalonePluginHolder::getInstance())
+                    kb09_gui::AudioSettingsDialog::show(holder->deviceManager,this,
+                        holder->getProcessorHasPotentialFeedbackLoop()?&holder->shouldMuteInput:nullptr);
             };
         }
         if(processor.wrapperType!=juce::AudioProcessor::wrapperType_Standalone)addAndMakeVisible(maximise);
@@ -1424,11 +1432,8 @@ public:
             externalHelp=juce::AlertWindow::showScopedAsync(
                 juce::MessageBoxOptions{}.withIconType(juce::MessageBoxIconType::InfoIcon)
                     .withTitle("External audio + envelope follower")
-                    .withMessage("Route DAW audio to the instrument's External Input and raise EXT in the mixer.\n\n"
-                                 "Without MIDI, set VCA to HOLD and lower VCO / SUB.\n\n"
-                                 "Select ENV FOL'R in VCF, lower CUTOFF and raise ENV for touch-sensitive filtering.\n\n"
-                                 "The follower listens before the EXT fader.")
-                    .withButton("OK").withAssociatedComponent(getTopLevelComponent()),[](int){});
+                    .withMessage(kb09_gui::externalAudioMessage)
+                    .withButton("OK").withAssociatedComponent(this),[](int){});
         };
         updateModern();startTimerHz(60);
     }
@@ -1716,7 +1721,7 @@ private:
         return juce::String(computerKeys).containsChar(c);
     }
     void timerCallback() override {
-        if(processor.wrapperType!=juce::AudioProcessor::wrapperType_Undefined&&isShowing()&&getPeer()){if(!updateOpened){updateOpened=true;kb09::Updates::instance().opened();}kb09::Updates::instance().deliver();}
+        if(processor.wrapperType!=juce::AudioProcessor::wrapperType_Undefined&&isShowing()&&getPeer()){if(!updateOpened){updateOpened=true;kb09::Updates::instance().opened(this);}kb09::Updates::instance().deliver(this);}
         if(!computerReady())releaseComputerNotes();
         else for(size_t i=0;i<computerHeld.size();++i)if(computerHeld[i]&&!juce::KeyPress::isKeyCurrentlyDown(computerKeys[i])) {
             computerHeld[i]=false;keyboard.setComputerNote((computerOctave+1)*12+int(i),false);
@@ -1912,5 +1917,3 @@ void SH09Editor::resized() {
         panel->setTopLeftPosition(0,0);
     }
 }
-
-
