@@ -57,7 +57,7 @@ jobs:
           ditto 'docs/manual' "$folder/Support/User Guide"
           cp 'docs/manual/User Manual.html' "$folder/User Manual.html"
           mkdir -p "$folder/Support/Licenses"
-          cp Assets/Fonts/OFL-Jost.txt "$folder/Support/Licenses/OFL-Jost.txt"
+          cp Assets/Fonts/OFL.txt "$folder/Support/Licenses/OFL-Jost.txt"
           cp auval.txt "$folder/Support/auval.txt"
           cp au-components.txt "$folder/Support/au-components.txt"
           cp tools/install-mac.command "$folder/INSTALL KB-09.command"
