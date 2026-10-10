@@ -19,7 +19,7 @@ public:
  void prepare(double sampleRate) noexcept;
  void reset() noexcept;
  void setControls(Controls controls) noexcept;
- void noteOn(int note,int velocity) noexcept;
+ void noteOn(int note,int velocity,bool alreadyHeld=false) noexcept;
  void noteOff(int note) noexcept;
  void allNotesOff() noexcept;
  void allSoundOff() noexcept;

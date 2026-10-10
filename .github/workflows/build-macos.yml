@@ -56,11 +56,13 @@ jobs:
           ditto 'build-mac/SH09_artefacts/Release/Standalone/Toyland KB-09.app' "$folder/Toyland KB-09 Standalone.app"
           ditto 'docs/manual' "$folder/Support/User Guide"
           cp 'docs/manual/User Manual.html' "$folder/User Manual.html"
+          mkdir -p "$folder/Support/Licenses"
+          cp Assets/Fonts/OFL-Jost.txt "$folder/Support/Licenses/OFL-Jost.txt"
           cp auval.txt "$folder/Support/auval.txt"
           cp au-components.txt "$folder/Support/au-components.txt"
           cp tools/install-mac.command "$folder/INSTALL KB-09.command"
           chmod +x "$folder/INSTALL KB-09.command"
-          printf '%s\n' 'KB-09 1.0.1 — Mac release.' '1. Extract this ZIP.' '2. Close your music software.' '3. Double-click INSTALL KB-09.command.' '4. Reopen your music software and rescan plug-ins.' '' 'Built for macOS 12 or later, Intel and Apple Silicon. Ad-hoc signed, not Developer ID signed or notarized. If macOS blocks it, contact Kevin for help; do not disable system security.' 'Please report bugs or manual mistakes to Kevin with your Mac, macOS and host versions.' 'Open User Manual.html beside this file for installation, controls and troubleshooting.' > "$folder/OPEN ME FIRST!.txt"
+          printf '%s\n' 'KB-09 1.0.2 — Mac release.' '1. Extract this ZIP.' '2. Close your music software.' '3. Double-click INSTALL KB-09.command.' '4. Reopen your music software and rescan plug-ins.' '' 'Built for macOS 12 or later, Intel and Apple Silicon. Ad-hoc signed, not Developer ID signed or notarized. If macOS blocks it, contact Kevin for help; do not disable system security.' 'Please report bugs or manual mistakes to Kevin with your Mac, macOS and host versions.' 'Open User Manual.html beside this file for installation, controls and troubleshooting.' > "$folder/OPEN ME FIRST!.txt"
           ditto -c -k --sequesterRsrc --keepParent "$folder" 'Toyland KB-09 for Mac.zip'
       - uses: actions/upload-artifact@v4
         with:

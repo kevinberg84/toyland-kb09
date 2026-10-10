@@ -87,9 +87,9 @@ void Engine::selectNote(bool repeat) noexcept {
  }else if(selected>=0)stage=Stage::release;
  selected=next;
 }
-void Engine::noteOn(int note,int velocity) noexcept {
+void Engine::noteOn(int note,int velocity,bool alreadyHeld) noexcept {
  if(note<0||note>127)return;if(velocity<=0){noteOff(note);return;}
- muted=false;auto& count=keys[size_t(note)];if(count<255)++count;
+ muted=false;auto& count=keys[size_t(note)];if(!alreadyHeld&&count<255)++count;
  velocities[size_t(note)]=float(std::clamp(velocity,1,127))/127;
  selectNote(note==selected);
 }

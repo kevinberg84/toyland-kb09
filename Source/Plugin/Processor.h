@@ -36,6 +36,7 @@ public:
  void queueKeyboard(int,bool,bool mouse=true) noexcept;
  void queuePitchBend(float value) noexcept { guiBend.store(juce::jlimit(-1.0f,1.0f,value),std::memory_order_relaxed); guiBendDirty.store(true,std::memory_order_release); }
  juce::AudioProcessorValueTreeState state;
+ std::atomic<unsigned> midiActivitySerial{0};
  std::atomic<int> displayedNote{-1};
  // Last oscillator pitch for the VCA HOLD keyboard latch.
  std::atomic<int> displayedHeldNote{-1};
@@ -56,6 +57,8 @@ private:
  void clearKeyDisplay() noexcept;
  void clearVoiceDisplay() noexcept;
  void updateKeyDisplay(int,bool) noexcept;
+ // One hold per MIDI channel and pitch; GUI holds remain independent.
+ std::array<std::array<bool,128>,16> midiHeld{};
  sh09::Engine engine;
  std::array<std::atomic<float>*,sh09::specs.size()> raw{};
  std::atomic<int> currentProgram{0};

@@ -22,6 +22,29 @@ int main(){
  expect(p.keyDisplay[60].load()==2,"GUI and MIDI duplicate note display count");
  p.queueKeyboard(60,false);process();expect(p.keyDisplay[60].load()==1&&p.displayedNote.load()==60,"GUI note release retains held MIDI note");
  midi.addEvent(juce::MidiMessage::noteOff(1,60),126);process();expect(p.keyDisplay[60].load()==0&&p.displayedNote.load()==-1,"last duplicate release clears display and voice");
+ // Regression: a retransmitted note-on interleaved with wheel traffic must
+ // not acquire a second hold on the same MIDI channel.
+ midi.addEvent(juce::MidiMessage::noteOn(1,60,juce::uint8(100)),0);
+ for(int i=1;i<90;++i)midi.addEvent(juce::MidiMessage::pitchWheel(1,(i*173)%16384),i);
+ midi.addEvent(juce::MidiMessage::noteOn(1,60,juce::uint8(90)),40);
+ midi.addEvent(juce::MidiMessage::noteOff(1,60),126);process();
+ expect(p.displayedNote.load()==-1&&p.keyDisplay[60].load()==0,"repeated MIDI note-on during pitch bend releases with one note-off");
+ p.reset();
+ midi.addEvent(juce::MidiMessage::noteOn(1,64,juce::uint8(100)),0);
+ midi.addEvent(juce::MidiMessage::noteOn(2,64,juce::uint8(100)),1);process();
+ midi.addEvent(juce::MidiMessage::noteOff(3,64),0);process();
+ expect(p.keyDisplay[64].load()==2,"unmatched channel note-off cannot release another channel");
+ midi.addEvent(juce::MidiMessage::noteOff(1,64),0);process();
+ expect(p.keyDisplay[64].load()==1&&p.displayedNote.load()==64,"same-pitch notes on separate channels retain independent ownership");
+ midi.addEvent(juce::MidiMessage::noteOn(2,64,juce::uint8(0)),126);process();
+ expect(p.displayedNote.load()==-1,"zero-velocity note-on releases the remaining channel");
+ p.reset();
+ for(int block=0;block<1000;++block){
+   midi.addEvent(juce::MidiMessage::noteOn(1,48+block%24,juce::uint8(100)),0);
+   for(int i=1;i<126;++i)midi.addEvent(juce::MidiMessage::pitchWheel(1,(block*337+i*179)%16384),i);
+   midi.addEvent(juce::MidiMessage::noteOff(1,48+block%24),127);process();
+ }
+ expect(p.displayedNote.load()==-1,"125000 wheel events preserve end-of-block note-offs");
  for(int b=0;b<500;++b){for(int i=0;i<20;++i){midi.addEvent(juce::MidiMessage::noteOn(1,40+i,juce::uint8(100)),i*3);midi.addEvent(juce::MidiMessage::noteOff(1,40+i),i*3+1);}p.queueKeyboard(62,true);p.queueKeyboard(62,false);process();}
  expect(allocations==0,"normal render path performs no C++ new allocations");
  juce::AudioBuffer<float> zero(2,0);midi.addEvent(juce::MidiMessage::allSoundOff(1),0);p.processBlock(zero,midi);expect(p.displayedNote.load()==-1,"zero-sample MIDI panic flush");

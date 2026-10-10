@@ -77,8 +77,8 @@ struct Artwork {
     juce::Image fader=load(BinaryData::faderpersonaloverhead_png,BinaryData::faderpersonaloverhead_pngSize);
     juce::Image rail=load(BinaryData::frontrailgrain_png,BinaryData::frontrailgrain_pngSize);
     juce::Image keys=load(BinaryData::keys_png,BinaryData::keys_pngSize);
-    juce::Image whiteKey=keys.getClippedImage({296,60,218,1130});
-    juce::Image blackKey=keys.getClippedImage({763,68,159,695});
+    juce::Image whiteKey=keys.getClippedImage({296,60,218,1080});
+    juce::Image blackKey=keys.getClippedImage({763,68,159,615});
     juce::Image marks,marksAged;
     Artwork() {
         auto original=load(BinaryData::marks_png,BinaryData::marks_pngSize);
@@ -1010,8 +1010,8 @@ public:
             if(pass==0) {
                 const auto ivory=juce::Colour(0xffefede6).interpolatedWith(juce::Colour(0xffd1bd86),age*.85f);
                 auto key=r.reduced(.65f,0);
-                auto face=key.withTrimmedTop(key.getHeight()-20);
-                auto top=key.withTrimmedBottom(20);
+                auto face=key.withTrimmedTop(key.getHeight()-3);
+                auto top=key.withTrimmedBottom(3);
                 juce::ColourGradient enamel(ivory.darker(.23f),0,top.getY(),ivory,0,top.getBottom(),false);
                 enamel.addColour(.07,ivory.darker(.09f));enamel.addColour(.55,ivory.brighter(.04f*gloss));
                 enamel.addColour(.975,ivory.brighter(.09f*gloss));g.setGradientFill(enamel);g.fillRect(top);
@@ -1033,7 +1033,7 @@ public:
                 g.fillRoundedRectangle(key.reduced(.5f),1.4f);
             } else {
                 for(int i=5;i>0;--i){g.setColour(juce::Colours::black.withAlpha(.07f));g.fillRoundedRectangle(r.expanded(float(i)*.45f).translated(2,3),1.8f);}
-                auto face=r.withTrimmedTop(r.getHeight()-17),top=r.withTrimmedBottom(17);
+                auto face=r.withTrimmedTop(r.getHeight()-3),top=r.withTrimmedBottom(3);
                 const auto matte=[age](juce::Colour fresh,juce::Colour worn) {return fresh.interpolatedWith(worn,age);};
                 juce::ColourGradient plastic(matte(juce::Colour(0xff111517),juce::Colour(0xff151614)),top.getX(),top.getY(),
                                             matte(juce::Colour(0xff171b1d),juce::Colour(0xff191a17)),top.getRight(),top.getY(),false);
@@ -1140,21 +1140,34 @@ private:
     void release() {if(mouseNote>=0){processor.queueKeyboard(mouseNote,false);mouseNote=-1;repaint();}}
 };
 class Meter final : public juce::Component {
-public:
-    void setLevels(float e,float f,float input) {if(std::abs(e-env)>.005f||std::abs(f-ext)>.005f||std::abs(input-in)>.005f){env=e;ext=f;in=input;repaint();}}
-    void paint(juce::Graphics& g) override {
-        for(int k=0;k<3;++k) {
-            const float xx=float(k*90);caption(g,k==2?"IN":k?"EXT":"ENV",{xx,0,25,20},9,juce::Justification::centredLeft);
-            for(int i=0;i<8;++i) {
-                const bool lit=(k==2?in:k?ext:env)>float(i)/8;
-                g.setColour(lit?amber:juce::Colour(0xff373b39));g.fillRect(xx+28+float(i*6),6.0f,4.0f,8.0f);
-            }
+    class Indicator final : public juce::Component, public juce::SettableTooltipClient {
+    public:
+        juce::String label;float level=0;bool midi=false;
+        void paint(juce::Graphics& g) override {
+            caption(g,label,{0,0,midi?31.0f:25.0f,20},9,juce::Justification::centredLeft);
+            if(midi){g.setColour(level>0?amber:juce::Colour(0xff373b39));g.fillEllipse(34,6,8,8);}
+            else for(int i=0;i<8;++i){g.setColour(level>float(i)/8?amber:juce::Colour(0xff373b39));g.fillRect(28.0f+float(i*6),6.0f,4.0f,8.0f);}
         }
-    }
-private:float env=0,ext=0,in=0;
-};
-class RateLamp final : public juce::Component {
+    };
 public:
+    Meter() {
+        const char* labels[]={"ENV","EXT","IN","MIDI"};
+        const char* tips[]={"ENV: the synth's ADSR envelope level.","EXT: external audio envelope follower level, measured before the EXT fader.","IN: incoming audio level before the EXT fader and stereo-to-mono conversion.","MIDI: incoming notes, pitch bend and controller activity. This is not an audio meter."};
+        for(int i=0;i<4;++i){auto& lamp=indicators[size_t(i)];lamp.label=labels[i];lamp.midi=i==3;lamp.setTooltip(tips[i]);lamp.setComponentID(juce::String("indicator")+labels[i]);addAndMakeVisible(lamp);lamp.setBounds(i*83,0,i==3?44:78,20);}
+    }
+    void setLevels(float e,float f,float input,unsigned serial) {
+        const auto now=juce::Time::getMillisecondCounter();
+        if(serial!=lastSerial){lastSerial=serial;lastActivity=now;hasActivity=true;}
+        const float levels[]={e,f,input,hasActivity&&juce::uint32(now-lastActivity)<140?1.0f:0.0f};
+        for(int i=0;i<4;++i){auto& lamp=indicators[size_t(i)];if(std::abs(lamp.level-levels[i])>.005f){lamp.level=levels[i];lamp.repaint();}}
+    }
+private:
+    std::array<Indicator,4> indicators;
+    unsigned lastSerial=0;juce::uint32 lastActivity=0;bool hasActivity=false;
+};
+class RateLamp final : public juce::Component, public juce::SettableTooltipClient {
+public:
+    RateLamp(){setTooltip("Modulator rate light: follows the LFO cycle and RATE setting.");}
     void setLevel(float value) {if(std::abs(on-value)>.005f){on=value;repaint();}}
     void paint(juce::Graphics& g) override {
         auto r=getLocalBounds().toFloat().reduced(1);
@@ -1331,7 +1344,7 @@ public:
                 if(wasLoad){userPreset=true;lastProgramRevision=processor.getProgramRevision();lastProgram=processor.getCurrentProgram();presets.setSelectedId(0,juce::dontSendNotification);presets.setText(file.getFileNameWithoutExtension(),juce::dontSendNotification);}
             }
         };
-        addAndMakeVisible(meter);meter.setBounds(1008,7,270,20);
+        addAndMakeVisible(meter);meter.setBounds(956,7,293,20);
         addAndMakeVisible(small);small.setButtonText("S");small.setBounds(1299,5,35,24);small.setComponentID("sizeS");
         small.setTooltip("Small: fit within 65% of this screen's work-area width and height, with the complete instrument visible.");small.onClick=[this]{sizing.chooseSmall();};
         addAndMakeVisible(medium);medium.setButtonText("M");medium.setBounds(1340,5,35,24);medium.setComponentID("sizeM");
@@ -1730,7 +1743,7 @@ private:
         const int program=processor.getCurrentProgram();
         if(!userPreset||program!=lastProgram||programRevision!=lastProgramRevision){presets.setSelectedId(program+1,juce::dontSendNotification);userPreset=false;}
         lastProgram=program;lastProgramRevision=programRevision;
-        meter.setLevels(processor.displayedEnvelope.load(),processor.displayedFollower.load(),processor.displayedInput.load());
+        meter.setLevels(processor.displayedEnvelope.load(),processor.displayedFollower.load(),processor.displayedInput.load(),processor.midiActivitySerial.load(std::memory_order_relaxed));
         const double stamp=processor.displayedModulatorTime.load(std::memory_order_acquire);
         const double elapsed=juce::jmax(0.0,(juce::Time::getMillisecondCounterHiRes()-stamp)*.001);
         const float hz=processor.displayedModulatorFrequency.load(std::memory_order_relaxed);

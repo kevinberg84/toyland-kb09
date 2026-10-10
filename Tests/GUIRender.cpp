@@ -96,6 +96,11 @@ bool fitsVisibleAncestors(juce::Component* component, juce::Component& editor) {
 }
 
 void checkFooterGeometry(juce::Component& editor, Checks& checks, const juce::String& context) {
+    for(const auto* id:{"indicatorENV","indicatorEXT","indicatorIN","indicatorMIDI"}) {
+        auto* indicator=findComponent(editor,id);
+        auto* tip=dynamic_cast<juce::TooltipClient*>(indicator);
+        checks.expect(fitsVisibleAncestors(indicator,editor)&&tip!=nullptr&&tip->getTooltip().isNotEmpty(),context+" visible indicator with DESCRIPTION text: "+id);
+    }
     juce::StringArray clippedControls, clippedLabels;
     for (const auto* id : {"modern", "age", "velocity", "aftertouch", "lfoSync", "extGain"})
         if (!fitsVisibleAncestors(findComponent(editor, id), editor)) clippedControls.add(id);

@@ -39,6 +39,7 @@ sh09::Controls SH09Processor::readControls() const noexcept {
  return c;
 }
 void SH09Processor::clearKeyDisplay() noexcept {
+ for(auto& channel:midiHeld)channel.fill(false);
  for(auto& k:keyDisplay)k.store(0,std::memory_order_relaxed);
  for(auto& k:displayedComputerKeys)k.store(0,std::memory_order_relaxed);
  displayedKeyboardNote.store(-1,std::memory_order_relaxed);
@@ -76,9 +77,11 @@ void SH09Processor::queueKeyboard(int note,bool down,bool mouse) noexcept {
 }
 void SH09Processor::handleMidi(const juce::uint8* bytes,int n) noexcept {
  if(n<1)return; int status=bytes[0]&0xf0;
+ if(bytes[0]>=0x80&&bytes[0]<0xf0)midiActivitySerial.fetch_add(1,std::memory_order_relaxed);
  if((status==0x90||status==0x80)&&n>=3){int note=bytes[1]&127;bool on=status==0x90&&bytes[2]!=0;
-   if(on)engine.noteOn(note,bytes[2]&127);else engine.noteOff(note);
-   updateKeyDisplay(note,on);
+   auto& held=midiHeld[size_t(bytes[0]&15)][size_t(note)];
+   if(on){engine.noteOn(note,bytes[2]&127,held);if(!held)updateKeyDisplay(note,true);held=true;}
+   else if(held){held=false;engine.noteOff(note);updateKeyDisplay(note,false);}
  }else if(status==0xe0&&n>=3){engine.pitchBend(float(((bytes[2]&127)<<7)|(bytes[1]&127))/8192.0f-1.0f);}
  else if(status==0xd0&&n>=2)engine.setAftertouch(float(bytes[1]&127)/127.0f);
  else if(status==0xb0&&n>=3){
