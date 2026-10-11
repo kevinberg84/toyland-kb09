@@ -16,7 +16,12 @@ inline const RateDivision& rateDivision(double value) noexcept {
  const auto index=std::clamp(int(std::floor(std::clamp(value,0.0,1.0)*(rateDivisions.size()-1)+.5)),0,int(rateDivisions.size()-1));
  return rateDivisions[size_t(index)];
 }
-inline double lfoFrequency(double value,bool synced,double bpm) noexcept {
- return synced?bpm/(60*rateDivision(value).beats):.2*std::pow(125.0,value);
+inline double lfoFrequency(double value,bool synced,double bpm,bool modern=false) noexcept {
+ if(synced)return bpm/(60*rateDivision(value).beats);
+ value=std::clamp(value,0.0,1.0);
+ // Extend only the lowest fifth of Modern's travel. Preserve existing rates
+ // above it, with continuous frequency and slope at the join.
+ const double extension=modern?std::max(0.0,1-value/.2):0;
+ return .2*std::pow(125.0,value)*std::exp(-std::log(4.0)*extension*extension);
 }
 }

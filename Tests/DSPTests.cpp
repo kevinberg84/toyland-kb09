@@ -128,9 +128,9 @@ int main(){
  }
  {
   // Measure phase, not audio crossings: AGE=0 must have no clock drift or jitter.
-  for(double sr:{44100.,48000.,96000.}) for(float rate:{0.f,.5f,1.f}) {
-   sh09::Engine clock;clock.prepare(sr);auto c=clean();c.age=0;c.lfoRate=rate;clock.setControls(c);
-   const double hz=sh09::lfoFrequency(rate,false,120);
+  for(double sr:{44100.,48000.,96000.}) for(float rate:{0.f,.5f,1.f}) for(bool modern:{false,true}) {
+   sh09::Engine clock;clock.prepare(sr);auto c=clean();c.age=0;c.lfoRate=rate;c.modern=modern?1.f:0.f;clock.setControls(c);
+   const double hz=sh09::lfoFrequency(rate,false,120,modern);
    double previous=clock.modulatorPhase(),cycles=0,maxStepError=0;
    for(int i=0;i<int(sr);++i) {
     clock.process(0);const double phase=clock.modulatorPhase();
@@ -140,6 +140,11 @@ int main(){
    check(std::abs(cycles-hz)<1e-8&&maxStepError<1e-12,
          "fresh LFO has stable phase increments and no cumulative drift at "+std::to_string(int(sr))+" Hz rate="+std::to_string(hz));
   }
+  check(std::abs(sh09::lfoFrequency(0,false,120,true)-.05)<1e-12,"Modern minimum is one cycle per 20 seconds");
+  check(std::abs(sh09::lfoFrequency(0,false,120)-.2)<1e-12,"Authentic minimum retains published 0.2 Hz");
+  bool preserved=true,monotonic=true;double last=0;
+  for(int i=0;i<=10000;++i){const double v=i/10000.;const auto hz=sh09::lfoFrequency(v,false,120,true);monotonic&=hz>last;last=hz;if(v>=.2)preserved&=hz==sh09::lfoFrequency(v,false,120);}
+  check(preserved&&monotonic,"Modern extension is monotonic and preserves upper 80 percent of RATE travel");
  }
  const auto elapsed=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();std::cout<<"RESULT "<<passed<<" passed "<<failed<<" failed wall_seconds="<<elapsed<<'\n';return failed?1:0;
 }

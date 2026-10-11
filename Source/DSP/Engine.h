@@ -35,17 +35,17 @@ public:
  double modulatorLevel() const noexcept {return lastLfo;}
  bool modulatorLampOn() const noexcept {return lfoPhase<.5;}
  double modulatorPhase() const noexcept {return lfoPhase;}
- double modulatorFrequency() const noexcept {return lfoFrequency(smooth.lfoRate, smooth.modern>=.5f && smooth.lfoSync>=.5f,tempo);}
+ double modulatorFrequency() const noexcept {return lfoFrequency(smooth.lfoRate, smooth.modern>=.5f && smooth.lfoSync>=.5f,tempo,smooth.modern>=.5f);}
  int latencySamples() const noexcept {return 128;}
  std::uint64_t solverFailures() const noexcept {return failures;}
- static constexpr int oversamplingFactor=8;
+ static constexpr int oversamplingFactor=4;
 private:
- static constexpr int firLength=128*oversamplingFactor+1, alignment=64*oversamplingFactor;
+ static constexpr int firLength=513, alignment=256;
  struct Frame {double source=0,amplitude=0,cutoff=1000,resonance=0,gain=0,externalLevel=0,followerAmount=0;};
  enum class Stage {idle,attack,decay,sustain,release};
  Controls target{},smooth{};
  bool initialized=false,muted=false,pendingMode=false;
- double fs=44100,internalFs=44100*oversamplingFactor,smoothing=0,controlBend=0,bendTarget=0,pressure=0,pressureTarget=0,tempo=120;
+ double fs=44100,internalFs=176400,smoothing=0,controlBend=0,bendTarget=0,pressure=0,pressureTarget=0,tempo=120;
  std::array<unsigned char,128> keys{};
  std::array<float,128> velocities{};
  int selected=-1,lastNote=60;
@@ -57,14 +57,10 @@ private:
  double noiseLP=0,noiseDC=0,externalDC=0,outputDC=0;
  std::array<double,3> follower{};
  std::array<double,4> filterState{},filterY{};
- // Normalized circuit quantities, refreshed once per host sample.
- std::array<double,4> otaScale{},otaBias{},otaZero{},otaSlope{};
- double diodeVoltage=0,diodePositive=0,diodeNegative=0,diodeThermal=.045;
- double vcaScale=1.8,vcaBias=0,vcaZero=0,vcaSlope=1;
  std::uint32_t randomState=0x91e10da5u;
  std::uint64_t failures=0;
  std::array<double,firLength> fir{},outputHistory{};
- std::array<double,(firLength+oversamplingFactor-1)/oversamplingFactor> inputHistory{};
+ std::array<double,(firLength+3)/4> inputHistory{};
  std::array<Frame,alignment> frames{};
  unsigned int inputPos=0,outputPos=0,framePos=0;
  void selectNote(bool repeat=false) noexcept;
@@ -73,6 +69,5 @@ private:
  double filter(double input,double cutoff,double resonance) noexcept;
  double random() noexcept;
  void smoothControls() noexcept;
- void updateCircuitCondition() noexcept;
 };
 }

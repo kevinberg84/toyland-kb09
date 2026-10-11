@@ -1,18 +1,24 @@
 # 1.3.0 — Toyland KB-09
 
+Restored the pre-upgrade 1.1.3 oscillator, filter, saturation and output engine after listening feedback on 1.2.0. Four-times processing and 128-sample reported latency return with it. The preserved 1.1.3 engine is compiled separately for sample-for-sample regression comparison. The manual now describes the restored circuit-informed approximation without claiming the superseded component model.
+
+Modern FREE mode extends the lowest fifth of RATE travel to 0.05 Hz (20 seconds per cycle), preserving the higher-rate mapping. Authentic retains Roland’s published 0.2–25 Hz range; tempo-sync divisions are unchanged.
+
 Incoming MIDI pitch wheel now moves the GUI bender, including when reopening its window. GUI feedback does not retransmit MIDI, override a mouse drag or reset an external wheel when the editor closes. Record controller movement through MIDI Pitch Bend envelopes; the existing VCO/VCF depth parameters remain separately automatable.
 
 Releasing the onscreen bender now returns its sound and animation over approximately 100 ms in AUTHENTIC mode. MODERN returns immediately with existing audio smoothing. New wheel or mouse input interrupts the return. The short spring curve is a playing approximation, not hardware-calibrated mechanical modelling. External wheels follow their own MIDI messages without an added spring delay.
 
 MIDI CC1 now controls VCO MOD in both modes, with pickup after preset loads or manual/host edits. The visible fader follows, its setting is saved, and sound changes at the incoming event without waiting for GUI delivery. Parameter notifications stay off the audio thread.
 
-The MIDI lamp refreshes independently at 120 Hz with a shorter 90 ms activity flash. Host buffering and message-thread rendering can still affect visible latency. Aftertouch help now explicitly describes its Modern channel-pressure-to-filter route. Parameter IDs, preset formats, the 24 factory definitions and the filter circuit model are retained.
+The MIDI lamp refreshes independently at 120 Hz with a shorter 90 ms activity flash. Host buffering and message-thread rendering can still affect visible latency. Aftertouch help now explicitly describes its Modern channel-pressure-to-filter route. Parameter IDs, preset formats, and the 24 factory definitions are retained.
 
 # 1.2.1 — Toyland KB-09
 
 Fixed the bare chassis flashing while dragging AGE during parameter automation. The editor keeps the last complete instrument preview while building a replacement bank; incomplete banks never replace it. A complete startup preview also keeps the first AGE drag responsive. Releasing AGE restores live control positions and keyboard feedback. The audio engine, parameter IDs and preset definitions are unchanged from 1.2.0.
 
 # 1.2.0 — Toyland KB-09
+
+Historical release: its filter/output revision was reverted in 1.3.0; the expanded preset bank remains.
 
 The filter now models four coupled OTA stages and the opposing-diode resonance limiter described in the SH-09 service schematic. Self-oscillation comes from the filter feedback loop, with stronger output and restrained harmonic colour. Eight-times oversampling and continuous AGE changes support nonlinear headroom and asymmetry. This is a reduced circuit model; hardware-level accuracy has not been established.
 

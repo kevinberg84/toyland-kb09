@@ -44,7 +44,7 @@ void Engine::prepare(double sampleRate) noexcept {
  internalFs=fs*oversamplingFactor;smoothing=1-std::exp(-1/(.008*fs));
  double sum=0;
  for(int n=0;n<firLength;++n){
-  const double x=double(n-(firLength-1)/2),fc=.46/oversamplingFactor;
+  const double x=double(n-(firLength-1)/2),fc=.115;
   const double sinc=x==0?2*fc:std::sin(2*pi*fc*x)/(pi*x);
   const double w=.42-.5*std::cos(2*pi*n/(firLength-1))+.08*std::cos(4*pi*n/(firLength-1));
   fir[size_t(n)]=sinc*w;sum+=fir[size_t(n)];
@@ -55,11 +55,10 @@ void Engine::prepare(double sampleRate) noexcept {
 void Engine::reset() noexcept {
  keys.fill(0);velocities.fill(0);selected=-1;lastNote=60;pitch=60;pitchInitialized=false;selectedVelocity=1;
  phase=lfoPhase=lfoDelayElapsed=randomLfo=lastLfo=env=gateGain=0;cycle=0;stage=Stage::idle;modeGain=1;pendingMode=false;
- noiseLP=noiseDC=externalDC=outputDC=diodeVoltage=0;muted=false;follower.fill(0);filterState.fill(0);filterY.fill(0);
+ noiseLP=noiseDC=externalDC=outputDC=0;muted=false;follower.fill(0);filterState.fill(0);filterY.fill(0);
  randomState=0x91e10da5u;failures=0;inputHistory.fill(0);outputHistory.fill(0);frames.fill({});
  inputPos=outputPos=framePos=0;controlBend=bendTarget=pressure=pressureTarget=0;
  if(initialized)smooth=target;
- updateCircuitCondition();
 }
 void Engine::setControls(Controls c) noexcept {
  for(auto p:continuous){if(!std::isfinite(c.*p))c.*p=Controls{}.*p;c.*p=float(clamp(c.*p,p==&Controls::tune?-65:0,p==&Controls::tune?65:1));}
@@ -74,33 +73,6 @@ void Engine::smoothControls() noexcept {
  if(pendingMode){modeGain=std::max(0.0,modeGain-1/(.002*fs));if(modeGain==0){for(auto p:discrete)smooth.*p=target.*p;pendingMode=false;}}
  else modeGain=std::min(1.0,modeGain+1/(.002*fs));
  controlBend+=smoothing*(bendTarget-controlBend);pressure+=smoothing*(pressureTarget-pressure);
- updateCircuitCondition();
-}
-void Engine::updateCircuitCondition() noexcept {
- // Service p.5: 100k/1k first OTA input divider; 68k/1k thereafter.
- // 2VT=52 mV is a room-temperature differential-pair model, not a measured
- // BA662 fit. 1.5 circuit volts per engine unit is an explicit calibration
- // assumption. Pole small-signal slopes stay unity as offsets/headroom vary.
- const double a=clamp(smooth.age,0,1),wear=a*a*a*a;
- constexpr std::array<double,4> dividers{101.0,69.0,69.0,69.0};
- constexpr std::array<double,4> freshOffset{.003,-.002,.004,-.003};
- constexpr std::array<double,4> wornOffset{.035,-.028,.045,-.037};
- for(size_t j=0;j<4;++j){
-  otaScale[j]=.052*dividers[j]/1.5*(1-.14*wear);
-  otaBias[j]=freshOffset[j]+wornOffset[j]*wear;
-  otaZero[j]=std::tanh(otaBias[j]);otaSlope[j]=1-otaZero[j]*otaZero[j];
- }
- // R118 || R109 || R119 at maximum resonance is approximately 1.30 kohm.
- // D12/D13 are opposing silicon diodes; Is and nVT are behavioral values,
- // not inferred from a fixed "0.6 V" threshold or an original-part fit.
- const double mismatch=.012+.12*wear,strength=1302.0*2.5e-9*(1+.4*wear);
- diodePositive=strength*(1+mismatch);diodeNegative=strength*(1-mismatch);
- diodeThermal=.045*(1+.025*wear);
- // Retain the existing lumped VCA/output transfer, with small offset and
- // progressively reduced headroom. AGE is a deterministic condition model;
- // chronological age alone does not establish these component changes.
- vcaScale=1.8*(1-.18*wear);vcaBias=.004+.04*wear;
- vcaZero=sat(vcaBias);vcaSlope=satDerivative(vcaBias);
 }
 void Engine::trigger() noexcept {stage=Stage::attack;lfoDelayElapsed=0;}
 void Engine::selectNote(bool repeat) noexcept {
@@ -148,48 +120,36 @@ double Engine::stepEnvelope() noexcept {
 double Engine::filter(double input,double cutoff,double resonance) noexcept {
  const double g=std::tan(pi*clamp(cutoff,5,std::min(22000.0,internalFs*.2))/internalFs);
  const double k=4.65*resonance;
- constexpr double feedbackGain=100.0/12.0,voltsPerUnit=1.5;
+ constexpr double scale=1.1,feedbackScale=2.8;
  auto y=filterY;
- double node=diodeVoltage;
  bool converged=false;
- for(int iteration=0;iteration<12;++iteration){
-  // Solve the shunt diode KCL as the fifth unknown in the same Newton loop.
-  // No nested limiter solver and no artificial unit delay in resonance.
-  const double positive=std::exp(node/diodeThermal),negative=1/positive;
-  const double diodeResidual=node+diodePositive*(positive-1)-diodeNegative*(negative-1)
-      -k*y[3]*voltsPerUnit/feedbackGain;
-  const double diodeDerivative=1+(diodePositive*positive+diodeNegative*negative)/diodeThermal;
-  const double feedback=feedbackGain*node/voltsPerUnit;
+ for(int iteration=0;iteration<8;++iteration){
+  const double feedbackArg=k*y[3]/feedbackScale;
+  const double feedback=feedbackScale*sat(feedbackArg);
+  const double feedbackDerivative=k*satDerivative(feedbackArg);
   std::array<double,4> a{},b{};
-  double error=std::abs(diodeResidual);
+  double error=0;
   for(int j=0;j<4;++j){
    const double in=j==0?input-feedback:y[size_t(j-1)];
-   const auto index=size_t(j);
-   const double transfer=std::tanh((in-y[index])/otaScale[index]+otaBias[index]);
-   const double residual=y[index]-filterState[index]-g*otaScale[index]*(transfer-otaZero[index])/otaSlope[index];
-   const double derivative=g*(1-transfer*transfer)/otaSlope[index],denominator=1+derivative;
+   const double v=(in-y[size_t(j)])/scale;
+   const double residual=y[size_t(j)]-filterState[size_t(j)]-g*scale*sat(v);
+   const double derivative=g*satDerivative(v),denominator=1+derivative;
    a[size_t(j)]=derivative/denominator;b[size_t(j)]=-residual/denominator;
    error=std::max(error,std::abs(residual));
   }
   if(error<1e-13){converged=true;break;}
   const double A=a[3]*a[2]*a[1],B=a[3]*(a[2]*b[1]+b[2])+b[3];
-  const double q=a[0]*k/diodeDerivative;
-  std::array<double,4> delta{};
-  delta[0]=(b[0]+a[0]*feedbackGain/voltsPerUnit*diodeResidual/diodeDerivative-q*B)/(1+q*A);
-  for(int j=1;j<4;++j)delta[size_t(j)]=a[size_t(j)]*delta[size_t(j-1)]+b[size_t(j)];
-  const double nodeDelta=(k*delta[3]*voltsPerUnit/feedbackGain-diodeResidual)/diodeDerivative;
-  // Damped Newton limits excursions through the exponential knee while
-  // preserving the coupled update direction. Bounded work on the audio thread.
-  const double damping=std::abs(nodeDelta)>.1?.1/std::abs(nodeDelta):1;
-  node+=nodeDelta*damping;
-  for(size_t j=0;j<4;++j)y[j]+=delta[j]*damping;
+  const double q=a[0]*feedbackDerivative;
+  double delta=(b[0]-q*B)/(1+q*A);
+  y[0]+=delta;
+  for(int j=1;j<4;++j){delta=a[size_t(j)]*delta+b[size_t(j)];y[size_t(j)]+=delta;}
  }
  if(!converged)++failures;
  for(size_t j=0;j<4;++j){
-  if(!std::isfinite(y[j])||std::abs(y[j])>32||!std::isfinite(node)||std::abs(node)>2){filterState.fill(0);filterY.fill(0);diodeVoltage=0;++failures;return 0;}
+  if(!std::isfinite(y[j])||std::abs(y[j])>32){filterState.fill(0);filterY.fill(0);++failures;return 0;}
   filterState[j]=tiny(2*y[j]-filterState[j]);
  }
- filterY=y;diodeVoltage=node;return y[3];
+ filterY=y;return y[3];
 }
 
 float Engine::process(float externalMono) noexcept {
@@ -202,7 +162,7 @@ float Engine::process(float externalMono) noexcept {
  // neither maximum is claimed as a measured hardware modulation calibration.
  const double vcoModSemitones=modern?36.0:12.0,vcfModOctaves=modern?8.0:5.0;
  const double trim=modern?std::pow(10.0,(smooth.extGain-.5)*48/20):1;
- const double lfoHz=lfoFrequency(smooth.lfoRate,modern&&choice(smooth.lfoSync,1)!=0,tempo);
+ const double lfoHz=lfoFrequency(smooth.lfoRate,modern&&choice(smooth.lfoSync,1)!=0,tempo,modern);
  const double pole=1-std::exp(-2*pi*8000/internalFs),dc=1-std::exp(-2*pi*12/internalFs);
  // Preserve analogue noise power as the internal sampling rate changes.
  const double referencePole=1-std::exp(-2*pi*8000/176400.0);
@@ -211,7 +171,7 @@ float Engine::process(float externalMono) noexcept {
  const double followerA=1-std::exp(-1/(.010*internalFs)),followerB=1-std::exp(-1/(.0033*internalFs));
  for(int os=0;os<oversamplingFactor;++os){
   double external=0;
-  for(int j=0;j<int(inputHistory.size());++j){const int tap=j*oversamplingFactor+os;if(tap>=firLength)break;const size_t index=(inputPos+inputHistory.size()-size_t(j))%inputHistory.size();external+=fir[size_t(tap)]*inputHistory[index]*oversamplingFactor;}
+  for(int j=0;j<int(inputHistory.size());++j){const int tap=j*4+os;if(tap>=firLength)break;const size_t index=(inputPos+inputHistory.size()-size_t(j))%inputHistory.size();external+=fir[size_t(tap)]*inputHistory[index]*4;}
   externalDC+=dc*(external*trim-externalDC);external=external*trim-externalDC;
   // Positive rectifier before the mixer: three RC sections approximate the active ladder.
   const double rectified=std::max(0.0,external)*2.2;
@@ -255,7 +215,7 @@ float Engine::process(float externalMono) noexcept {
   finalCutoff*=std::exp2(clamp(follower[2],0,1)*delayedFrame.followerAmount);
   const double mix=delayedFrame.source+external*delayedFrame.externalLevel*.8;
   const double filtered=filter(1.6*sat(mix/1.6)+rawNoise*1e-8,finalCutoff,delayedFrame.resonance);
-  const double coupled=vcaScale*(sat(filtered*delayedFrame.amplitude/vcaScale+vcaBias)-vcaZero)/vcaSlope*delayedFrame.gain;
+  const double coupled=1.8*sat(filtered*delayedFrame.amplitude/1.8)*delayedFrame.gain;
   outputDC+=outputCoupling*(coupled-outputDC);outputDC=tiny(outputDC);
   const double out=muted?0:coupled-outputDC;
   outputHistory[outputPos]=out;

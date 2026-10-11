@@ -1,5 +1,8 @@
 > The current filter revision is documented in [SH09_FILTER_MODEL.md](SH09_FILTER_MODEL.md), including explicit assumptions, A/B results and remaining calibration work. The implementation notes below include historical design targets.
 
+Current release 1.3.0 restores the preserved 1.1.3 four-times DSP core after listening feedback. The 1.2.0 coupled diode/OTA revision is superseded. The restored core is a circuit-informed nonlinear four-stage approximation, not a component-calibrated model. Modern FREE adds a 0.05 Hz minimum only within the bottom fifth of RATE travel; Authentic retains 0.2–25 Hz. Parameter IDs, state format and reported 128-sample latency are unchanged. Earlier evidence below is historical unless explicitly identified as current.
+
+
 > The current filter revision is documented in [SH09_FILTER_MODEL.md](SH09_FILTER_MODEL.md), including explicit assumptions, A/B results and remaining calibration work. The implementation notes below include historical design targets.
 
 # DSP design evidence and implementation boundaries
