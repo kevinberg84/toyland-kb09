@@ -17,6 +17,23 @@ contains one current Mac ZIP and one current Windows ZIP; upload new versions
 of those existing files to preserve links. Publish the update feed only after
 both platform uploads are verified.
 
+### Permanent shared destinations
+
+Keep the existing **KB-09 Host Folder**, its name, and its sharing settings.
+Its permanent folder ID is `18-S-iz4-5i8mkjPSaRtNXy4BTG2D1VBo`.
+Never create a replacement folder for an iteration. Update only its contents.
+Also preserve these existing download file IDs by uploading a **new version**
+of each ZIP (Drive: Manage versions > Upload new version), rather than deleting
+and re-uploading them as new files:
+
+- `Toyland KB-09 for Windows.zip`: `1E3zEFVccSlNBXAaLd_MuO8YCAzyJxW7U`
+- `Toyland KB-09 for Mac.zip`: `1rGIq_l31dPX4o3fMvlskKsKcTXBwBd3P`
+
+These destinations are recorded in `tools/release-destinations.json`. Verify
+the folder and both file IDs before and after each upload, then download the
+current ZIPs and verify their hashes and embedded versions. Do not assume a
+matching filename proves the linked file is the intended item.
+
 ## Release numbering (required)
 
 Use major.minor.patch for every released build. Classify the combined changes

@@ -1,0 +1,15 @@
+{
+  "googleDrive": {
+    "folderId": "18-S-iz4-5i8mkjPSaRtNXy4BTG2D1VBo",
+    "folderName": "KB-09 Host Folder",
+    "windows": {
+      "fileId": "1E3zEFVccSlNBXAaLd_MuO8YCAzyJxW7U",
+      "fileName": "Toyland KB-09 for Windows.zip"
+    },
+    "mac": {
+      "fileId": "1rGIq_l31dPX4o3fMvlskKsKcTXBwBd3P",
+      "fileName": "Toyland KB-09 for Mac.zip"
+    },
+    "updatePolicy": "Upload a new version to each existing file ID. Preserve the folder, filenames, sharing and IDs. Verify downloaded hashes and embedded versions before announcing an update."
+  }
+}
