@@ -1,3 +1,15 @@
+# 1.2.0 — Toyland KB-09
+
+The filter now models four coupled OTA stages and the opposing-diode resonance limiter described in the SH-09 service schematic. Self-oscillation comes from the filter feedback loop, with stronger output and restrained harmonic colour. Eight-times oversampling and continuous AGE changes support nonlinear headroom and asymmetry. This is a reduced circuit model; hardware-level accuracy has not been established.
+
+The bank now contains 24 factory sounds, preserving the original sixteen definitions and order and appending eight bass, PWM, expression and filter-feedback patches across AGE 0–10. The manual covers the filter model, new sounds and system recommendations. The GUI and textured strip remain as released in 1.1.3.
+
+Presets, parameter IDs and automation formats are preserved. Self-oscillating patches may need cutoff/level adjustment: the representative fresh case is 3.23 dB stronger and 145 cents higher at the same cutoff. The measured core costs about 2.4 times as much CPU; start at 44.1/48 kHz. Reported latency remains 128 samples.
+
+Windows: six test suites, 548 GUI checks, 47 Steinberg VST3 tests, strictness-10 headless pluginval and isolated installer verification passed. The actual VST3 host passed 75 assertions but waited at shutdown; this is not a clean host exit. Similar GUI-validator shutdown waits were reproduced on released 1.1.3. Mac: universal standalone/AU/VST3 built; six suites, 548 GUI checks and Apple AU validation passed on the arm64 CI runner. Intel execution and comparison against Kevin's hardware remain to be evaluated. Full measurements and limitations are recorded in the filter validation artifacts and model notes.
+
+Existing shared Drive folder and download file IDs are retained. Both current ZIP downloads must be hash-verified before publishing the update announcement.
+
 # 0.13.2 — Toyland KB-09
 
 This update brings the owner's final control/material refinements into the Windows VST3 and standalone build. A real Windows AAX Native development bundle also compiles from the shared source; it is **unsigned and untested in Pro Tools**, so it belongs in the package's clearly labeled Development area. Native AU configuration and Mac build instructions are supplied, but no AU binary has been built because no Mac/Xcode host is available. A Mac source kit is not an installable Audio Unit.
