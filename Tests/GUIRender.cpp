@@ -1007,7 +1007,14 @@ void checkMidiBender(SH09Processor& processor,juce::Component& editor,const juce
     bender->setValue(1,juce::sendNotificationSync);audio.clear();processor.processBlock(audio,midi);
     bender->onDragEnd();
     checks.expect(bender->getValue()==1,"Authentic bender release starts at its held position");
-    juce::MessageManager::getInstance()->runDispatchLoopUntil(25);juce::Timer::callPendingTimersSynchronously();
+    const auto springStart=juce::Time::getMillisecondCounterHiRes();
+    // Pump only the scheduled timer here: unrelated queued rendering work can
+    // consume the entire short spring before this headless fixture observes it.
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));juce::Timer::callPendingTimersSynchronously();
+    while(bender->getValue()==1&&juce::Time::getMillisecondCounterHiRes()-springStart<85) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));juce::Timer::callPendingTimersSynchronously();
+    }
+    std::cout<<"Spring intermediate elapsed_ms="<<juce::Time::getMillisecondCounterHiRes()-springStart<<" value="<<bender->getValue()<<" modern="<<processor.state.getRawParameterValue("modern")->load()<<'\n';
     checks.expect(bender->getValue()>0&&bender->getValue()<1,"Authentic spring return has an intermediate visual frame");
     checks.expect(writePNG(snapshot(),directory.getChildFile("bender_spring_mid.png")),"spring return intermediate actual-render export");
     settleEditor();checks.expect(std::abs(bender->getValue())<.0001,"Authentic spring animation settles at centre");
@@ -1018,7 +1025,7 @@ void checkMidiBender(SH09Processor& processor,juce::Component& editor,const juce
     settleEditor();
     const auto dark=lamp->createComponentSnapshot(lamp->getLocalBounds(),true,1.0f);
     const auto start=juce::Time::getMillisecondCounterHiRes();
-    processMidi(processor,juce::MidiMessage::pitchWheel(16,4096));
+    midi.addEvent(juce::MidiMessage::pitchWheel(16,4096),0);audio.clear();processor.processBlock(audio,midi);
     bool lit=false;
     while(!lit&&juce::Time::getMillisecondCounterHiRes()-start<80) {
         juce::MessageManager::getInstance()->runDispatchLoopUntil(1);
