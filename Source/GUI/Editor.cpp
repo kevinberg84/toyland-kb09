@@ -574,7 +574,7 @@ public:
                     return 5.4f+7.4f*t*t*(3-2*t);
                 };
                 const float wheelBaseline=13.0f+radius*panelViewSin;
-                const bool broken=age>=.92f;
+                const bool broken=age>=.80f;
                 const auto project=[centre,wheelBaseline,sa,ca](juce::Point<float> p,float axleDepth) {
                     const float xx=p.x*ca+p.y*sa,zz=p.y*ca-p.x*sa;
                     return juce::Point<float>(centre+xx,wheelBaseline-zz*panelViewSin+axleDepth*panelViewCos);
@@ -1136,7 +1136,7 @@ public:
                 const auto transform=juce::AffineTransform::scale(trace.getWidth(),trace.getHeight()).translated(trace.getX(),trace.getY());
                 hairline.applyTransform(transform);
                 g.setColour(juce::Colour(0xff554835).withAlpha(.78f));
-                g.strokePath(hairline,juce::PathStrokeType(n==60?.32f:n==65?.62f:.56f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+                g.strokePath(hairline,juce::PathStrokeType(n==60?.32f:n==65?.34f:.33f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
             }
             if(pass==0&&n%12==0) {
                 const int octave=n/12-1+juce::roundToInt(processor.state.getRawParameterValue("range")->load())-2;
@@ -1618,7 +1618,9 @@ public:
         // different material from the smooth painted main panel.
         {
             juce::Graphics::ScopedSaveState save(g);
-            const juce::Rectangle<float> rail(65.0f,float(headerH+708),1370.0f,24.0f);
+            // End at the visible outer edge of the last ivory key.
+            const auto rail=juce::Rectangle<float>(65.0f,float(headerH+708),1370.0f,24.0f)
+                .withRight(float(keyboard.getRight())-.65f);
             // Unlit case below the rail must not read as a tall front face.
             g.setColour(juce::Colour(0xff070909));
             g.fillRect(59.0f,rail.getY(),1382.0f,float(headerH+visibleBodyH)-rail.getY());

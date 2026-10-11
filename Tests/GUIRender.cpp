@@ -864,7 +864,7 @@ void renderBenderPositions(SH09Processor& processor, juce::Component& editor,
     checks.expect(bender->getCurrentPopupDisplay()!=nullptr,"bender mouse gesture opens the actual value popup");
     bender->mouseUp(down);settleEditor();
     const std::array<const char*, 3> names {"left", "neutral", "right"};
-    for(const auto age:{0.0f,.91f,.92f}) {
+    for(const auto age:{0.0f,.79f,.80f}) {
         setParameter(processor,"age",age);settleEditor();
         std::array<juce::Image,3> positions;
         const auto prefix=age==0.0f?juce::String("bender_"):"bender_age"+juce::String(juce::roundToInt(age*100))+"_";
@@ -891,13 +891,13 @@ void renderBenderPositions(SH09Processor& processor, juce::Component& editor,
     };
     // Isolate the bender so moving lamps/keys and other Age events cannot pass
     // the break test. Adjacent samples distinguish an abrupt break from patina.
-    const auto below=capture(.9199f),at=capture(.92f),above=capture(.9201f);
+    const auto below=capture(.7999f),at=capture(.80f),above=capture(.8001f);
     checks.expect(changedPixels(below,at,12)>=100,
-                  "bender tip visibly breaks at Age .92 in actual renderer");
+                  "bender tip visibly breaks at FIRE HAZARD (Age .80) in actual renderer");
     checks.expect(changedPixels(at,above,12)==0,
                   "bender break is discrete; adjacent post-onset Age adds no visible damage event");
-    checks.expect(changedPixels(below,capture(.9199f))==0,
-                  "lowering Age below .92 restores the identical intact bender tip");
+    checks.expect(changedPixels(below,capture(.7999f))==0,
+                  "lowering Age below .80 restores the identical intact bender tip");
     setParameter(processor,"age",initialAge);bender->setValue(initialBend,juce::sendNotificationSync);settleEditor();
 }
 
@@ -959,7 +959,7 @@ void checkBenderAudioCallbacks(SH09Processor& processor,juce::Component& editor,
         }
         return peak>.01f?double(cycles)*sampleRate/double(measuredBlocks*blockSize):0.0;
     };
-    for(const auto age:{.91f,.92f}) {
+    for(const auto age:{.79f,.80f}) {
         setParameter(processor,"age",age);processor.reset();
         bender->setValue(0,juce::sendNotificationSync);bender->onDragEnd();
         processMidi(processor,juce::MidiMessage::noteOn(1,69,juce::uint8(100)));
@@ -1278,7 +1278,7 @@ int main(int argc, char** argv) {
     if (argc != 2 || juce::String(argv[1]) == "--help") {
         std::cout << "Usage: SH09GUIRender <output-directory>\n"
                      "Exports actual editor PNGs and component JSON at 3840x2160 and 2880x1620,\n"
-                     "plus an unheld personal_age7 preview, a button-selected S viewport, and bender positions at Ages 0/.91/.92;\n"
+                     "plus an unheld personal_age7 preview, a button-selected S viewport, and bender positions at Ages 0/.79/.80;\n"
                      "checks discrete bender breakage, spring-return audio and wide/tall footer geometry.\n";
         return argc == 2 ? 0 : 2;
     }
