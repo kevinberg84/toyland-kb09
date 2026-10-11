@@ -5,6 +5,7 @@
 #include "../Source/GUI/AudioSettingsDialog.h"
 #include "../Source/Presets/Factory.h"
 #include <iostream>
+#include "AudioLayoutDevice.h"
 
 namespace {
 void png(juce::Component& c,const juce::File& file) {
@@ -29,7 +30,7 @@ int main(int argc,char** argv){
             kb09_gui::UpdateMenuTheme updateTheme(age);
             juce::PopupMenu menu;menu.setLookAndFeel(presets?&ownerTheme:&updateTheme);
             if(presets){int i=0;for(const auto& p:sh09::factoryPresets()){++i;menu.addItem(i,p.name,true,i==1);}}
-            else{menu.addSectionHeader("Toyland KB-09 1.1.1");menu.addItem(1,"Check for updates now");menu.addItem(2,"Automatic checks (every 90 days)",true,true);}
+            else{menu.addSectionHeader("Toyland KB-09 1.1.2");menu.addItem(1,"Check for updates now");menu.addItem(2,"Automatic checks (every 90 days)",true,true);}
             menu.showMenuAsync(juce::PopupMenu::Options().withParentComponent(&stage).withTargetScreenArea({10,10,1,1}).withMinimumWidth(presets?400:380).withStandardItemHeight(presets?36:34),[](int){});
             if(stage.getNumChildComponents()>0)png(*stage.getChildComponent(stage.getNumChildComponents()-1),out.getChildFile(juce::String(presets?"preset-menu":"update-menu")+"-"+juce::String(level)+".png"));
             juce::PopupMenu::dismissAllActiveMenus();
@@ -37,7 +38,7 @@ int main(int argc,char** argv){
         menuCapture(false);menuCapture(true);
         alert("external-audio","External audio + envelope follower",kb09_gui::externalAudioMessage,I::InfoIcon,{"OK"});
         alert("update-consent","KB-09 updates",kb09_gui::updateConsentMessage,I::QuestionIcon,{"Allow","No thanks"});
-        alert("update-available","KB-09 update available",kb09_gui::updateAvailableMessage("1.1.1"),I::InfoIcon,{"Show update instructions","Not now"});
+        alert("update-available","KB-09 update available",kb09_gui::updateAvailableMessage("1.1.2"),I::InfoIcon,{"Show update instructions","Not now"});
         alert("up-to-date","KB-09 updates","You're up to date!",I::InfoIcon,{"OK"});
         alert("update-error","KB-09 updates","Could not check for updates. Please try again later.",I::InfoIcon,{"OK"});
         alert("updates-unconfigured","KB-09 updates","Update announcements are not configured in this build yet.",I::InfoIcon,{"OK"});
@@ -54,5 +55,29 @@ int main(int argc,char** argv){
         kb09_gui::AudioSettingsDialog settings(manager,&stage,&mute,age);capture(settings,"audio-midi-settings");
         stage.setLookAndFeel(nullptr);
     }
+    audio_layout_test::Manager layoutManager;
+    if(layoutManager.initialise(2,2,nullptr,false).isNotEmpty())return 3;
+    juce::Value muteInput(true);
+    for(const auto size:{juce::Point<int>(1800,1400),juce::Point<int>(1024,768),juce::Point<int>(800,600)}) {
+        stage.setSize(size.x,size.y);
+        kb09_gui::AudioSettingsDialog settings(layoutManager,&stage,&muteInput,.7f);
+        stage.addAndMakeVisible(settings);
+        // Force a shorter window as on high-DPI/small-work-area desktops.
+        settings.setSize(juce::jmin(settings.getWidth(),size.x-40),juce::jmin(settings.getHeight(),size.y-50));
+        auto* viewport=dynamic_cast<juce::Viewport*>(settings.getCustomComponent(0));
+        auto* close=settings.getButton(0);
+        if(viewport==nullptr||close==nullptr||viewport->getBottom()+12>close->getY()
+           ||!settings.getLocalBounds().contains(close->getBounds()))return 4;
+        auto* content=viewport->getViewedComponent();
+        if(content==nullptr)return 5;
+        for(auto* child:content->getChildren())if(auto* selector=dynamic_cast<juce::AudioDeviceSelectorComponent*>(child)) {
+            for(auto* row:selector->getChildren())if(!selector->getLocalBounds().contains(row->getBounds()))return 6;
+        }
+        viewport->setViewPosition(0,content->getHeight());
+        if(viewport->getViewArea().getBottom()<content->getHeight())return 7;
+        png(settings,out.getChildFile("audio-midi-inputs-"+juce::String(size.x)+"x"+juce::String(size.y)+".png"));
+        stage.removeChildComponent(&settings);
+    }
+    std::cout<<"PASS audio input/output rows: MIDI content reachable and Close separate at 1800x1400, 1024x768, 800x600.\n";
     std::cout<<"Rendered 63 actual dialog/menu states. No update requests, device changes, installs or release changes.\n";
 }
