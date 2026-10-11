@@ -1,6 +1,6 @@
 # SH-09 filter model: evidence, assumptions and verification
 
-10 October 2026. DSP evaluation candidate 1.1.4; preceding released DSP 1.1.3 is preserved in `Tests/ReferenceDSP113`. This document describes a reduced, circuit-informed model, not a transistor-level recreation or a measured match to Kevin's SH-09.
+10 October 2026. DSP evaluation candidate 1.2.0; preceding released DSP 1.1.3 is preserved in `Tests/ReferenceDSP113`. This document describes a reduced, circuit-informed model, not a transistor-level recreation or a measured match to Kevin's SH-09.
 
 ## What the original circuit establishes
 

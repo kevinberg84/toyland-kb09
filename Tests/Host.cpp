@@ -204,7 +204,7 @@ void exportPresets(Host& h,const juce::File& directory){
         if(loaded)h.p.setStateInformation(diskState.getData(),int(diskState.getSize()));h.flush();
         good=good&&loaded&&h.p.getCurrentProgram()==i&&h.match(expected);++count;
     }
-    h.checks.expect(good&&count==16,"export and disk round-trip all 16 factory .sh09state files");h.restore();
+    h.checks.expect(good&&count==24,"export and disk round-trip all 24 factory .sh09state files");h.restore();
 }
 }
 int main(int argc,char** argv){

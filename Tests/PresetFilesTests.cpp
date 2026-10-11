@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     rejectXml([](auto& xml) { xml.removeAttribute("schema"); }, "reject missing schema");
     rejectXml([](auto& xml) { xml.setAttribute("schema", 2); }, "reject future schema");
     rejectXml([](auto& xml) { xml.removeAttribute("program"); }, "reject missing program reference");
-    rejectXml([](auto& xml) { xml.setAttribute("program", 16); }, "reject out-of-range program reference");
+    rejectXml([&](auto& xml) { xml.setAttribute("program", processor.getNumPrograms()); }, "reject out-of-range program reference");
     rejectXml([](auto& xml) { xml.setAttribute("program", "2.5"); }, "reject fractional program reference");
     rejectXml([](auto& xml) { xml.setAttribute("other", 1); }, "reject unknown state-header field");
     rejectXml([](auto& xml) { xml.removeChildElement(xml.getFirstChildElement(), true); }, "reject incomplete parameter set");
@@ -171,7 +171,7 @@ int main(int argc, char** argv)
         bankPassed &= sh09::PresetFiles::loadFromFile(processor, saved.getFile()).wasOk();
         bankPassed &= values(processor) == reference && processor.getCurrentProgram() == program;
     }
-    expect(bankPassed, "all 16 factory programs repeatedly save/overwrite/load exactly");
+    expect(bankPassed && processor.getNumPrograms() == 24, "all 24 factory programs repeatedly save/overwrite/load exactly");
 
     // Optional path to the actual bank exported by Tests/Host.cpp. This tests real
     // JUCE-host output, in addition to synthetic edge cases above.
@@ -179,7 +179,7 @@ int main(int argc, char** argv)
     {
         const juce::File folder = juce::File::getCurrentWorkingDirectory().getChildFile(juce::String::fromUTF8(argv[1]));
         const auto files = folder.findChildFiles(juce::File::findFiles, false, "*.sh09state");
-        expect(files.size() == 16, "actual exported bank contains 16 .sh09state files");
+        expect(files.size() == 24, "actual exported bank contains 24 .sh09state files");
         for (const auto& file : files)
         {
             const auto result = sh09::PresetFiles::loadFromFile(processor, file);
