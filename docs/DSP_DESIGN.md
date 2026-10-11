@@ -1,3 +1,7 @@
+> The current filter revision is documented in [SH09_FILTER_MODEL.md](SH09_FILTER_MODEL.md), including explicit assumptions, A/B results and remaining calibration work. The implementation notes below include historical design targets.
+
+> The current filter revision is documented in [SH09_FILTER_MODEL.md](SH09_FILTER_MODEL.md), including explicit assumptions, A/B results and remaining calibration work. The implementation notes below include historical design targets.
+
 # DSP design evidence and implementation boundaries
 
 Applies to **Toyland KB-09 0.11.0**, including its extended Modern MOD ranges. The standalone core evidence below is distinct from validation of the final 0.11.0 plug-in binary.

@@ -35,3 +35,8 @@ Read-only inspection of [Engine.cpp](../Source/DSP/Engine.cpp) found mixer satur
 Do not add another diode clipper merely because the schematic contains diodes, or claim progressively reduced headroom as a documented aging fact. Leave the DSP unchanged unless hardware measurements or a deliberate artistic decision justify a change. If the user's permitted subtle maximum-AGE coloration is selected later, identify it as an **optional creative condition model**. Prefer a small, smooth, level-matched change to an existing nonlinear stage, preserve AGE-zero behavior, and verify level-dependent harmonics/intermodulation, self-oscillation, DC, aliasing and preset stability. Its amount must be an explicit engineering choice, not a fabricated historical specification.
 
 For later calibration, record external sine and two-tone level sweeps with VCO/Sub off, VCA Hold, documented cutoff/resonance and fixed output loading; include low-level and self-oscillating cases. Log actual signal levels, supply/bias condition and service history. Compare the same unit before/after identified repair or adjustment where possible. A single old-versus-new recording with different gain, calibration or components cannot isolate aging. Match listening levels and retain raw captures. None of these measurements has been performed in this investigation.
+
+
+## Subsequent implementation
+
+Kevin explicitly requested circuit-informed self-oscillation and smooth AGE-dependent condition modeling on 10 October 2026. [SH09_FILTER_MODEL.md](SH09_FILTER_MODEL.md) records the resulting reduced model and its limits. This supersedes the earlier read-only recommendation; it does not establish that chronological aging always increases distortion.

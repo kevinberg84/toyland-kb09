@@ -14,7 +14,7 @@ jobs:
       - name: Configure universal Mac build
         run: cmake -S . -B build-mac -G Xcode -DJUCE_DIR="$RUNNER_TEMP/JUCE" -DKB09_BUILD_AU=ON -DKB09_BUILD_AAX=OFF '-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64' -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
       - name: Build plug-ins and tests
-        run: cmake --build build-mac --config Release --target SH09_AU SH09_VST3 SH09_Standalone SH09DSPTests SH09ProcessorTests SH09PresetFilesTests KB09UpdateTests SH09GUIRender KB09DialogPreview --parallel 3
+        run: cmake --build build-mac --config Release --target SH09_AU SH09_VST3 SH09_Standalone SH09DSPTests SH09FilterNonlinearTests SH09ProcessorTests SH09PresetFilesTests KB09UpdateTests SH09GUIRender KB09DialogPreview --parallel 3
       - name: Test audio engine and presets
         run: ctest --test-dir build-mac -C Release --output-on-failure
       - name: Test audio settings scrolling and dialog layouts
