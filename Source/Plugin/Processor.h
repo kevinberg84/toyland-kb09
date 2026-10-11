@@ -34,9 +34,15 @@ public:
  bool isPowerEnabled() const noexcept {return powerEnabled.load(std::memory_order_acquire);}
  void setPowerEnabled(bool enabled) noexcept;
  void queueKeyboard(int,bool,bool mouse=true) noexcept;
- void queuePitchBend(float value) noexcept { guiBend.store(juce::jlimit(-1.0f,1.0f,value),std::memory_order_relaxed); guiBendDirty.store(true,std::memory_order_release); }
+ static constexpr double benderReturnSeconds=.1;
+ void queuePitchBend(float value) noexcept { guiBendReturn.store(false,std::memory_order_relaxed);guiBend.store(juce::jlimit(-1.0f,1.0f,value),std::memory_order_relaxed);guiBendDirty.store(true,std::memory_order_release); }
+ void queuePitchBendReturn() noexcept {guiBend.store(0,std::memory_order_relaxed);guiBendReturn.store(true,std::memory_order_relaxed);guiBendDirty.store(true,std::memory_order_release);}
  juce::AudioProcessorValueTreeState state;
  std::atomic<unsigned> midiActivitySerial{0};
+ // Audio-thread bend target, shared with the editor without MIDI echo or host automation writes.
+ std::atomic<float> displayedPitchBend{0};
+ std::atomic<unsigned> displayedPitchBendSerial{0};
+ std::atomic<bool> displayedPitchBendReturning{false};
  std::atomic<int> displayedNote{-1};
  // Last oscillator pitch for the VCA HOLD keyboard latch.
  std::atomic<int> displayedHeldNote{-1};
@@ -54,6 +60,7 @@ public:
 private:
  sh09::Controls readControls() const noexcept;
  void handleMidi(const juce::uint8*,int) noexcept;
+ void applyPitchBend(float) noexcept;
  void clearKeyDisplay() noexcept;
  void clearVoiceDisplay() noexcept;
  void updateKeyDisplay(int,bool) noexcept;
@@ -77,5 +84,9 @@ private:
  std::atomic<bool> queueOverflow{false};
  std::atomic<float> guiBend{0};
  std::atomic<bool> guiBendDirty{false};
+ std::atomic<bool> guiBendReturn{false};
+ int bendReturnRemaining=0,bendReturnLength=1;
+ double bendSampleRate=48000;
+ float bendReturnFrom=0,soundingBendTarget=0;
  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SH09Processor)
 };

@@ -1,3 +1,11 @@
+# 1.3.0 — Toyland KB-09
+
+Incoming MIDI pitch wheel now moves the GUI bender, including when reopening its window. GUI feedback does not retransmit MIDI, override a mouse drag or reset an external wheel when the editor closes. Record controller movement through MIDI Pitch Bend envelopes; the existing VCO/VCF depth parameters remain separately automatable.
+
+Releasing the onscreen bender now returns its sound and animation over approximately 100 ms in AUTHENTIC mode. MODERN returns immediately with existing audio smoothing. New wheel or mouse input interrupts the return. The short spring curve is a playing approximation, not hardware-calibrated mechanical modelling. External wheels follow their own MIDI messages without an added spring delay.
+
+The MIDI lamp refreshes independently at 120 Hz with a shorter 90 ms activity flash. Host buffering and message-thread rendering can still affect visible latency. Aftertouch help now explicitly describes its Modern channel-pressure-to-filter route. Parameter IDs, preset formats, the 24 factory definitions and the filter circuit model are retained.
+
 # 1.2.1 — Toyland KB-09
 
 Fixed the bare chassis flashing while dragging AGE during parameter automation. The editor keeps the last complete instrument preview while building a replacement bank; incomplete banks never replace it. A complete startup preview also keeps the first AGE drag responsive. Releasing AGE restores live control positions and keyboard feedback. The audio engine, parameter IDs and preset definitions are unchanged from 1.2.0.

@@ -3,7 +3,7 @@
 #include "../Presets/Factory.h"
 #include <cmath>
 #include <string_view>
-static_assert(std::atomic<bool>::is_always_lock_free && std::atomic<unsigned>::is_always_lock_free,
+static_assert(std::atomic<bool>::is_always_lock_free && std::atomic<unsigned>::is_always_lock_free && std::atomic<float>::is_always_lock_free,
               "Power and keyboard controls require lock-free atomics");
 SH09Processor::SH09Processor():AudioProcessor(BusesProperties()
  .withInput("External Input",juce::AudioChannelSet::stereo(),true)
@@ -45,6 +45,8 @@ void SH09Processor::clearKeyDisplay() noexcept {
  displayedKeyboardNote.store(-1,std::memory_order_relaxed);
 }
 void SH09Processor::clearVoiceDisplay() noexcept {
+ bendReturnRemaining=0;soundingBendTarget=0;displayedPitchBendReturning.store(false,std::memory_order_relaxed);
+ displayedPitchBend.store(0,std::memory_order_relaxed);displayedPitchBendSerial.fetch_add(1,std::memory_order_release);
  clearKeyDisplay();displayedNote.store(-1,std::memory_order_relaxed);displayedHeldNote.store(-1,std::memory_order_relaxed);
  displayedEnvelope.store(0,std::memory_order_relaxed);displayedFollower.store(0,std::memory_order_relaxed);
  displayedModulatorLamp.store(false,std::memory_order_relaxed);
@@ -55,6 +57,7 @@ void SH09Processor::updateKeyDisplay(int note,bool down) noexcept {
  key.store(juce::jlimit(0,255,count+(down?1:-1)),std::memory_order_relaxed);
 }
 void SH09Processor::prepareToPlay(double rate,int){
+ bendSampleRate=rate;
  engine.prepare(rate);engine.setControls(readControls());setLatencySamples(engine.latencySamples());clearVoiceDisplay();
  queueRead.store(queueWrite.load(std::memory_order_acquire),std::memory_order_release);
 }
@@ -75,6 +78,12 @@ void SH09Processor::queueKeyboard(int note,bool down,bool mouse) noexcept {
  if(next==queueRead.load(std::memory_order_acquire)){queueOverflow.store(true);return;}
  keyboardQueue[w]={note,down,powerGeneration.load(std::memory_order_acquire),mouse};queueWrite.store(next,std::memory_order_release);
 }
+void SH09Processor::applyPitchBend(float value) noexcept {
+ bendReturnRemaining=0;soundingBendTarget=value;displayedPitchBendReturning.store(false,std::memory_order_relaxed);
+ engine.pitchBend(value);
+ displayedPitchBend.store(value,std::memory_order_relaxed);
+ displayedPitchBendSerial.fetch_add(1,std::memory_order_release);
+}
 void SH09Processor::handleMidi(const juce::uint8* bytes,int n) noexcept {
  if(n<1)return; int status=bytes[0]&0xf0;
  if(bytes[0]>=0x80&&bytes[0]<0xf0)midiActivitySerial.fetch_add(1,std::memory_order_relaxed);
@@ -82,12 +91,12 @@ void SH09Processor::handleMidi(const juce::uint8* bytes,int n) noexcept {
    auto& held=midiHeld[size_t(bytes[0]&15)][size_t(note)];
    if(on){engine.noteOn(note,bytes[2]&127,held);if(!held)updateKeyDisplay(note,true);held=true;}
    else if(held){held=false;engine.noteOff(note);updateKeyDisplay(note,false);}
- }else if(status==0xe0&&n>=3){engine.pitchBend(float(((bytes[2]&127)<<7)|(bytes[1]&127))/8192.0f-1.0f);}
+ }else if(status==0xe0&&n>=3){applyPitchBend(float(((bytes[2]&127)<<7)|(bytes[1]&127))/8192.0f-1.0f);}
  else if(status==0xd0&&n>=2)engine.setAftertouch(float(bytes[1]&127)/127.0f);
  else if(status==0xb0&&n>=3){
-   if(bytes[1]==120){engine.allSoundOff();clearKeyDisplay();}
+   if(bytes[1]==120){engine.allSoundOff();applyPitchBend(0);clearKeyDisplay();}
    else if(bytes[1]==123){engine.allNotesOff();clearKeyDisplay();}
-   else if(bytes[1]==121){engine.pitchBend(0);engine.setAftertouch(0);}
+   else if(bytes[1]==121){applyPitchBend(0);engine.setAftertouch(0);}
  }
 }
 void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuffer& midi){
@@ -110,11 +119,19 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
    guiBendDirty.exchange(false,std::memory_order_acq_rel);
    midi.clear();buffer.clear();return;
  }
- engine.setControls(readControls());
- if(guiBendDirty.exchange(false,std::memory_order_acq_rel))engine.pitchBend(guiBend.load(std::memory_order_relaxed));
+ const auto controls=readControls();engine.setControls(controls);
+ if(controls.modern>=.5f&&bendReturnRemaining>0)applyPitchBend(0);
+ if(guiBendDirty.exchange(false,std::memory_order_acq_rel)) {
+   if(guiBendReturn.load(std::memory_order_relaxed)&&controls.modern<.5f&&std::abs(soundingBendTarget)>.0001f) {
+     bendReturnFrom=soundingBendTarget;
+     bendReturnLength=juce::jmax(1,juce::roundToInt(bendSampleRate*benderReturnSeconds));
+     bendReturnRemaining=bendReturnLength;
+     displayedPitchBendReturning.store(true,std::memory_order_relaxed);
+   } else applyPitchBend(guiBend.load(std::memory_order_relaxed));
+ }
  if(auto* playhead=getPlayHead())if(auto position=playhead->getPosition())if(auto bpm=position->getBpm())engine.setTempo(*bpm);
  auto r=queueRead.load(std::memory_order_relaxed);
- if(queueDidOverflow){engine.allSoundOff();clearKeyDisplay();r=w;}
+ if(queueDidOverflow){engine.allSoundOff();applyPitchBend(0);clearKeyDisplay();r=w;}
  while(r!=w){const auto event=keyboardQueue[r];
    if(event.generation==generation){if(event.down)engine.noteOn(event.note,100);else engine.noteOff(event.note);updateKeyDisplay(event.note,event.down);
      if(!event.mouse) {
@@ -127,8 +144,13 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  queueRead.store(r,std::memory_order_release);
  auto input=getBusBuffer(buffer,true,0);auto output=getBusBuffer(buffer,false,0);
  auto event=midi.cbegin(); const auto end=midi.cend();
- float inputPeak=0;
+ float inputPeak=0;bool springAdvanced=false;
  for(int s=0;s<buffer.getNumSamples();++s){
+   if(bendReturnRemaining>0) {
+     const auto remaining=float(--bendReturnRemaining)/float(bendReturnLength);
+     soundingBendTarget=bendReturnFrom*remaining*remaining;
+     engine.pitchBend(soundingBendTarget);springAdvanced=true;
+   }
    while(event!=end&&(*event).samplePosition<=s){const auto meta=*event;handleMidi(meta.data,meta.numBytes);++event;}
    float external=0;
    for(int ch=0;ch<input.getNumChannels();++ch){float x=input.getSample(ch,s);x=std::isfinite(x)?juce::jlimit(-32.0f,32.0f,x):0;external+=x;inputPeak=juce::jmax(inputPeak,std::abs(x));}
@@ -138,6 +160,11 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  }
  // Process end-of-block and zero-length flush events without losing note-offs.
  while(event!=end){const auto meta=*event;handleMidi(meta.data,meta.numBytes);++event;}
+ if(springAdvanced) {
+   displayedPitchBend.store(soundingBendTarget,std::memory_order_relaxed);
+   displayedPitchBendReturning.store(bendReturnRemaining>0,std::memory_order_relaxed);
+   displayedPitchBendSerial.fetch_add(1,std::memory_order_release);
+ }
  midi.clear();displayedNote.store(engine.currentNote(),std::memory_order_relaxed);
  displayedHeldNote.store(engine.lastPlayedNote(),std::memory_order_relaxed);
  displayedEnvelope.store(engine.envelopeLevel(),std::memory_order_relaxed);displayedFollower.store(engine.followerLevel(),std::memory_order_relaxed);

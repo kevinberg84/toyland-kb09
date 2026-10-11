@@ -15,7 +15,7 @@
     <a class="brand" href="#top" aria-label="Toyland KB-09 home">
       <svg viewBox="85 308 722 158" role="img" aria-labelledby="toyland-title"><title id="toyland-title">Toyland</title><image href="assets/marks.png" width="2172" height="724" /></svg>
     </a>
-    <span class="edition">User Manual · Version 1.2.1 · 10 October 2026</span>
+    <span class="edition">User Manual · Version 1.3.0 · 11 October 2026</span>
     <button class="print-button" type="button" onclick="window.print()">Print / Save PDF</button>
   </div>
 </header>
@@ -47,7 +47,7 @@
   <div class="quick-links"><a href="#start">Play your first sound <span aria-hidden="true">↗</span></a><a href="#age">Explore AGE <span aria-hidden="true">↗</span></a><a href="#daws">Choose your DAW <span aria-hidden="true">↗</span></a></div>
   <p class="project-mark">UNOFFICIAL PERSONAL PROJECT — NOT AFFILIATED WITH ROLAND CORPORATION — NOT FOR SALE</p>
 </section>
-<aside class="notice"><strong>Windows 1.2.1.</strong> Use the VST3 instrument in your DAW or play the standalone app. A separate Mac AU/VST3/standalone download is available; see <a href="#install">Which file do I need?</a>.</aside>
+<aside class="notice"><strong>Windows 1.3.0.</strong> Use the VST3 instrument in your DAW or play the standalone app. A separate Mac AU/VST3/standalone download is available; see <a href="#install">Which file do I need?</a>.</aside>
 
 <section id="features">
   <p class="section-number">01 / DISCOVER KB-09</p><h2>A personal synth, ready to explore</h2>
@@ -101,7 +101,7 @@
 
 <section id="panel">
   <p class="section-number">05 / HANDS ON</p><h2>Learn the panel</h2>
-  <figure><a href="assets/panel-1.1.3.png"><img src="assets/panel-1.1.3.png" alt="The aged KB-09 panel, with Modulator, VCO, Sub Oscillator, Audio Mixer, VCF, VCA and Envelope across the top; the performance bay at lower left; keyboard below; utility controls in the footer." width="3840" height="2160" loading="lazy"></a><figcaption>Get to know the panel in KB-09 1.2.1. Click for the full-size image.</figcaption></figure>
+  <figure><a href="assets/panel-1.1.3.png"><img src="assets/panel-1.1.3.png" alt="The aged KB-09 panel, with Modulator, VCO, Sub Oscillator, Audio Mixer, VCF, VCA and Envelope across the top; the performance bay at lower left; keyboard below; utility controls in the footer." width="3840" height="2160" loading="lazy"></a><figcaption>Get to know the panel in KB-09 1.3.0. Click for the full-size image.</figcaption></figure>
   <p>Drag sliders vertically; drag a knob vertically or horizontally. Hover or drag to read its value bubble. Most sound controls use a <strong>0–10</strong> display; TUNE displays cents. Double-click a continuous control to return to its default. Click or drag the ridged switches, or click their adjacent labels. Focused switches also accept arrow keys, Home and End.</p>
   <p>Click the grey <strong>POWER</strong> button to switch the instrument on or off. It stands tall when OFF and sits lower when ON; the red lamp below the POWER label lights when the synth is on. Switching it off mutes the sound and clears held notes. Play a fresh note after switching it back on.</p>
   <div class="table-wrap"><table class="control-table"><thead><tr><th>Section</th><th>What it does</th><th>A first experiment</th></tr></thead><tbody>
@@ -123,7 +123,7 @@
   </details>
 </div>
   <h3>Authentic &amp; Modern</h3>
-  <p><strong>Authentic</strong> keeps the original-style routing and ignores the optional velocity, aftertouch, LFO tempo-sync and input-trim settings. Those controls dim. <strong>Modern</strong> enables them: velocity controls level, channel aftertouch opens the filter, SYNC locks RATE to musical grid divisions, and INPUT TRIM adjusts external input by ±24 dB. Return to Modern to use their retained settings.</p>
+  <p><strong>Authentic</strong> keeps the original-style routing and ignores the optional velocity, aftertouch, LFO tempo-sync and input-trim settings. Those controls dim. <strong>Modern</strong> enables them: velocity controls level, channel aftertouch opens the filter (up to three octaves at full pressure and AFTERTOUCH amount), SYNC locks RATE to musical grid divisions, and INPUT TRIM adjusts external input by ±24 dB. Return to Modern to use their retained settings.</p>
   <p>Modern provides deeper maximum LFO modulation: ±36 semitones for VCO pitch and ±8 octaves for the VCF, compared with Authentic's ±12 semitones and ±5 octaves. These are software design ranges. Modern sounds saved before 0.11 with nonzero MOD can sound deeper after upgrading. The bender sensitivities are separate.</p>
   <p>The header's <strong>ENV</strong> and <strong>EXT</strong> indicators show envelope/auto-wah follower activity. <strong>EXT AUDIO</strong> opens a routing reminder in the same dialog style as the other KB-09 windows; choose OK to close.</p>
 </section>
@@ -208,7 +208,7 @@
   <div class="notes-box"><h3>Session notes</h3><p>Date: ____________________ &nbsp; DAW / version: ____________________</p><p>Preset: ____________________ &nbsp; Favourite AGE: ____________________</p><p>Sounds, settings and ideas to return to:</p><div class="writing-lines" aria-hidden="true"></div></div>
 </section>
 
-<section id="bender-readout"><h2>Pitch-bender readout</h2><p>Hover over or drag the spring-return bender to see its signed position, from -100% to +100%; centre is 0%. The VCO and VCF depth faders determine the resulting pitch and filter movement, so the position is not a fixed semitone amount. Release the bender to return to centre.</p></section><section id="hands-on"><h2>A little more control, a lot more playing</h2>
+<section id="bender-readout"><h2>Pitch-bender readout</h2><p>Hover over or drag the spring-return bender to see its signed position, from -100% to +100%; centre is 0%. The VCO and VCF depth faders determine the resulting pitch and filter movement, so the position is not a fixed semitone amount. Release the onscreen bender for a short, approximately 100 ms spring return in AUTHENTIC mode; sound and animation return together. MODERN returns immediately, retaining click-free audio smoothing. The spring duration is a playing approximation, not a measured SH-09 calibration. An external MIDI wheel moves the GUI bender and follows the controller’s own return messages. In a DAW, record or edit MIDI Pitch Bend envelopes; the bender position is a MIDI performance control, while its VCO and VCF depth faders are automatable plug-in parameters.</p></section><section id="hands-on"><h2>A little more control, a lot more playing</h2>
 <p>Hold <strong>SHIFT</strong> while dragging any knob, fader or the bender for ten-times finer adjustment. Release SHIFT to return to normal speed, even during a drag. AGE changes the sound, slider position and appearance during the drag. Blended visual previews keep it responsive; full visual detail returns on release. During automation, control positions and key feedback may stay at the last complete preview while you drag AGE; they return live on release. The four utility sliders have larger handles and grab areas. Faders move relative to where you grab them, so a fine adjustment will not jump to the pointer. The <strong>DESCRIPTION</strong> button in the bottom strip enables hover descriptions; it starts off and lights amber with DESCRIPTION ON when enabled. Hover over DESCRIPTION itself for help even when it is off. Value readouts work with DESCRIPTION off or on. Switches show their selected mode in a readable value box when hovered or adjusted; the box disappears after you leave or finish the adjustment.</p>
 <p><strong>VOLUME</strong> now has an audio taper: quiet levels occupy useful knob travel, 0 mutes, and 10 is full output. Existing patches keep their knob positions, so intermediate VOLUME settings sound quieter than in 0.13.2; turn up VOLUME if needed.</p>
 <p>In <strong>Modern</strong>, choose <strong>FREE</strong> for the continuous original 0.2–25 Hz LFO, or <strong>SYNC</strong> to follow the host tempo. RATE then selects 21 divisions, from four bars to 1/64-note triplets. Its value box displays the division. D means dotted (one-and-a-half times the straight duration); T means triplet (two-thirds). Bar labels assume 4/4; divisions are quarter-note beat durations and do not change with the host time signature. Without host tempo information the clock uses 120 BPM. Authentic always uses the original free rate, even with a saved SYNC setting.</p>
@@ -226,7 +226,7 @@
   <details><summary>A sound keeps playing</summary><p>VCA HOLD deliberately passes audio without a key. Try ENV or GATE, or load Calibrated Init. POWER mutes and clears note history; play a new note after turning it back on.</p></details>
   <details><summary>The window is large but blurry</summary><p>Use the <a href="#daws">DAW-specific scaling setting</a>. In Live, disabling Auto-Scale Plug-in Window fixed this for the owner. Then choose KB-09's own size. Do not lower the screen resolution to make the plug-in bigger.</p></details>
   <details><summary>The footer or a control is outside the window</summary><p>Choose S or M, reopen the editor and check the host's scaling setting. Try a fresh instance after saving the patch. If it persists, note the DAW version, Windows display scale, monitor resolution and selected size when reporting the problem; a host can constrain a plug-in's requested dimensions.</p></details>
-  <details><summary>Velocity, aftertouch, sync or input trim does nothing</summary><p>Select Modern. Authentic deliberately ignores these optional controls. Aftertouch also needs a controller that sends channel pressure. Onscreen mouse presses do not provide expressive aftertouch.</p></details>
+  <details><summary>Velocity, aftertouch, sync or input trim does nothing</summary><p>Select Modern. Authentic deliberately ignores these optional controls. Aftertouch opens the filter; its slider sets the amount. Try a moderately low CUTOFF and preset 24 / Aftertouch Brass. It needs a controller that sends channel pressure, rather than polyphonic aftertouch. Onscreen mouse presses do not provide expressive aftertouch.</p></details>
   <details><summary>External audio is quiet or disappears</summary><p>Confirm the host enabled the auxiliary input, raise EXT and use VCA Hold. Stereo sources with opposite-polarity channels cancel when folded to mono. In Modern, check INPUT TRIM. IN shows the incoming audio peak before mono folding and mixer level; EXT shows the auto-wah envelope follower. These meters do not promise that your output path is audible.</p></details>
   <details><summary>Windows reports a missing VCRUNTIME or MSVCP file</summary><p>Install Microsoft's current x64 Visual C++ Redistributable from <a href="https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist">Microsoft's official download page</a>, then reopen the synth. Do not download individual DLLs from unrelated sites.</p></details>
   <details><summary>A missing cap, cracked key or broken bender looks alarming</summary><p>These are visual AGE effects. The controls continue to work. Lower AGE to restore a fresher appearance; the same setting also returns the sound toward its healthy profile.</p></details>
@@ -241,7 +241,7 @@
     <input type="hidden" name="shotName" value=""><input type="hidden" name="shotType" value=""><input type="hidden" name="shotData" value="">
     <div class="report-trap" aria-hidden="true"><label>Leave this empty<input name="website" maxlength="80" tabindex="-1" autocomplete="off"></label></div>
     <div class="report-grid">
-      <label>KB-09 version <span>(required)</span><input name="version" value="1.2.1" maxlength="40" required autocomplete="off"></label>
+      <label>KB-09 version <span>(required)</span><input name="version" value="1.3.0" maxlength="40" required autocomplete="off"></label>
       <label>Operating system and version <span>(required)</span><input name="os" placeholder="e.g. macOS 15.7 / Windows 11" maxlength="120" required autocomplete="off"></label>
       <label>DAW / host and version <span>(required)</span><input name="host" placeholder="e.g. Standalone / Live 12.3" maxlength="160" required autocomplete="off"></label>
       <label>Issue category <span>(required)</span><select name="category" required><option value="">Choose a category</option><option>Sound / MIDI</option><option>Interface / display</option><option>Installation / updates</option><option>Crash / performance</option><option>Manual / documentation</option><option>Other</option></select></label>

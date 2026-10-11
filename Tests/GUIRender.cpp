@@ -880,7 +880,7 @@ void renderBenderPositions(SH09Processor& processor, juce::Component& editor,
                       && changedPixels(positions[0], positions[2], 12) >= 100,
                       prefix + "left, neutral and right positions visibly differ");
         const bool springCallback=bool(bender->onDragEnd);
-        if(springCallback)bender->onDragEnd();
+        if(springCallback){bender->onDragEnd();settleEditor();}
         const auto restored=bender->createComponentSnapshot(bender->getLocalBounds(),true,3.0f);
         checks.expect(springCallback&&std::abs(bender->getValue())<1.0e-12&&changedPixels(positions[1],restored)==0,
                       prefix + "actual drag-end callback restores zero and identical neutral pixels");
@@ -966,7 +966,7 @@ void checkBenderAudioCallbacks(SH09Processor& processor,juce::Component& editor,
         const auto neutral=frequency();
         bender->setValue(1,juce::sendNotificationSync);const auto high=frequency();
         bender->setValue(-1,juce::sendNotificationSync);const auto low=frequency();
-        bender->onDragEnd();const auto returned=frequency();
+        bender->onDragEnd();const auto returned=frequency();settleEditor();
         const auto context="bender Age "+juce::String(age,2);
         checks.expect(neutral>400&&neutral<480&&high>neutral*1.9&&high<neutral*2.1
                       &&low>neutral*.46&&low<neutral*.54,
@@ -977,6 +977,68 @@ void checkBenderAudioCallbacks(SH09Processor& processor,juce::Component& editor,
     }
     processor.setStateInformation(savedState.getData(),int(savedState.getSize()));
     processor.reset();bender->setValue(originalValue,juce::sendNotificationSync);settleEditor();
+}
+
+void checkMidiBender(SH09Processor& processor,juce::Component& editor,const juce::File& directory,Checks& checks) {
+    auto* bender=dynamic_cast<juce::Slider*>(findComponent(editor,"bender"));
+    auto* lamp=findComponent(editor,"indicatorMIDI");
+    checks.expect(bender&&lamp,"MIDI bender and activity lamp are present");if(!bender||!lamp)return;
+    juce::MemoryBlock saved;processor.getStateInformation(saved);processor.reset();
+    setParameter(processor,"modern",0);settleEditor();
+    const auto snapshot=[&]{return bender->createComponentSnapshot(bender->getLocalBounds(),true,3.0f);};
+    const auto centre=snapshot();
+    for(const int channel:{1,8,16})for(const int wheel:{0,4096,8192,12288,16383}) {
+        processMidi(processor,juce::MidiMessage::pitchWheel(channel,wheel));settleEditor();
+        checks.expect(std::abs(bender->getValue()-(double(wheel)/8192-1))<.0011,
+                      "MIDI wheel channel "+juce::String(channel)+" value "+juce::String(wheel)+" updates GUI position");
+    }
+    const auto right=snapshot();
+    checks.expect(changedPixels(centre,right,12)>100,"incoming MIDI visibly moves the rendered bender");
+    checks.expect(writePNG(right,directory.getChildFile("midi_bender_right.png")),"MIDI bender actual-render preview export");
+    const auto serial=processor.displayedPitchBendSerial.load();
+    juce::AudioBuffer<float> audio(2,blockSize);juce::MidiBuffer midi;audio.clear();processor.processBlock(audio,midi);
+    checks.expect(processor.displayedPitchBendSerial.load()==serial,"GUI MIDI feedback never echoes pitch bend to audio");
+    processMidi(processor,juce::MidiMessage::controllerEvent(1,121,0));settleEditor();
+    checks.expect(std::abs(bender->getValue())<.0001,"Reset All Controllers centres the GUI bender");
+    // A controller message may not pull the control away from an active mouse gesture.
+    bender->onDragStart();bender->setValue(.75,juce::sendNotificationSync);
+    processMidi(processor,juce::MidiMessage::pitchWheel(2,0));settleEditor();
+    checks.expect(bender->getValue()==.75,"MIDI feedback does not fight an active bender drag");
+    bender->setValue(1,juce::sendNotificationSync);audio.clear();processor.processBlock(audio,midi);
+    bender->onDragEnd();
+    checks.expect(bender->getValue()==1,"Authentic bender release starts at its held position");
+    juce::MessageManager::getInstance()->runDispatchLoopUntil(25);juce::Timer::callPendingTimersSynchronously();
+    checks.expect(bender->getValue()>0&&bender->getValue()<1,"Authentic spring return has an intermediate visual frame");
+    checks.expect(writePNG(snapshot(),directory.getChildFile("bender_spring_mid.png")),"spring return intermediate actual-render export");
+    settleEditor();checks.expect(std::abs(bender->getValue())<.0001,"Authentic spring animation settles at centre");
+    setParameter(processor,"modern",1);bender->setValue(-1,juce::sendNotificationSync);bender->onDragEnd();
+    checks.expect(std::abs(bender->getValue())<.0001,"Modern bender release centres the GUI immediately");
+    audio.clear();processor.processBlock(audio,midi);
+    checks.expect(processor.displayedPitchBend.load()==0,"Modern GUI release sends immediate neutral audio target");
+    settleEditor();
+    const auto dark=lamp->createComponentSnapshot(lamp->getLocalBounds(),true,1.0f);
+    const auto start=juce::Time::getMillisecondCounterHiRes();
+    processMidi(processor,juce::MidiMessage::pitchWheel(16,4096));
+    bool lit=false;
+    while(!lit&&juce::Time::getMillisecondCounterHiRes()-start<80) {
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(1);
+        lit=changedPixels(dark,lamp->createComponentSnapshot(lamp->getLocalBounds(),true,1.0f),12)>10;
+    }
+    std::cout<<"MIDI lamp onset_ms="<<juce::Time::getMillisecondCounterHiRes()-start<<'\n';
+    checks.expect(lit,"MIDI lamp promptly lights for incoming wheel activity");
+    settleEditor();checks.expect(changedPixels(dark,lamp->createComponentSnapshot(lamp->getLocalBounds(),true,1.0f))==0,
+                                "MIDI lamp clears after its short activity flash");
+    // Reopening must reflect a held external wheel; closing must not centre it.
+    {
+        SH09Processor reopened;reopened.prepareToPlay(sampleRate,blockSize);
+        processMidi(reopened,juce::MidiMessage::pitchWheel(3,12288));
+        auto another=std::unique_ptr<juce::AudioProcessorEditor>(reopened.createEditor());
+        auto* control=dynamic_cast<juce::Slider*>(findComponent(*another,"bender"));
+        checks.expect(control&&control->getValue()==.5,"new editor starts at the existing MIDI bend position");
+        another.reset();audio.clear();reopened.processBlock(audio,midi);
+        checks.expect(reopened.displayedPitchBend.load()==.5,"closing editor never resets an external controller bend");
+    }
+    processor.setStateInformation(saved.getData(),int(saved.getSize()));processor.reset();settleEditor();
 }
 
 void checkOptionalDescriptions(SH09Processor& processor,juce::Component& editor,const juce::File& directory,Checks& checks) {
@@ -1269,6 +1331,7 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
         renderBenderPositions(processor, *editor, directory, checks);
         renderHardwareDetails(processor,*editor,directory,checks);
         checkBenderAudioCallbacks(processor,*editor,checks);
+        checkMidiBender(processor,*editor,directory,checks);
         checkAgeEvents(processor, *editor, checks);
     }
 

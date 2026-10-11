@@ -118,5 +118,75 @@ int main(){
         "computer keyboard release preserves another held note");
  p.queueKeyboard(64,false,false);process();
  expect(p.keyDisplay[64].load()==0,"computer keyboard release clears its last held note");
+ // Incoming wheel feedback is transient MIDI state, never host parameter automation.
+ p.reset();
+ bool wheelPositions=true;
+ for(int channel=1;channel<=16;++channel)for(int wheel:{0,4096,8192,12288,16383}) {
+   midi.addEvent(juce::MidiMessage::pitchWheel(channel,wheel),0);process();
+   wheelPositions=wheelPositions&&std::abs(p.displayedPitchBend.load()-(float(wheel)/8192-1))<1e-7f;
+ }
+ expect(wheelPositions,"all MIDI channels publish the full 14-bit pitch wheel position");
+ const auto serial=p.displayedPitchBendSerial.load();process();
+ expect(p.displayedPitchBendSerial.load()==serial,"idle processing does not echo displayed MIDI back into the engine");
+ midi.addEvent(juce::MidiMessage::controllerEvent(1,121,0),0);process();
+ expect(p.displayedPitchBend.load()==0,"Reset All Controllers centers bend feedback");
+ midi.addEvent(juce::MidiMessage::pitchWheel(2,0),0);
+ midi.addEvent(juce::MidiMessage::pitchWheel(7,12288),127);process();
+ expect(p.displayedPitchBend.load()==.5f,"end-of-block wheel events publish the final incoming position");
+ midi.addEvent(juce::MidiMessage::pitchWheel(4,4096),0);p.processBlock(zero,midi);
+ expect(p.displayedPitchBend.load()==-.5f,"zero-sample callbacks publish incoming wheel feedback");
+ midi.addEvent(juce::MidiMessage::allSoundOff(1),0);process();
+ expect(p.displayedPitchBend.load()==0,"All Sound Off centers the reset engine and displayed bender together");
+ // The spring is timed in samples, not dependent on editor refresh or buffer size.
+ bool springTiming=true,modernReturn=true,interruptions=true;
+ for(double rate:{44100.,48000.,96000.})for(int blockSize:{1,127,512}) {
+   SH09Processor spring;spring.prepareToPlay(rate,blockSize);
+   juce::AudioBuffer<float> block(2,blockSize);juce::MidiBuffer events;events.ensureSize(256);
+   auto render=[&]{block.clear();track=true;spring.processBlock(block,events);track=false;};
+   auto mode=[&](float value){auto* parameter=spring.state.getParameter("modern");parameter->setValueNotifyingHost(parameter->convertTo0to1(value));};
+   mode(0);spring.queuePitchBend(1);render();spring.queuePitchBendReturn();
+   int elapsed=0;float previous=1;const int duration=int(std::lround(rate*SH09Processor::benderReturnSeconds));
+   while(elapsed<duration+blockSize) {
+     render();elapsed+=blockSize;const float bend=spring.displayedPitchBend.load();
+     springTiming=springTiming&&bend<=previous&&bend>=0;
+     if(elapsed<duration/2)springTiming=springTiming&&bend>0;
+     if(elapsed>=duration)springTiming=springTiming&&bend==0&&!spring.displayedPitchBendReturning.load();
+     previous=bend;
+   }
+   mode(1);spring.queuePitchBend(-1);render();spring.queuePitchBendReturn();render();
+   modernReturn=modernReturn&&spring.displayedPitchBend.load()==0&&!spring.displayedPitchBendReturning.load();
+   mode(0);spring.queuePitchBend(1);render();spring.queuePitchBendReturn();render();
+   events.addEvent(juce::MidiMessage::pitchWheel(16,4096),blockSize/2);render();render();
+   interruptions=interruptions&&spring.displayedPitchBend.load()==-.5f&&!spring.displayedPitchBendReturning.load();
+   spring.queuePitchBendReturn();render();spring.queuePitchBend(.75f);render();
+   interruptions=interruptions&&spring.displayedPitchBend.load()==.75f&&!spring.displayedPitchBendReturning.load();
+   spring.queuePitchBendReturn();render();mode(1);render();
+   modernReturn=modernReturn&&spring.displayedPitchBend.load()==0&&!spring.displayedPitchBendReturning.load();
+ }
+ expect(springTiming,"Authentic spring returns continuously to exact center in 100 ms across sample rates and buffers");
+ expect(modernReturn,"Modern returns immediately, including when entered during an Authentic return");
+ expect(interruptions,"new controller wheel and GUI gestures cancel an in-progress spring without stale bend");
+ // Observe actual oscillator pitch, rather than relying only on the display target.
+ auto audibleReturn=[&](bool modern) {
+   SH09Processor sound;sound.prepareToPlay(48000,64);
+   auto set=[&](const char* id,float value){auto* param=sound.state.getParameter(id);param->setValueNotifyingHost(param->convertTo0to1(value));};
+   set("modern",modern?1.f:0.f);set("wave",2);set("vcaMode",2);set("cutoff",1);set("vcfEnv",0);set("bendVco",1);
+   juce::AudioBuffer<float> block(2,64);juce::MidiBuffer events;events.ensureSize(256);
+   events.addEvent(juce::MidiMessage::noteOn(1,69,juce::uint8(100)),0);sound.queuePitchBend(1);
+   auto render=[&]{block.clear();track=true;sound.processBlock(block,events);track=false;};
+   for(int i=0;i<240;++i)render();
+   sound.queuePitchBendReturn();std::array<float,9600> samples{};
+   for(size_t start=0;start<samples.size();start+=64){render();for(size_t j=0;j<64;++j)samples[start+j]=block.getSample(0,int(j));}
+   auto frequency=[&](int begin,int end){bool below=false;int cycles=0;for(int i=begin;i<end;++i){if(samples[size_t(i)]<-.005f)below=true;else if(samples[size_t(i)]>.005f&&below){++cycles;below=false;}}return double(cycles)*48000/(end-begin);};
+   return std::array<double,3>{frequency(0,960),frequency(1920,2880),frequency(6720,9600)};
+ };
+ const auto authenticPitch=audibleReturn(false),modernPitch=audibleReturn(true);
+ std::cout<<"Return pitch Hz Authentic="<<authenticPitch[0]<<','<<authenticPitch[1]<<','<<authenticPitch[2]
+          <<" Modern="<<modernPitch[0]<<','<<modernPitch[1]<<','<<modernPitch[2]<<'\n';
+ expect(authenticPitch[0]>authenticPitch[1]&&authenticPitch[1]>authenticPitch[2]*1.03
+        &&authenticPitch[2]>420&&authenticPitch[2]<460,"Authentic audible pitch returns progressively and settles at the unbent note");
+ expect(modernPitch[0]<authenticPitch[0]*.9&&std::abs(modernPitch[2]-440)<20,
+        "Modern audio returns faster while retaining existing click-free smoothing");
+ expect(allocations==0,"MIDI feedback and sample-timed spring perform no C++ new allocations");
  p.releaseResources();std::cout<<"RESULT failures="<<failed<<" allocations="<<allocations<<'\n';return failed?1:0;
 }

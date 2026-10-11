@@ -1180,7 +1180,7 @@ private:
     }
     void release() {if(mouseNote>=0){processor.queueKeyboard(mouseNote,false);mouseNote=-1;repaint();}}
 };
-class Meter final : public juce::Component {
+class Meter final : public juce::Component, private juce::Timer {
     class Indicator final : public juce::Component, public juce::SettableTooltipClient {
     public:
         juce::String label;float level=0;bool midi=false;
@@ -1191,18 +1191,25 @@ class Meter final : public juce::Component {
         }
     };
 public:
-    Meter() {
+    explicit Meter(SH09Processor& p):processor(p) {
         const char* labels[]={"ENV","EXT","IN","MIDI"};
         const char* tips[]={"ENV: the synth's ADSR envelope level.","EXT: external audio envelope follower level, measured before the EXT fader.","IN: incoming audio level before the EXT fader and stereo-to-mono conversion.","MIDI: incoming notes, pitch bend and controller activity. This is not an audio meter."};
         for(int i=0;i<4;++i){auto& lamp=indicators[size_t(i)];lamp.label=labels[i];lamp.midi=i==3;lamp.setTooltip(tips[i]);lamp.setComponentID(juce::String("indicator")+labels[i]);addAndMakeVisible(lamp);lamp.setBounds(i*83,0,i==3?44:78,20);}
+        startTimerHz(120);
     }
+    ~Meter() override {stopTimer();}
     void setLevels(float e,float f,float input,unsigned serial) {
         const auto now=juce::Time::getMillisecondCounter();
         if(serial!=lastSerial){lastSerial=serial;lastActivity=now;hasActivity=true;}
-        const float levels[]={e,f,input,hasActivity&&juce::uint32(now-lastActivity)<140?1.0f:0.0f};
+        const float levels[]={e,f,input,hasActivity&&juce::uint32(now-lastActivity)<90?1.0f:0.0f};
         for(int i=0;i<4;++i){auto& lamp=indicators[size_t(i)];if(std::abs(lamp.level-levels[i])>.005f){lamp.level=levels[i];lamp.repaint();}}
     }
 private:
+    SH09Processor& processor;
+    void timerCallback() override {
+        setLevels(processor.displayedEnvelope.load(std::memory_order_relaxed),processor.displayedFollower.load(std::memory_order_relaxed),
+                  processor.displayedInput.load(std::memory_order_relaxed),processor.midiActivitySerial.load(std::memory_order_relaxed));
+    }
     std::array<Indicator,4> indicators;
     unsigned lastSerial=0;juce::uint32 lastActivity=0;bool hasActivity=false;
 };
@@ -1361,7 +1368,7 @@ public:
         for(auto& c:controls) {if(c->slider)c->slider->setBufferedToImage(true);if(c->selector)c->selector->setBufferedToImage(true);}
     }
     Panel(SH09Processor& p,sh09::WindowSizing& s)
-        :processor(p),sizing(s),presetFiles(p,*this),keyboard(p),header(s),maximise(s),power(p) {
+        :processor(p),sizing(s),presetFiles(p,*this),keyboard(p),header(s),maximise(s),power(p),meter(p) {
         setLookAndFeel(&look);setSize(designW,designH);
         addAndMakeVisible(header);header.setBounds(0,0,designW,headerH);
         addAndMakeVisible(updates);updates.setBounds(25,5,132,24);updates.setButtonText("TOYLAND / KB-09");updates.setComponentID("updates");updates.onClick=[this]{kb09::Updates::instance().showMenu(&updates);};
@@ -1444,13 +1451,25 @@ public:
         addFader("bendVco","VCO",98,496,37,112,true);addFader("bendVcf","VCF",142,496,37,112,true);
         addFader("portamento","PORTAMENTO",205,496,37,112,true);
         addAndMakeVisible(bender);bender.setBounds(85,headerH+638,143,48);bender.setComponentID("bender");
-        bender.setRange(-1,1,.001);bender.setValue(0);bender.setSliderStyle(juce::Slider::LinearHorizontal);
+        bender.setRange(-1,1,.001);
+        lastBendSerial=processor.displayedPitchBendSerial.load(std::memory_order_acquire);
+        bender.setValue(processor.displayedPitchBend.load(std::memory_order_relaxed),juce::dontSendNotification);
+        bender.setSliderStyle(juce::Slider::LinearHorizontal);
         bender.setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);bender.setScrollWheelEnabled(false);bender.setWantsKeyboardFocus(false);
         bender.setTooltip("Spring-return bender. VCO / VCF sliders set the depth.");
         bender.setTitle("Pitch bender");bender.setPopupDisplayEnabled(true,true,this);
         bender.textFromValueFunction=[](double v){return (v>0?juce::String("+"):juce::String())+juce::String(v*100,1)+"%";};
-        bender.onValueChange=[this]{bendActive=std::abs(bender.getValue())>.0001;processor.queuePitchBend(float(bender.getValue()));};
-        bender.onDragEnd=[this]{bender.setValue(0,juce::sendNotificationSync);};
+        bender.onValueChange=[this]{bendReturnStarted=0;bendActive=std::abs(bender.getValue())>.0001;processor.queuePitchBend(float(bender.getValue()));};
+        bender.onDragStart=[this]{benderDragging=true;bendReturnStarted=0;};
+        bender.onDragEnd=[this]{
+            benderDragging=false;bendActive=false;
+            lastBendSerial=processor.displayedPitchBendSerial.load(std::memory_order_acquire);
+            bendReturnFrom=bender.getValue();
+            const bool modern=processor.state.getRawParameterValue("modern")->load()>=.5f;
+            bendReturnStarted=modern?0:juce::Time::getMillisecondCounterHiRes();
+            if(modern)bender.setValue(0,juce::dontSendNotification);
+            processor.queuePitchBendReturn();
+        };
         addSwitch("modern",25,designH-headerH-44,131,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
         // Keep a consistent 52-unit gap between bottom-row control groups.
         addUtility("age","CONDITION / AGE",290,170);
@@ -1501,7 +1520,7 @@ public:
         startTimerHz(60);
     }
     ~Panel() override {
-        externalHelp.close();stopTimer();releaseComputerNotes();removeKeyListener(this);sizing.onChange=nullptr;if(bendActive)processor.queuePitchBend(0);setLookAndFeel(nullptr);
+        externalHelp.close();stopTimer();releaseComputerNotes();removeKeyListener(this);sizing.onChange=nullptr;if(bendActive||benderDragging)processor.queuePitchBend(0);setLookAndFeel(nullptr);
     }
     void paint(juce::Graphics& g) override {
         if(!renderingCondition&&resizeBackdrop.isValid()&&resizeCacheUntil>0){g.drawImage(resizeBackdrop,getLocalBounds().toFloat());return;}
@@ -1745,6 +1764,7 @@ private:
     juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions,audioMidi,computerKeyboard,updates;bool updateOpened=false;
     std::unique_ptr<juce::TooltipWindow> tooltip;juce::Image conditionBackdrop,previousCondition,resizeBackdrop;std::array<juce::Image,5> agePreviews,pendingAgePreviews;std::vector<juce::Component::SafePointer<juce::Component>> hiddenForCondition;uint64_t previewParameters=0;double previewIdleAfter=0;float previewAge=-1;bool renderingCondition=false;double resizeCacheUntil=0;
     FineSlider bender;juce::ScopedMessageBox externalHelp;Meter meter;RateLamp rateLamp;
+    unsigned lastBendSerial=0;bool benderDragging=false;double bendReturnStarted=0,bendReturnFrom=0;
     std::vector<std::unique_ptr<Control>> controls;
     std::array<int,128> lastKeys{};float lastAge=-1;int lastLabelRange=-1;bool lastModern=false,bendActive=false,userPreset=false,lastHoldMode=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1,lastHeldNote=-1;unsigned lastProgramRevision=0;double lastConditionPaint=0;
     std::array<bool,13> computerHeld{};
@@ -1779,6 +1799,25 @@ private:
         return juce::String(computerKeys).containsChar(c);
     }
     void timerCallback() override {
+        const auto bendSerial=processor.displayedPitchBendSerial.load(std::memory_order_acquire);
+        if(!benderDragging&&bendSerial!=lastBendSerial) {
+            lastBendSerial=bendSerial;bendActive=false;
+            const auto bend=processor.displayedPitchBend.load(std::memory_order_relaxed);
+            // The audio spring and its visual animation share a duration. External
+            // MIDI takes over immediately; display changes never feed back to audio.
+            if(bendReturnStarted==0||(!processor.displayedPitchBendReturning.load(std::memory_order_relaxed)&&std::abs(bend)>.0001f)) {
+                bendReturnStarted=0;bender.setValue(bend,juce::dontSendNotification);
+            }
+        }
+        if(!benderDragging&&bendReturnStarted>0) {
+            if(processor.state.getRawParameterValue("modern")->load()>=.5f) {
+                bendReturnStarted=0;bender.setValue(0,juce::dontSendNotification);
+            } else {
+            const auto progress=juce::jlimit(0.0,1.0,(juce::Time::getMillisecondCounterHiRes()-bendReturnStarted)/(SH09Processor::benderReturnSeconds*1000));
+            bender.setValue(bendReturnFrom*(1-progress)*(1-progress),juce::dontSendNotification);
+            if(progress>=1)bendReturnStarted=0;
+            }
+        }
         if(processor.wrapperType!=juce::AudioProcessor::wrapperType_Undefined&&isShowing()&&getPeer()){if(!updateOpened){updateOpened=true;kb09::Updates::instance().opened(this);}kb09::Updates::instance().deliver(this);}
         if(!computerReady())releaseComputerNotes();
         else for(size_t i=0;i<computerHeld.size();++i)if(computerHeld[i]&&!juce::KeyPress::isKeyCurrentlyDown(computerKeys[i])) {
@@ -1788,7 +1827,6 @@ private:
         const int program=processor.getCurrentProgram();
         if(!userPreset||program!=lastProgram||programRevision!=lastProgramRevision){presets.setSelectedId(program+1,juce::dontSendNotification);userPreset=false;}
         lastProgram=program;lastProgramRevision=programRevision;
-        meter.setLevels(processor.displayedEnvelope.load(),processor.displayedFollower.load(),processor.displayedInput.load(),processor.midiActivitySerial.load(std::memory_order_relaxed));
         const double stamp=processor.displayedModulatorTime.load(std::memory_order_acquire);
         const double elapsed=juce::jmax(0.0,(juce::Time::getMillisecondCounterHiRes()-stamp)*.001);
         const float hz=processor.displayedModulatorFrequency.load(std::memory_order_relaxed);
@@ -1906,7 +1944,7 @@ private:
         if(juce::String(id)=="volume")slider.setTooltip("Set instrument output volume, from silence to full level.");
         if(juce::String(id)=="age")slider.setTooltip("Age the circuitry and appearance. Click anywhere on the track to jump there, or drag; SHIFT gives fine adjustment. Appearance previews update while dragging; full visual detail returns on release.");
         if(juce::String(id)=="velocity")slider.setTooltip("In Modern mode, set how strongly playing velocity affects the sound.");
-        if(juce::String(id)=="aftertouch")slider.setTooltip("In Modern mode, set the amount of pressure-controlled expression.");
+        if(juce::String(id)=="aftertouch")slider.setTooltip("In Modern mode, channel aftertouch opens the filter. Set the pressure amount here; maximum pressure and amount raise cutoff by up to three octaves.");
         if(juce::String(id)=="extGain")slider.setTooltip("In Modern mode, adjust external input gain before the follower and mixer.");
 slider.setDoubleClickReturnValue(true,spec.initial);}
         addAndMakeVisible(slider);c->attachment=std::make_unique<SliderAttachment>(processor.state,id,slider);
