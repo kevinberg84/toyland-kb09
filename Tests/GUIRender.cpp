@@ -979,7 +979,7 @@ void checkBenderAudioCallbacks(SH09Processor& processor,juce::Component& editor,
     processor.reset();bender->setValue(originalValue,juce::sendNotificationSync);settleEditor();
 }
 
-void checkOptionalDescriptions(juce::Component& editor,Checks& checks) {
+void checkOptionalDescriptions(SH09Processor& processor,juce::Component& editor,const juce::File& directory,Checks& checks) {
     auto* button=dynamic_cast<juce::TextButton*>(findComponent(editor,"descriptions"));
     checks.expect(button!=nullptr&&!button->getToggleState(),"DESCRIPTION is available and starts off");
     if(button==nullptr)return;
@@ -996,10 +996,12 @@ void checkOptionalDescriptions(juce::Component& editor,Checks& checks) {
     checks.expect(age->getTooltip().contains("release"),"AGE help explains live sound and deferred material update");
     auto* cutoff=dynamic_cast<juce::Slider*>(findComponent(editor,"cutoff"));
     checks.expect(cutoff!=nullptr&&cutoff->getTooltip().contains("harmonics"),"Parameter hover help explains its function");
+    if(cutoff==nullptr)return;
     const auto render=[&]{return bender->createComponentSnapshot(bender->getLocalBounds(),true,1.0f);};
     double start=juce::Time::getMillisecondCounterHiRes();
     auto before=render();const auto fullMs=juce::Time::getMillisecondCounterHiRes()-start;
     age->onDragStart();start=juce::Time::getMillisecondCounterHiRes();
+    checks.expect(bender->isVisible(),"AGE before cache warmup keeps live hardware visible");
     auto coldFrame=age->getParentComponent()->createComponentSnapshot(age->getParentComponent()->getLocalBounds(),true,.75f);
     const auto coldMs=juce::Time::getMillisecondCounterHiRes()-start;
     checks.expect(coldFrame.isValid()&&coldMs<60,"AGE remains responsive before preview caches are ready");
@@ -1031,6 +1033,55 @@ void checkOptionalDescriptions(juce::Component& editor,Checks& checks) {
     age->setValue(original,juce::sendNotificationSync);
     panel->getProperties().set("renderConditionPreviews",false);
     std::cout<<"AGE complete cached preview_ms="<<frameMs<<"\n";
+
+    // Host automation invalidates material snapshots before and between AGE
+    // gestures. A sounding note exercises the real processor/display path.
+    const auto originalCutoff=cutoff->getValue();
+    const auto snapshotBody=[&]{return panel->createComponentSnapshot({0,34,1500,732},true,.6f);};
+    const auto sameImage=[](const juce::Image& a,const juce::Image& b) {
+        if(a.getBounds()!=b.getBounds()||!a.isValid())return false;
+        for(int y=0;y<a.getHeight();++y)for(int x=0;x<a.getWidth();++x)
+            if(a.getPixelAt(x,y)!=b.getPixelAt(x,y))return false;
+        return true;
+    };
+    const std::array<double,4> ages{0,.31,.81,1};
+    std::array<juce::Image,4> completeBodies;
+    age->onDragStart();
+    for(size_t i=0;i<ages.size();++i){age->setValue(ages[i],juce::sendNotificationSync);completeBodies[i]=snapshotBody();}
+    age->onDragEnd();
+    panel->getProperties().set("renderConditionPreviews",true);
+    processMidi(processor,juce::MidiMessage::noteOn(1,60,juce::uint8(100)));
+    for(int step=0;step<18;++step) {
+        setParameter(processor,"cutoff",.2f+.6f*float(step)/17);
+        juce::AudioBuffer<float> audio(2,blockSize);juce::MidiBuffer midi;audio.clear();processor.processBlock(audio,midi);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(20);
+    }
+    checks.expect(!bool(panel->getProperties().getWithDefault("conditionPreviewReady",true)),"FREQ automation prevents a fresh AGE bank from completing");
+    age->onDragStart();
+    bool retained=true,finiteAudio=true;float soundingPeak=0;
+    for(size_t i=0;i<ages.size();++i) {
+        setParameter(processor,"cutoff",.8f-.15f*float(i));
+        age->setValue(ages[i],juce::sendNotificationSync);
+        juce::AudioBuffer<float> audio(2,blockSize);juce::MidiBuffer midi;audio.clear();processor.processBlock(audio,midi);
+        for(int sample=0;sample<blockSize;++sample){const auto value=audio.getSample(0,sample);finiteAudio&=std::isfinite(value);soundingPeak=std::max(soundingPeak,std::abs(value));}
+        settleEditor();const auto frame=snapshotBody();retained&=sameImage(frame,completeBodies[i]);
+        if(i==2)checks.expect(writePNG(frame,directory.getChildFile("age_drag_automated_freq.png")),"AGE with sounding note and automated FREQ preview export");
+    }
+    checks.expect(retained,"AGE during FREQ automation retains complete controls and keys at every tested age");
+    checks.expect(finiteAudio&&soundingPeak>1.0e-5f,"Note continues producing finite audible output during automated FREQ and AGE drag");
+    age->onDragEnd();
+    checks.expect(bender->isVisible()&&cutoff->isVisible(),"AGE release under automation restores live controls");
+    // A second drag while automation continues must also retain the bank.
+    setParameter(processor,"cutoff",.37f);settleEditor();age->onDragStart();age->setValue(ages[1],juce::sendNotificationSync);
+    checks.expect(sameImage(snapshotBody(),completeBodies[1]),"Repeated AGE drag under automation never falls back to the bare chassis");
+    age->onDragEnd();
+    processMidi(processor,juce::MidiMessage::allNotesOff(1));
+    cutoff->setValue(originalCutoff,juce::sendNotificationSync);age->setValue(original,juce::sendNotificationSync);
+    const auto refreshDeadline=juce::Time::getMillisecondCounterHiRes()+2500;
+    while(!bool(panel->getProperties().getWithDefault("conditionPreviewReady",false))&&juce::Time::getMillisecondCounterHiRes()<refreshDeadline)
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(20);
+    checks.expect(bool(panel->getProperties().getWithDefault("conditionPreviewReady",false)),"AGE replacement bank completes after automation settles");
+    panel->getProperties().set("renderConditionPreviews",false);
 
 }
 
@@ -1204,7 +1255,7 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
     if (fixture.program == 0) {
         checkSizeChoices(*editor,directory,checks);
         checkSwitchAttachment(processor, *editor, checks);
-        checkOptionalDescriptions(*editor,checks);
+        checkOptionalDescriptions(processor,*editor,directory,checks);
         checkKeyboardFeedback(processor, *editor, directory, checks);
         checkOpaqueCaps(*editor, checks);
         checkFineGestures(processor,*editor,checks);

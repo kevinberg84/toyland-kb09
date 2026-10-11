@@ -1,3 +1,7 @@
+# 1.2.1 — Toyland KB-09
+
+Fixed the bare chassis flashing while dragging AGE during parameter automation. The editor keeps the last complete instrument preview while building a replacement bank; incomplete banks never replace it. Before previews have warmed, live controls and keys remain visible. Releasing AGE restores live control positions and keyboard feedback. The audio engine, parameter IDs and preset definitions are unchanged from 1.2.0.
+
 # 1.2.0 — Toyland KB-09
 
 The filter now models four coupled OTA stages and the opposing-diode resonance limiter described in the SH-09 service schematic. Self-oscillation comes from the filter feedback loop, with stronger output and restrained harmonic colour. Eight-times oversampling and continuous AGE changes support nonlinear headroom and asymmetry. This is a reduced circuit model; hardware-level accuracy has not been established.

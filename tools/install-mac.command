@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")"
-echo 'Toyland KB-09 — Mac release 1.2.0'
+echo 'Toyland KB-09 — Mac release 1.2.1'
 echo 'Close your music software before continuing.'
 read -r -p 'Press Return when ready. '
 backup="$HOME/Library/Application Support/Toyland/KB-09/Backups/$(date +%Y%m%d-%H%M%S)"

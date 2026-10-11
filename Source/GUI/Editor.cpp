@@ -1456,9 +1456,9 @@ public:
         addUtility("age","CONDITION / AGE",290,170);
         controls.back()->slider->onDragStart=[this]{
             look.conditionDragging=true;
-            // All expensive hardware is already in small pre-rendered frames.
-            // Keep the footer and its AGE thumb live on every mouse event.
-            {
+            // Only hide hardware when a complete replacement can be drawn.
+            // Automation may keep the first preview bank from warming at all.
+            if(agePreviews.front().isValid()&&agePreviews.back().isValid()) {
                 for(auto* c:getChildren())if(c->isVisible()&&c->getY()>=headerH&&c->getBottom()<=headerH+visibleBodyH) {
                     hiddenForCondition.emplace_back(c);c->setVisible(false);
                 }
@@ -1496,22 +1496,12 @@ public:
     }
     void paint(juce::Graphics& g) override {
         if(!renderingCondition&&resizeBackdrop.isValid()&&resizeCacheUntil>0){g.drawImage(resizeBackdrop,getLocalBounds().toFloat());return;}
-        if(look.conditionDragging&&!renderingCondition) {
+        if(look.conditionDragging&&!renderingCondition&&agePreviews.front().isValid()&&agePreviews.back().isValid()) {
             const float amount=juce::jlimit(0.0f,1.0f,processor.state.getRawParameterValue("age")->load())*4;
             const int low=juce::jmin(3,int(amount));
             const juce::Rectangle<float> body(0,float(headerH),float(designW),float(visibleBodyH));
-            if(agePreviews[0].isValid()&&agePreviews[4].isValid()) {
-                g.drawImage(agePreviews[size_t(low)],body);
-                g.setOpacity(amount-low);g.drawImage(agePreviews[size_t(low+1)],body);g.setOpacity(1);
-            } else {
-                // Even a gesture immediately after opening cannot force a
-                // detailed render onto the input path. Use a warmed frame if
-                // available; otherwise show the embedded body until release.
-                const juce::Image* available=nullptr;
-                for(const auto& frame:agePreviews)if(frame.isValid()){available=&frame;break;}
-                if(available!=nullptr)g.drawImage(*available,body);
-                else {const auto& photo=artwork().chassis;g.drawImage(photo,0,headerH,designW,bodyH,2,7,1770,873);}
-            }
+            g.drawImage(agePreviews[size_t(low)],body);
+            g.setOpacity(amount-low);g.drawImage(agePreviews[size_t(low+1)],body);g.setOpacity(1);
             paintFooter(g);return;
         }
         look.age=previewAge>=0?previewAge:processor.state.getRawParameterValue("age")->load();
@@ -1744,7 +1734,7 @@ private:
     SH09Processor& processor;sh09::WindowSizing& sizing;sh09::PresetFiles presetFiles;HardwareLook look;
     Keyboard keyboard;Header header;MaximiseButton maximise;PowerButton power;
     juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions,audioMidi,computerKeyboard,updates;bool updateOpened=false;
-    std::unique_ptr<juce::TooltipWindow> tooltip;juce::Image conditionBackdrop,previousCondition,resizeBackdrop;std::array<juce::Image,5> agePreviews;std::vector<juce::Component::SafePointer<juce::Component>> hiddenForCondition;uint64_t previewParameters=0;double previewIdleAfter=0;float previewAge=-1;bool renderingCondition=false;double resizeCacheUntil=0;
+    std::unique_ptr<juce::TooltipWindow> tooltip;juce::Image conditionBackdrop,previousCondition,resizeBackdrop;std::array<juce::Image,5> agePreviews,pendingAgePreviews;std::vector<juce::Component::SafePointer<juce::Component>> hiddenForCondition;uint64_t previewParameters=0;double previewIdleAfter=0;float previewAge=-1;bool renderingCondition=false;double resizeCacheUntil=0;
     FineSlider bender;juce::ScopedMessageBox externalHelp;Meter meter;RateLamp rateLamp;
     std::vector<std::unique_ptr<Control>> controls;
     std::array<int,128> lastKeys{};float lastAge=-1;int lastLabelRange=-1;bool lastModern=false,bendActive=false,userPreset=false,lastHoldMode=false;int lastProgram=-1,lastDisplayedNote=-1,lastDisplayedKeyboardNote=-1,lastHeldNote=-1;unsigned lastProgramRevision=0;double lastConditionPaint=0;
@@ -1824,17 +1814,22 @@ private:
                 const float v=processor.state.getRawParameterValue(spec.id)->load();
                 stateHash=(stateHash^uint64_t(juce::roundToInt(v*100000)))*1099511628211ull;
             }
-            if(stateHash!=previewParameters){previewParameters=stateHash;previewIdleAfter=now+250;getProperties().set("conditionPreviewReady",false);for(auto& image:agePreviews)image={};}
-            if(now>=previewIdleAfter&&!juce::ModifierKeys::getCurrentModifiersRealtime().isAnyMouseButtonDown())for(size_t i=0;i<agePreviews.size();++i)if(!agePreviews[i].isValid()) {
+            // Build a separate bank. Keep the last complete instrument visible
+            // while automation invalidates or interrupts pending material work.
+            if(stateHash!=previewParameters){previewParameters=stateHash;previewIdleAfter=now+250;getProperties().set("conditionPreviewReady",false);pendingAgePreviews={};}
+            if(!bool(getProperties().getWithDefault("conditionPreviewReady",false))&&now>=previewIdleAfter&&!juce::ModifierKeys::getCurrentModifiersRealtime().isAnyMouseButtonDown())for(size_t i=0;i<pendingAgePreviews.size();++i)if(!pendingAgePreviews[i].isValid()) {
                 const float originalAge=look.age;
                 previewAge=float(i)/4;renderingCondition=true;look.age=previewAge;look.renderingPreview=true;
                 look.conditionDragging=true; // Low-cost material rasterisation while caching.
                 keyboard.setBufferedToImage(false);bender.setBufferedToImage(false);power.setBufferedToImage(false);
                 for(auto& c:controls)if(c->slider)c->slider->setBufferedToImage(false);
-                agePreviews[i]=createComponentSnapshot({0,headerH,designW,visibleBodyH},true,900.0f/designW);
+                pendingAgePreviews[i]=createComponentSnapshot({0,headerH,designW,visibleBodyH},true,900.0f/designW);
                 look.conditionDragging=false;look.renderingPreview=false;
                 previewAge=-1;renderingCondition=false;look.age=originalAge;
-                getProperties().set("conditionPreviewReady",agePreviews[0].isValid()&&agePreviews[4].isValid());
+                if(std::all_of(pendingAgePreviews.begin(),pendingAgePreviews.end(),[](const auto& image){return image.isValid();})) {
+                    agePreviews=std::move(pendingAgePreviews);pendingAgePreviews={};
+                    getProperties().set("conditionPreviewReady",true);
+                }
                 break;
             }
         }
