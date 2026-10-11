@@ -1,6 +1,6 @@
 # 1.2.1 — Toyland KB-09
 
-Fixed the bare chassis flashing while dragging AGE during parameter automation. The editor keeps the last complete instrument preview while building a replacement bank; incomplete banks never replace it. Before previews have warmed, live controls and keys remain visible. Releasing AGE restores live control positions and keyboard feedback. The audio engine, parameter IDs and preset definitions are unchanged from 1.2.0.
+Fixed the bare chassis flashing while dragging AGE during parameter automation. The editor keeps the last complete instrument preview while building a replacement bank; incomplete banks never replace it. A complete startup preview also keeps the first AGE drag responsive. Releasing AGE restores live control positions and keyboard feedback. The audio engine, parameter IDs and preset definitions are unchanged from 1.2.0.
 
 # 1.2.0 — Toyland KB-09
 

@@ -1001,10 +1001,13 @@ void checkOptionalDescriptions(SH09Processor& processor,juce::Component& editor,
     double start=juce::Time::getMillisecondCounterHiRes();
     auto before=render();const auto fullMs=juce::Time::getMillisecondCounterHiRes()-start;
     age->onDragStart();start=juce::Time::getMillisecondCounterHiRes();
-    checks.expect(bender->isVisible(),"AGE before cache warmup keeps live hardware visible");
     auto coldFrame=age->getParentComponent()->createComponentSnapshot(age->getParentComponent()->getLocalBounds(),true,.75f);
     const auto coldMs=juce::Time::getMillisecondCounterHiRes()-start;
+    auto* keyboard=findComponent(editor,"keyboard");
+    checks.expect(keyboard!=nullptr&&coldFrame.getPixelAt(juce::roundToInt((keyboard->getX()+20)*.75f),juce::roundToInt((keyboard->getBottom()-30)*.75f)).getBrightness()>.5f,
+                  "AGE before bank warmup retains visible keys in a complete startup preview");
     checks.expect(coldFrame.isValid()&&coldMs<60,"AGE remains responsive before preview caches are ready");
+    std::cout<<"AGE startup preview_ms="<<coldMs<<"\n";
     start=juce::Time::getMillisecondCounterHiRes();auto preview=render();
     const auto previewMs=juce::Time::getMillisecondCounterHiRes()-start;
     age->onDragEnd();auto after=render();

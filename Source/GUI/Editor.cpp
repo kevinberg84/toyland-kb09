@@ -1489,7 +1489,16 @@ public:
                     .withMessage(kb09_gui::externalAudioMessage)
                     .withButton("OK").withAssociatedComponent(this),[](int){});
         };
-        updateModern();startTimerHz(60);
+        updateModern();
+        // Have one complete fallback before the editor can be displayed or
+        // dragged. Until idle work builds all five ages, share this snapshot
+        // across the bank so a first gesture never renders a bare chassis or
+        // forces detailed hardware painting onto every mouse event.
+        renderingCondition=true;look.conditionDragging=true;look.renderingPreview=true;
+        const auto initialPreview=createComponentSnapshot({0,headerH,designW,visibleBodyH},true,900.0f/designW);
+        renderingCondition=false;look.conditionDragging=false;look.renderingPreview=false;
+        agePreviews.fill(initialPreview);
+        startTimerHz(60);
     }
     ~Panel() override {
         externalHelp.close();stopTimer();releaseComputerNotes();removeKeyListener(this);sizing.onChange=nullptr;if(bendActive)processor.queuePitchBend(0);setLookAndFeel(nullptr);
