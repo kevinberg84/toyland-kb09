@@ -1048,6 +1048,24 @@ void checkMidiBender(SH09Processor& processor,juce::Component& editor,const juce
     processor.setStateInformation(saved.getData(),int(saved.getSize()));processor.reset();settleEditor();
 }
 
+void checkModWheel(SH09Processor& processor,juce::Component& editor,Checks& checks) {
+    auto* fader=dynamic_cast<juce::Slider*>(findComponent(editor,"vcoMod"));
+    checks.expect(fader!=nullptr,"VCO MOD fader is present for CC1 feedback");if(!fader)return;
+    juce::MemoryBlock saved;processor.getStateInformation(saved);
+    for(float modern:{0.f,1.f}) {
+        setParameter(processor,"modern",modern);setParameter(processor,"vcoMod",.5f);processor.reset();settleEditor();
+        processMidi(processor,juce::MidiMessage::controllerEvent(1,1,0));
+        checks.expect(std::abs(fader->getValue()-.5)<.001,"CC1 waits for pickup in mode "+juce::String(modern));
+        processMidi(processor,juce::MidiMessage::controllerEvent(16,1,100));
+        checks.expect(std::abs(fader->getValue()-100./127)<.001,"CC1 moves the visible VCO MOD fader in mode "+juce::String(modern));
+        setParameter(processor,"vcoMod",.25f);processMidi(processor,juce::MidiMessage::controllerEvent(1,1,110));
+        checks.expect(std::abs(fader->getValue()-.25)<.001,"manual VCO MOD edit re-arms wheel pickup");
+        processMidi(processor,juce::MidiMessage::controllerEvent(1,1,20));
+        checks.expect(std::abs(fader->getValue()-20./127)<.001,"crossing pickup resumes visible fader control");
+    }
+    processor.setStateInformation(saved.getData(),int(saved.getSize()));processor.reset();settleEditor();
+}
+
 void checkOptionalDescriptions(SH09Processor& processor,juce::Component& editor,const juce::File& directory,Checks& checks) {
     auto* button=dynamic_cast<juce::TextButton*>(findComponent(editor,"descriptions"));
     checks.expect(button!=nullptr&&!button->getToggleState(),"DESCRIPTION is available and starts off");
@@ -1339,6 +1357,7 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
         renderHardwareDetails(processor,*editor,directory,checks);
         checkBenderAudioCallbacks(processor,*editor,checks);
         checkMidiBender(processor,*editor,directory,checks);
+        checkModWheel(processor,*editor,checks);
         checkAgeEvents(processor, *editor, checks);
     }
 

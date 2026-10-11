@@ -9,8 +9,45 @@ SH09Processor::SH09Processor():AudioProcessor(BusesProperties()
  .withInput("External Input",juce::AudioChannelSet::stereo(),true)
  .withOutput("Output",juce::AudioChannelSet::stereo(),true)),state(*this,nullptr,"SH09State",sh09::makeParameters()) {
  for(size_t i=0;i<raw.size();++i)raw[i]=state.getRawParameterValue(sh09::specs[i].id);
+ rawVcoMod=state.getRawParameterValue("vcoMod");
  setLatencySamples(engine.latencySamples());
  clearKeyDisplay();
+ startTimerHz(60);
+}
+void SH09Processor::timerCallback() {
+ const auto serial=modSerial.load(std::memory_order_acquire);
+ if(serial==deliveredModSerial)return;
+ deliveredModSerial=serial;
+ if(!modFeedbackValid.load(std::memory_order_acquire)||modFeedbackRevision.load()!=getProgramRevision())return;
+ auto* parameter=state.getParameter("vcoMod");
+ const float source=modFeedbackSource.load(),value=modFeedbackValue.load();
+ const float current=state.getRawParameterValue("vcoMod")->load();
+ // Host notifications and APVTS listeners belong on the message thread, never
+ // in the sample loop. A newer preset or automation edit defeats stale feedback.
+ if(std::abs(current-source)<1e-6f||std::abs(current-value)<1e-6f)
+   {parameter->beginChangeGesture();parameter->setValueNotifyingHost(parameter->convertTo0to1(value));parameter->endChangeGesture();}
+}
+void SH09Processor::resetModWheel() noexcept {
+ modWheelPickedUp=modWheelOverride=false;previousModWheel=-1;
+ lastModParameter=rawVcoMod->load(std::memory_order_relaxed);
+ modProgramRevision=programRevision.load(std::memory_order_acquire);
+ modFeedbackValid.store(false,std::memory_order_release);
+}
+void SH09Processor::applyModWheel(int controllerValue) noexcept {
+ const float wheel=float(controllerValue)/127;
+ const float current=renderControls.vcoMod;
+ if(!modWheelPickedUp) {
+   const bool near=std::abs(wheel-current)<=1.0f/127;
+   const bool crossed=previousModWheel>=0&&(previousModWheel-current)*(wheel-current)<=0;
+   modWheelPickedUp=near||crossed;
+ }
+ previousModWheel=wheel;
+ if(!modWheelPickedUp)return;
+ modWheelOverride=true;modWheelTarget=wheel;renderControls.vcoMod=wheel;engine.setControls(renderControls);
+ modFeedbackSource.store(lastModParameter,std::memory_order_relaxed);
+ modFeedbackValue.store(wheel,std::memory_order_relaxed);
+ modFeedbackRevision.store(modProgramRevision,std::memory_order_relaxed);
+ modFeedbackValid.store(true,std::memory_order_release);modSerial.fetch_add(1,std::memory_order_release);
 }
 int SH09Processor::getNumPrograms(){return int(sh09::factoryPresets().size());}
 const juce::String SH09Processor::getProgramName(int i){return juce::isPositiveAndBelow(i,getNumPrograms())?sh09::factoryPresets()[size_t(i)].name:"";}
@@ -45,6 +82,7 @@ void SH09Processor::clearKeyDisplay() noexcept {
  displayedKeyboardNote.store(-1,std::memory_order_relaxed);
 }
 void SH09Processor::clearVoiceDisplay() noexcept {
+ resetModWheel();
  bendReturnRemaining=0;soundingBendTarget=0;displayedPitchBendReturning.store(false,std::memory_order_relaxed);
  displayedPitchBend.store(0,std::memory_order_relaxed);displayedPitchBendSerial.fetch_add(1,std::memory_order_release);
  clearKeyDisplay();displayedNote.store(-1,std::memory_order_relaxed);displayedHeldNote.store(-1,std::memory_order_relaxed);
@@ -94,9 +132,10 @@ void SH09Processor::handleMidi(const juce::uint8* bytes,int n) noexcept {
  }else if(status==0xe0&&n>=3){applyPitchBend(float(((bytes[2]&127)<<7)|(bytes[1]&127))/8192.0f-1.0f);}
  else if(status==0xd0&&n>=2)engine.setAftertouch(float(bytes[1]&127)/127.0f);
  else if(status==0xb0&&n>=3){
-   if(bytes[1]==120){engine.allSoundOff();applyPitchBend(0);clearKeyDisplay();}
+   if(bytes[1]==1)applyModWheel(bytes[2]&127);
+   else if(bytes[1]==120){engine.allSoundOff();applyPitchBend(0);clearKeyDisplay();resetModWheel();}
    else if(bytes[1]==123){engine.allNotesOff();clearKeyDisplay();}
-   else if(bytes[1]==121){applyPitchBend(0);engine.setAftertouch(0);}
+   else if(bytes[1]==121){applyPitchBend(0);engine.setAftertouch(0);resetModWheel();renderControls.vcoMod=lastModParameter;engine.setControls(renderControls);}
  }
 }
 void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuffer& midi){
@@ -119,7 +158,15 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
    guiBendDirty.exchange(false,std::memory_order_acq_rel);
    midi.clear();buffer.clear();return;
  }
- const auto controls=readControls();engine.setControls(controls);
+ const auto controls=readControls();
+ const auto revision=programRevision.load(std::memory_order_acquire);
+ if(revision!=modProgramRevision||std::abs(controls.vcoMod-lastModParameter)>1e-6f) {
+   const bool ownFeedback=revision==modProgramRevision&&modWheelOverride&&std::abs(controls.vcoMod-modWheelTarget)<1e-6f;
+   if(!ownFeedback){modWheelPickedUp=modWheelOverride=false;modFeedbackValid.store(false,std::memory_order_release);}
+   lastModParameter=controls.vcoMod;modProgramRevision=revision;
+ }
+ renderControls=controls;if(modWheelOverride)renderControls.vcoMod=modWheelTarget;
+ engine.setControls(renderControls);
  if(controls.modern>=.5f&&bendReturnRemaining>0)applyPitchBend(0);
  if(guiBendDirty.exchange(false,std::memory_order_acq_rel)) {
    if(guiBendReturn.load(std::memory_order_relaxed)&&controls.modern<.5f&&std::abs(soundingBendTarget)>.0001f) {
@@ -177,6 +224,14 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
 juce::AudioProcessorEditor* SH09Processor::createEditor(){return new SH09Editor(*this);}
 void SH09Processor::getStateInformation(juce::MemoryBlock& destination){
  auto tree=state.copyState();tree.setProperty("schema",1,nullptr);tree.setProperty("program",currentProgram.load(),nullptr);
+ // A save immediately following MIDI must retain the new fader value even
+ // before the message-thread parameter notification has been delivered.
+ if(modFeedbackValid.load(std::memory_order_acquire)&&modFeedbackRevision.load()==getProgramRevision()) {
+   const float current=state.getRawParameterValue("vcoMod")->load();
+   const float value=modFeedbackValue.load();
+   if(std::abs(current-modFeedbackSource.load())<1e-6f||std::abs(current-value)<1e-6f)
+     for(auto child:tree)if(child.getProperty("id")==juce::var("vcoMod"))child.setProperty("value",value,nullptr);
+ }
  if(auto xml=tree.createXml())copyXmlToBinary(*xml,destination);
 }
 void SH09Processor::setStateInformation(const void* data,int size){

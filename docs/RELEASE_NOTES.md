@@ -4,6 +4,8 @@ Incoming MIDI pitch wheel now moves the GUI bender, including when reopening its
 
 Releasing the onscreen bender now returns its sound and animation over approximately 100 ms in AUTHENTIC mode. MODERN returns immediately with existing audio smoothing. New wheel or mouse input interrupts the return. The short spring curve is a playing approximation, not hardware-calibrated mechanical modelling. External wheels follow their own MIDI messages without an added spring delay.
 
+MIDI CC1 now controls VCO MOD in both modes, with pickup after preset loads or manual/host edits. The visible fader follows, its setting is saved, and sound changes at the incoming event without waiting for GUI delivery. Parameter notifications stay off the audio thread.
+
 The MIDI lamp refreshes independently at 120 Hz with a shorter 90 ms activity flash. Host buffering and message-thread rendering can still affect visible latency. Aftertouch help now explicitly describes its Modern channel-pressure-to-filter route. Parameter IDs, preset formats, the 24 factory definitions and the filter circuit model are retained.
 
 # 1.2.1 — Toyland KB-09

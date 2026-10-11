@@ -6,9 +6,10 @@
 #include <array>
 #include <atomic>
 #include <limits>
-class SH09Processor final : public juce::AudioProcessor, private juce::VST3ClientExtensions {
+class SH09Processor final : public juce::AudioProcessor, private juce::VST3ClientExtensions, private juce::Timer {
 public:
  SH09Processor();
+ ~SH09Processor() override {stopTimer();}
  const juce::String getName() const override {return sh09::branding::productName;}
  bool acceptsMidi() const override {return true;}
  bool producesMidi() const override {return false;}
@@ -61,6 +62,9 @@ private:
  sh09::Controls readControls() const noexcept;
  void handleMidi(const juce::uint8*,int) noexcept;
  void applyPitchBend(float) noexcept;
+ void timerCallback() override;
+ void resetModWheel() noexcept;
+ void applyModWheel(int) noexcept;
  void clearKeyDisplay() noexcept;
  void clearVoiceDisplay() noexcept;
  void updateKeyDisplay(int,bool) noexcept;
@@ -68,6 +72,7 @@ private:
  std::array<std::array<bool,128>,16> midiHeld{};
  sh09::Engine engine;
  std::array<std::atomic<float>*,sh09::specs.size()> raw{};
+ std::atomic<float>* rawVcoMod=nullptr;
  std::atomic<int> currentProgram{0};
  // Transient patch-replacement notification: reselecting the same factory index
  // still replaces a custom sound. Ordinary parameter edits do not advance it.
@@ -88,5 +93,12 @@ private:
  int bendReturnRemaining=0,bendReturnLength=1;
  double bendSampleRate=48000;
  float bendReturnFrom=0,soundingBendTarget=0;
+ sh09::Controls renderControls;
+ bool modWheelPickedUp=false,modWheelOverride=false;
+ float previousModWheel=-1,modWheelTarget=0,lastModParameter=0;
+ unsigned modProgramRevision=0,deliveredModSerial=0;
+ std::atomic<unsigned> modSerial{0},modFeedbackRevision{0};
+ std::atomic<float> modFeedbackValue{0},modFeedbackSource{0};
+ std::atomic<bool> modFeedbackValid{false};
  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SH09Processor)
 };

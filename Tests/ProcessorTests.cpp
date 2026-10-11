@@ -188,5 +188,40 @@ int main(){
  expect(modernPitch[0]<authenticPitch[0]*.9&&std::abs(modernPitch[2]-440)<20,
         "Modern audio returns faster while retaining existing click-free smoothing");
  expect(allocations==0,"MIDI feedback and sample-timed spring perform no C++ new allocations");
+ {
+   SH09Processor wheel;wheel.prepareToPlay(48000,127);
+   juce::AudioBuffer<float> block(2,127);juce::MidiBuffer events;events.ensureSize(1024);
+   auto* amount=wheel.state.getParameter("vcoMod");
+   auto set=[&](float value){amount->setValueNotifyingHost(amount->convertTo0to1(value));};
+   auto send=[&](int channel,int value){events.addEvent(juce::MidiMessage::controllerEvent(channel,1,value),0);block.clear();track=true;wheel.processBlock(block,events);track=false;};
+   auto savedAmount=[&]{juce::MemoryBlock saved;wheel.getStateInformation(saved);SH09Processor restored;restored.setStateInformation(saved.getData(),int(saved.getSize()));return restored.state.getRawParameterValue("vcoMod")->load();};
+   auto deliver=[&]{juce::Timer::callPendingTimersSynchronously();juce::Thread::sleep(80);juce::Timer::callPendingTimersSynchronously();};
+   for(int mode=0;mode<2;++mode) {
+     wheel.state.getParameter("modern")->setValueNotifyingHost(float(mode));set(.6f);wheel.reset();
+     send(1,0);send(8,32);
+     expect(std::abs(savedAmount()-.6f)<1e-6f,"mod wheel below pickup preserves the preset VCO MOD amount");
+     send(16,100);
+     expect(std::abs(savedAmount()-100.f/127)<1e-6f,"crossing pickup changes VCO MOD and immediate save retains it in either mode");
+     deliver();expect(std::abs(wheel.state.getRawParameterValue("vcoMod")->load()-100.f/127)<1e-6f,"mod wheel publishes the actual parameter off the audio thread");
+     send(3,127);deliver();expect(amount->getValue()==1,"picked-up wheel follows the full VCO MOD range");
+     set(.3f);send(1,110);deliver();expect(std::abs(amount->getValue()-.3f)<1e-6f,"manual or host parameter edit re-arms pickup");
+     send(1,20);deliver();expect(std::abs(amount->getValue()-20.f/127)<1e-6f,"wheel retakes control when it crosses the manually edited fader");
+     send(1,120);wheel.setCurrentProgram(0);deliver();
+     expect(wheel.state.getRawParameterValue("vcoMod")->load()==0&&savedAmount()==0,"new preset rejects queued wheel feedback before the next audio callback");
+   }
+   expect(allocations==0,"CC1 pickup and per-event modulation processing perform no C++ new allocations");
+ }
+ {
+   SH09Processor reference,wheel;reference.prepareToPlay(48000,127);wheel.prepareToPlay(48000,127);
+   juce::AudioBuffer<float> baseline(2,127),moved(2,127);juce::MidiBuffer normal,events;normal.ensureSize(256);events.ensureSize(256);
+   normal.addEvent(juce::MidiMessage::noteOn(1,69,juce::uint8(100)),0);events.addEvent(juce::MidiMessage::noteOn(1,69,juce::uint8(100)),0);
+   for(int i=0;i<128;++i){baseline.clear();moved.clear();reference.processBlock(baseline,normal);wheel.processBlock(moved,events);}
+   events.addEvent(juce::MidiMessage::controllerEvent(1,1,0),0);events.addEvent(juce::MidiMessage::controllerEvent(1,1,127),1);
+   double difference=0;
+   for(int i=0;i<32;++i){baseline.clear();moved.clear();track=true;reference.processBlock(baseline,normal);wheel.processBlock(moved,events);track=false;for(int j=0;j<127;++j)difference+=std::abs(baseline.getSample(0,j)-moved.getSample(0,j));}
+   expect(difference/(32*127)>.01&&wheel.state.getRawParameterValue("vcoMod")->load()==0,
+          "CC1 changes actual rendered sound immediately without an editor or message-thread parameter delivery");
+   expect(allocations==0,"audible CC1 changes remain allocation-free on the audio thread");
+ }
  p.releaseResources();std::cout<<"RESULT failures="<<failed<<" allocations="<<allocations<<'\n';return failed?1:0;
 }

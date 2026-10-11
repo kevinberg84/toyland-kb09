@@ -1929,7 +1929,7 @@ private:
         if(juce::String(id)=="extLevel")slider.setTooltip("Mix incoming external audio into the filter; watch the IN indicator.");
         if(juce::String(id)=="lfoRate")slider.setTooltip("Set modulation speed. In Modern SYNC, choose a musical division of the host tempo.");
         if(juce::String(id)=="lfoDelay")slider.setTooltip("Delay the onset of modulation after a note starts.");
-        if(juce::String(id)=="vcoMod")slider.setTooltip("Set the amount of LFO pitch modulation.");
+        if(juce::String(id)=="vcoMod")slider.setTooltip("Set the amount of LFO pitch modulation. MIDI mod wheel (CC1) controls this fader after reaching or crossing its current position. Manual edits re-arm pickup.");
         if(juce::String(id)=="cutoff")slider.setTooltip("Set filter cutoff frequency; lower it to remove upper harmonics.");
         if(juce::String(id)=="resonance")slider.setTooltip("Emphasise the cutoff frequency; high settings make the filter self-oscillate.");
         if(juce::String(id)=="vcfMod")slider.setTooltip("Set the amount of LFO modulation applied to filter cutoff.");
