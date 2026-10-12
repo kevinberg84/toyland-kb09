@@ -1,4 +1,4 @@
-# Toyland KB-09 0.13.2 — source/build instructions
+# Toyland KB-09 1.4.0 — source/build instructions
 
 JUCE **9.0.2** is an external dependency; this project does not modify it. The development toolchain is MSVC 19.51.36260.0, Visual Studio 18 2026, the Windows SDK and C++20. CMake's generator selects the compiler without changing PowerShell execution policy.
 
@@ -24,7 +24,7 @@ The project adds the generated `Info.txt` dependency to JUCE 9's Windows resourc
 
 ## Targets and source contents
 
-The internal target remains `SH09`; the public product is **Toyland KB-09**. CMake sets version 0.13.2. Windows builds **VST3** and **Standalone** by default. Native macOS builds also enable **AU** by default; **AAX Native** is an explicit option on Windows/macOS. Target configuration does not establish that a particular format was built, signed or host-tested. Consult [VALIDATION.md](VALIDATION.md) for the actual release artifacts. `Assets/Branding.h` defines the visible identity; compatibility keys remain unchanged as described in [REBRANDING.md](REBRANDING.md).
+The internal target remains `SH09`; the public product is **Toyland KB-09**. CMake sets version 1.4.0. Windows builds **VST3** and **Standalone** by default. Native macOS builds also enable **AU** by default; **AAX Native** is an explicit option on Windows/macOS. Target configuration does not establish that a particular format was built, signed or host-tested. Consult [VALIDATION.md](VALIDATION.md) for the actual release artifacts. `Assets/Branding.h` defines the visible identity; compatibility keys remain unchanged as described in [REBRANDING.md](REBRANDING.md).
 
 | Target | Release output relative to build directory |
 |---|---|
@@ -68,9 +68,20 @@ For an external compatible SDK, add `-DKB09_AAX_SDK_ROOT=C:/path/to/AAX_SDK`. Th
 
 Compilation does not provide AAX digital signing. Avid's [Pro Tools SDK guide](https://learn-cdn.avid.com/AAX_SDK_2p1p1/Documentation/Doxygen/output/html/a00274.html) requires a valid digital signature for ordinary Pro Tools hosts and describes the developer-build exception. Its [current SDK page](https://developer.avid.com/aax/) describes Avid/iLok accounts for testing and the commercial signing route. No Pro Tools developer host or AAX signing tool is configured on this workstation. An unsigned bundle must be labeled **development / unsigned / not tested in Pro Tools** and kept separate from the ready-to-use VST3. Do not install it into a normal user's AAX scan folder or imply it will load there. The bundled SDK contains no standalone AAX validation executable; a real Pro Tools developer-host test, signing and normal-host test remain outstanding.
 
+## Native Linux standalone build
+
+The release uses JUCE 9.0.2 and Ubuntu 22.04 to produce a generic x86-64 ELF executable, with no `-march=native` requirement. A current Arch x86-64 system is a target for user playback evaluation. Install the ALSA/JACK, curl, FreeType/fontconfig and X11 development packages appropriate to the build system, then run:
+
+```sh
+cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release -DJUCE_DIR=/path/to/JUCE -DKB09_STANDALONE_ONLY=ON -DKB09_BUILD_AU=OFF -DKB09_BUILD_AAX=OFF
+cmake --build build-linux --target SH09_Standalone --parallel 2
+```
+
+The output is `build-linux/SH09_artefacts/Release/Standalone/Toyland KB-09`. The standalone package adds launch and optional desktop-shortcut scripts; it contains no Linux plug-in format. The plugin target requests JUCE's `NEEDS_CURL` dependency so HTTPS update checking links correctly. Native CI also checks tests under Xvfb and `ldd` dependencies; this cannot establish physical audio-device playback. See `.github/workflows/build-linux.yml` for the exact package/test recipe and the manual for runtime requirements.
+
 ## Native macOS / AU build
 
-AU means Audio Unit. The conventional desktop AU target is macOS-only; this is not an AUv3/mobile build. `KB09_BUILD_AU` defaults to `ON` on Apple platforms and `OFF` elsewhere. Explicitly enabling it on Windows fails with a clear native-macOS requirement. No Mac build host or Xcode toolchain is available in this session, so these commands are a build recipe, not evidence of a compiled or tested AU.
+AU means Audio Unit. The conventional desktop AU target is macOS-only; this is not an AUv3/mobile build. `KB09_BUILD_AU` defaults to `ON` on Apple platforms and `OFF` elsewhere. Explicitly enabling it on Windows fails with a clear native-macOS requirement. The 1.4.0 universal build passed native CI tests and Apple AU validation on the arm64 macOS runner. These commands remain a build recipe; see the release validation record for the exact tested artifacts. Intel execution and individual DAW behavior need their own checks.
 
 On a Mac with Xcode and JUCE 9.0.2, run from the source directory:
 

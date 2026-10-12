@@ -10,6 +10,10 @@
       "fileId": "1rGIq_l31dPX4o3fMvlskKsKcTXBwBd3P",
       "fileName": "Toyland KB-09 for Mac.zip"
     },
-    "updatePolicy": "Upload a new version to each existing file ID. Preserve the folder, filenames, sharing and IDs. Verify downloaded hashes and embedded versions before announcing an update."
+    "updatePolicy": "Upload a new version to each existing file ID. Preserve the folder, filenames, sharing and IDs. Verify downloaded hashes and embedded versions before announcing an update.",
+    "linux": {
+      "fileId": "11oRmSe2V4g1pbXrnavfndi8oz5Wdk3Jr",
+      "fileName": "Toyland KB-09 for Linux (Standalone Only) - UNVERIFIED.zip"
+    }
   }
 }

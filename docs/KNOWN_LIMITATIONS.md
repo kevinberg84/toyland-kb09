@@ -1,5 +1,9 @@
 # Known limitations and remaining fidelity work
 
+For current 1.4.0 boundaries, see [the release validation](VALIDATION_1.4.0.md), [the audio investigation](ANALOG_INVESTIGATION_2026_10.md) and [the user manual](manual/index.html). The material below records **historical 0.13.2** behavior and formats; it is not the current release specification.
+
+## Historical 0.13.2 record
+
 Version **0.13.2** is a circuit-informed software instrument with control geometry and aging informed by Kevin's own multi-angle SH-09 photographs. This revision refines the v5 photographic knobs, gradual metal pitting/dulling, photo-referenced POWER area and immediate mouse-key feedback while retaining the shared 9° native projection target. Windows VST3, standalone and unsigned AAX Native development builds compile. Exact checks, package and installed-binary evidence belong in [VALIDATION.md](VALIDATION.md); compilation does not establish a new native DAW test. No physical SH-09 audio capture set, validated full-circuit SPICE reference, blind listening test or completed hardware listening A/B is claimed. Photographs inform the appearance rather than calibrate the sound.
 
 - The four nonlinear OTA cells and bounded feedback solver follow the four-BA662 schematic at a functional level. Normalised stages, saturation and diode feedback approximate the circuit rather than solve every transistor/op-amp. Self-oscillation level/tuning, stage interaction and drive require measurement.

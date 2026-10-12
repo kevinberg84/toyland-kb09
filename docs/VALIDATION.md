@@ -1,6 +1,8 @@
 # Validation record
 
-## Current Windows build â€” Toyland KB-09 0.13.2, 2026-10-07
+Current release: [Toyland KB-09 1.4.0 validation](VALIDATION_1.4.0.md). The records below are retained as historical evidence.
+
+## Historical Windows build â€” Toyland KB-09 0.13.2, 2026-10-07
 
 The final v5 knob proportions, long native top ticks, gradual silver micro-pitting, mouse-held amber note feedback and photo-referenced grey POWER cap/screw area are built into the Windows VST3 and standalone. A real x64 AAX Native development bundle also compiled using JUCE's bundled AAX SDK 2.9. **AAX is unsigned and has not been loaded in Pro Tools. AU is not built: no Mac/Xcode host is available.** The package supplies a separate Mac source/build kit rather than an installable `.component`.
 
