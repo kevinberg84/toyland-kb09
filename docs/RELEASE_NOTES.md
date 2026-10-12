@@ -1,3 +1,11 @@
+# 1.5.1 — Toyland KB-09
+
+Approved panel corrections: narrower waveform symbols and refined MODULATOR/PULSE WIDTH printing, balanced ENV track margins, centered performance bay, matching divider heights, and keyboard/cheek seams. The bender has a smoothly rounded pointer, a thicker rounded disc and visible underside rib. Its existing reflection has sharper boundaries; the pointer uses the same polished highlight. Fine tapered handling scuffs follow the rotating plastic and accumulate with age.
+
+Independent photographic cheek wear appears mark by mark as the body lightens progressively. Rust grows spatially in separate patches, retaining the panel's original lighting. Key/cap scuff counts and cap twist/lean progress at 0/25/50/75/100% across the five conditions. Each cap has an individual fixed angle rather than an alternating pattern; FREQ/RES movement is restrained. The PULSE WIDTH cap replaces the former VCF MOD cap-loss event at Fire Hazard; cutoff retains its cap. Missing-cap controls remain usable.
+
+Audio engine, 35 parameter identities, presets, automation and the 24-sound factory bank are unchanged. Windows, universal Mac and Linux standalone are rebuilt. Linux remains UNVERIFIED pending physical Arch playback/MIDI confirmation. Release-specific tests and limitations are recorded separately.
+
 # 1.5.0 — Toyland KB-09
 
 CONDITION / AGE now has five marked GUI positions and five matching appearances: Minty, Seen Some Shit, Vintage, Baby!, Sold As-Is and Fire Hazard. Existing saved finer AGE values and host automation remain continuous in the circuit model and display the nearest visual stage. All 35 parameter identities and the 24 factory presets are retained.

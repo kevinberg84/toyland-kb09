@@ -2,6 +2,7 @@
 #include "PowerDetails.h"
 #include "BinaryData.h"
 #include "AgeAppearance.h"
+#include <vector>
 
 namespace kb09_gui {
 // Separate clean mouldings and two distinct photo-informed wear sprites.
@@ -44,70 +45,103 @@ public:
         }
         const auto atlas=juce::SoftwareImageType().convert(juce::ImageFileFormat::loadFrom(
             BinaryData::cheekspersonalindependentv1_png,BinaryData::cheekspersonalindependentv1_pngSize));
-        struct Patch {float x,y,rx,ry;int firstStage;};
-        const std::array<std::array<Patch,14>,2> patches{{
-            {{{.28f,.27f,.30f,.025f,1},{.45f,.52f,.31f,.035f,1},{.34f,.77f,.31f,.025f,1},
-              {.96f,.21f,.23f,.035f,2},{.41f,.34f,.61f,.085f,2},{.06f,.44f,.23f,.035f,2},
-              {.51f,.61f,.60f,.05f,2},{.54f,.83f,.52f,.04f,2},{.24f,.072f,.45f,.06f,3},
-              {.55f,.40f,.61f,.06f,3},{.46f,.71f,.51f,.04f,3},{.55f,.90f,.65f,.04f,3},
-              {.25f,.98f,.65f,.05f,4},{.70f,.02f,.65f,.04f,4}}},
-            {{{.40f,.14f,.31f,.04f,1},{.52f,.36f,.41f,.035f,1},{.52f,.65f,.43f,.035f,1},
-              {.96f,.11f,.25f,.035f,2},{.52f,.25f,.65f,.075f,2},{.98f,.47f,.28f,.04f,2},
-              {.43f,.56f,.57f,.07f,2},{.62f,.79f,.52f,.035f,2},{.77f,.025f,.46f,.05f,3},
-              {.95f,.28f,.25f,.04f,3},{.97f,.66f,.26f,.035f,3},{.51f,.74f,.60f,.07f,3},
-              {.72f,.98f,.65f,.05f,4},{.52f,.90f,.65f,.055f,4}}}
+        // Trace complete individual scratches and cuts, including the lower
+        // halves. Each has a fixed birth stage; there is no final-stage catch-all.
+        struct Mark {float x1,y1,x2,y2,radius;int birth;};
+        const std::array<std::vector<Mark>,2> marks{{
+            {{.14f,.048f,.30f,.085f,12.f,3}, {.90f,.21f,.98f,.212f,8.f,2},
+             {.10f,.44f,.14f,.444f,7.f,1}, {.62f,.39f,.76f,.395f,4.5f,3},
+             {.34f,.716f,.45f,.706f,5.f,2}, {.08f,.939f,.12f,.963f,7.f,3},
+             {.10f,.966f,.28f,.987f,9.f,4},
+             {.47f,.136f,.83f,.133f,2.5f,1}, {.14f,.260f,.38f,.250f,2.7f,2},
+             {.15f,.315f,.82f,.365f,3.f,2}, {.15f,.375f,.73f,.433f,3.f,3},
+             {.14f,.540f,.43f,.534f,2.5f,1}, {.33f,.526f,.46f,.519f,2.f,3},
+             {.14f,.603f,.76f,.640f,3.f,3}, {.13f,.614f,.57f,.633f,2.5f,1},
+             {.47f,.811f,.96f,.833f,2.7f,4}, {.13f,.865f,.32f,.859f,2.5f,2},
+             {.31f,.946f,.54f,.951f,2.2f,3}, {.10f,.044f,.21f,.028f,7.f,4}},
+            {{.88f,.11f,.98f,.114f,12.f,1}, {.96f,.27f,.98f,.274f,8.f,2},
+             {.88f,.48f,.98f,.484f,8.f,3}, {.96f,.674f,.98f,.679f,8.f,2},
+             {.51f,.052f,.61f,.082f,4.5f,2}, {.53f,.341f,.62f,.337f,2.5f,1},
+             {.72f,.950f,.83f,.961f,6.f,3}, {.88f,.030f,.96f,.049f,9.f,3},
+             {.89f,.018f,.97f,.025f,9.f,4}, {.75f,.978f,.94f,.966f,10.f,4},
+             {.15f,.185f,.85f,.210f,2.8f,1}, {.20f,.331f,.94f,.383f,3.f,2},
+             {.43f,.392f,.88f,.397f,2.5f,3}, {.56f,.434f,.87f,.430f,2.3f,1},
+             {.10f,.522f,.50f,.555f,2.6f,3}, {.15f,.551f,.77f,.590f,2.8f,4},
+             {.10f,.610f,.65f,.596f,2.7f,2}, {.18f,.670f,.70f,.731f,2.8f,3},
+             {.50f,.751f,.91f,.737f,2.8f,1}, {.14f,.811f,.87f,.796f,2.8f,2},
+             {.42f,.861f,.85f,.833f,2.5f,4}, {.35f,.903f,.80f,.877f,2.5f,3},
+             {.30f,.941f,.51f,.952f,2.3f,2}}
         }};
         for(int side=0;side<2;++side) {
             juce::Image worn(juce::Image::ARGB,width*scale,height*scale,true,juce::SoftwareImageType());
             {juce::Graphics g(worn);g.drawImage(atlas.getClippedImage(side?juce::Rectangle<int>(704,15,132,1435):juce::Rectangle<int>(233,15,137,1435)),worn.getBounds().toFloat());}
-            auto diffuse=worn.createCopy();juce::ImageConvolutionKernel blur(31);
-            blur.createGaussianBlur(9);blur.applyToImage(diffuse,worn,worn.getBounds());
-            auto detail=worn.createCopy();juce::ImageConvolutionKernel deGrain(7);
-            deGrain.createGaussianBlur(2);deGrain.applyToImage(detail,worn,worn.getBounds());
             const juce::Image::BitmapData fresh(images[size_t(side)][0],juce::Image::BitmapData::readOnly);
-            const juce::Image::BitmapData photograph(worn,juce::Image::BitmapData::readOnly),matte(diffuse,juce::Image::BitmapData::readOnly);
-            const juce::Image::BitmapData scarDetail(detail,juce::Image::BitmapData::readOnly);
+            const juce::Image::BitmapData photograph(worn,juce::Image::BitmapData::readOnly);
+            // Preserve the original photographic plastic, fine grain and
+            // damage colour. Remove scheduled marks only from the undercoat;
+            // reveal their original photo detail at each fixed birth stage.
+            const int w=worn.getWidth(),h=worn.getHeight(),n=w*h;
+            std::array<std::vector<float>,5> masks;
+            for(auto& mask:masks)mask.resize(size_t(n),0.f);
+            for(int y=0;y<h;++y)for(int x=0;x<w;++x) {
+                const juce::Point<float> point((x+.5f)/scale,(y+.5f)/scale);
+                for(const auto& mark:marks[size_t(side)]) {
+                    const juce::Point<float> a(mark.x1*width,mark.y1*height),b(mark.x2*width,mark.y2*height);
+                    const auto line=b-a;const float length=line.getDistanceSquaredFromOrigin();
+                    const float along=length>0?juce::jlimit(0.f,1.f,((point.x-a.x)*line.x+(point.y-a.y)*line.y)/length):0.f;
+                    const float distance=point.getDistanceFrom(a+line*along);
+                    const float cover=1.f-power_detail::smoothRange(mark.radius-1.2f,mark.radius,distance);
+                    for(int stage=mark.birth;stage<5;++stage)masks[size_t(stage)][size_t(y*w+x)]=juce::jmax(masks[size_t(stage)][size_t(y*w+x)],cover);
+                }
+            }
+            // Copy intact photographic plastic from the same horizontal
+            // position. Preserve real grain and the moulding's light profile;
+            // do not smear a chip's shadow or edge through an averaged fill.
+            std::vector<juce::Colour> undercoat(size_t(n),juce::Colours::transparentBlack);
+            for(int y=0;y<h;++y)for(int x=0;x<w;++x) {
+                const size_t at=size_t(y*w+x);
+                if(masks[4][at]<=0){undercoat[at]=photograph.getPixelColour(x,y);continue;}
+                int sy=-1;
+                for(int offset:{137,-137,229,-229,317,-317,431,-431,613,-613}) {
+                    const int candidate=y+offset;
+                    if(candidate>60&&candidate<h-60&&masks[4][size_t(candidate*w+x)]<=0){sy=candidate;break;}
+                }
+                const auto original=fresh.getPixelColour(x,y);
+                if(sy<0){undercoat[at]=original;continue;}
+                const auto sample=photograph.getPixelColour(x,sy),reference=fresh.getPixelColour(x,sy);
+                const float ratio=juce::jlimit(.15f,1.7f,original.getBrightness()/juce::jmax(.025f,reference.getBrightness()));
+                const float tone=(sample.getFloatRed()+sample.getFloatGreen()+sample.getFloatBlue())/3.f;
+                undercoat[at]=juce::Colour::fromFloatRGBA(juce::jlimit(0.f,1.f,tone*ratio*.99f),
+                    juce::jlimit(0.f,1.f,tone*ratio*1.01f),juce::jlimit(0.f,1.f,tone*ratio),original.getFloatAlpha());
+            }
             for(int stage=1;stage<5;++stage) {
                 auto& result=images[size_t(side)][size_t(stage)];
                 result=juce::Image(juce::Image::ARGB,width*scale,height*scale,true,juce::SoftwareImageType());
                 juce::Image::BitmapData output(result,juce::Image::BitmapData::writeOnly);
                 for(int y=0;y<result.getHeight();++y)for(int x=0;x<result.getWidth();++x) {
                     const auto clean=fresh.getPixelColour(x,y),photo=photograph.getPixelColour(x,y);
-                    const float u=(x+.5f)/result.getWidth(),v=(y+.5f)/result.getHeight();
-                    // Assign a scar a birth stage, then retain its final contrast.
-                    // Fixed local patches accumulate; no opacity ramp on damage.
-                    int birth=4;
-                    for(const auto& patch:patches[size_t(side)]) {
-                        const float dx=(u-patch.x)/patch.rx,dy=(v-patch.y)/patch.ry;
-                        if(dx*dx+dy*dy<=1.f)birth=juce::jmin(birth,patch.firstStage);
-                    }
-                    const auto low=matte.getPixelColour(x,y);
-                    // Separate actual cuts from the fine moulding grain before
-                    // assigning damage stages; grain must never form reveal patches.
-                    const auto cut=scarDetail.getPixelColour(x,y);
-                    const float difference=juce::jmax(std::abs(cut.getFloatRed()-low.getFloatRed()),
-                        std::abs(cut.getFloatGreen()-low.getFloatGreen()),std::abs(cut.getFloatBlue()-low.getFloatBlue()));
-                    const float scar=power_detail::smoothRange(.04f,.10f,difference);
-                    const auto plastic=photo.interpolatedWith(low,scar);
+                    const size_t at=size_t(y*w+x);
+                    const float all=masks[4][at],revealed=all>0?masks[size_t(stage)][at]/all:0.f;
+                    const auto body=photo.interpolatedWith(undercoat[at],all);
                     const float coverage=.5f*photo.getFloatAlpha(),progress=float(stage)*.25f;
-                    const auto channel=[&](float c,float material,float damaged) {
-                        const float base=c+coverage*progress*(material-c);
-                        const float fixedScar=c+coverage*(damaged-c);
-                        return juce::jlimit(0.f,1.f,base+(stage>=birth?scar:0.f)*(fixedScar-base));
+                    const auto channel=[&](float c,float damaged,float paint) {
+                        // At max AGE this resolves exactly to the earlier
+                        // photographic endpoint, with no capsule-shaped colour
+                        // replacement or flat global average underneath a cut.
+                        return juce::jlimit(0.f,1.f,c+coverage*(progress*(paint-c)+revealed*(damaged-paint)));
                     };
-                    // Only low-contrast plastic dulling changes with age. Each
-                    // strong scratch appears at full contrast and stays there.
+                    // Full fixed-contrast local cuts are added one at a time.
                     output.setPixelColour(x,y,juce::Colour::fromFloatRGBA(
-                        channel(clean.getFloatRed(),plastic.getFloatRed(),photo.getFloatRed()),
-                        channel(clean.getFloatGreen(),plastic.getFloatGreen(),photo.getFloatGreen()),
-                        channel(clean.getFloatBlue(),plastic.getFloatBlue(),photo.getFloatBlue()),clean.getFloatAlpha()));
+                        channel(clean.getFloatRed(),photo.getFloatRed(),body.getFloatRed()),
+                        channel(clean.getFloatGreen(),photo.getFloatGreen(),body.getFloatGreen()),
+                        channel(clean.getFloatBlue(),photo.getFloatBlue(),body.getFloatBlue()),clean.getFloatAlpha()));
                 }
             }
         }
     }
-    void paint(juce::Graphics& g,int side,float age,float y) const {
+    void paint(juce::Graphics& g,int side,float age,float y,float totalWidth) const {
         juce::Graphics::ScopedSaveState save(g);
-        const float x=side?1445.f:0.f;
+        const float x=side?totalWidth-width:0.f;
         const juce::Rectangle<float> bounds(x,y,float(width),float(height));
         g.setColour(juce::Colour(0xff0a0d0e));g.fillRect(bounds);
         juce::Path outline;outline.addRoundedRectangle(bounds,12);g.reduceClipRegion(outline);

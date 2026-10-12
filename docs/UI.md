@@ -1,3 +1,7 @@
+# Current 1.5.1 GUI
+
+Approved revisions 4–12 refine panel spacing, the performance bay, keyboard seams, photographic cheeks, spatial rust growth and bender geometry/material. The final pointer uses the disc's polished highlight; tapered roughness scuffs replace uniform light dashes on its rotating plastic. Key/cap scuff counts and twist/lean progress at 0/25/50/75/100%. Every cap has a unique fixed seeded angle, with FREQ/RES restrained. PULSE WIDTH replaces VCF MOD in the final cap-loss event. The audio engine and parameter identities are unchanged.
+
 # Current 1.5.0 GUI
 
 The approved five-stage GUI, footer scales, performance-bay spacing and material changes are described in `GUI_REVIEW_2026_10_12_REV3.md`. The release adds lighter white-key scuffs at Sold As-Is while retaining the approved Fire Hazard endpoint. Current user instructions are in `manual/index.html`; material details and image provenance are in `Assets/Photoreal`. The historical UI notes below do not define the current controls.

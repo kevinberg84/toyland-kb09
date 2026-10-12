@@ -1,4 +1,4 @@
-# Toyland KB-09 1.5.0 — source/build instructions
+# Toyland KB-09 1.5.1 — source/build instructions
 
 JUCE **9.0.2** is an external dependency; this project does not modify it. The development toolchain is MSVC 19.51.36260.0, Visual Studio 18 2026, the Windows SDK and C++20. CMake's generator selects the compiler without changing PowerShell execution policy.
 
@@ -24,7 +24,7 @@ The project adds the generated `Info.txt` dependency to JUCE 9's Windows resourc
 
 ## Targets and source contents
 
-The internal target remains `SH09`; the public product is **Toyland KB-09**. CMake sets version 1.5.0. Windows builds **VST3** and **Standalone** by default. Native macOS builds also enable **AU** by default; **AAX Native** is an explicit option on Windows/macOS. Target configuration does not establish that a particular format was built, signed or host-tested. Consult [VALIDATION.md](VALIDATION.md) for the actual release artifacts. `Assets/Branding.h` defines the visible identity; compatibility keys remain unchanged as described in [REBRANDING.md](REBRANDING.md).
+The internal target remains `SH09`; the public product is **Toyland KB-09**. CMake sets version 1.5.1. Windows builds **VST3** and **Standalone** by default. Native macOS builds also enable **AU** by default; **AAX Native** is an explicit option on Windows/macOS. Target configuration does not establish that a particular format was built, signed or host-tested. Consult [VALIDATION.md](VALIDATION.md) for the actual release artifacts. `Assets/Branding.h` defines the visible identity; compatibility keys remain unchanged as described in [REBRANDING.md](REBRANDING.md).
 
 | Target | Release output relative to build directory |
 |---|---|
@@ -82,7 +82,7 @@ The output is `build-linux/SH09_artefacts/Release/Standalone/Toyland KB-09`. The
 
 ## Native macOS / AU build
 
-AU means Audio Unit. The conventional desktop AU target is macOS-only; this is not an AUv3/mobile build. `KB09_BUILD_AU` defaults to `ON` on Apple platforms and `OFF` elsewhere. Explicitly enabling it on Windows fails with a clear native-macOS requirement. Native CI and Apple AU validation results for 1.5.0 must be recorded after the release build completes; see its validation record. These commands remain a build recipe; see the release validation record for the exact tested artifacts. Intel execution and individual DAW behavior need their own checks.
+AU means Audio Unit. The conventional desktop AU target is macOS-only; this is not an AUv3/mobile build. `KB09_BUILD_AU` defaults to `ON` on Apple platforms and `OFF` elsewhere. Explicitly enabling it on Windows fails with a clear native-macOS requirement. Native CI and Apple AU validation results for 1.5.1 must be recorded after the release build completes; see its validation record. These commands remain a build recipe; see the release validation record for the exact tested artifacts. Intel execution and individual DAW behavior need their own checks.
 
 On a Mac with Xcode and JUCE 9.0.2, run from the source directory:
 

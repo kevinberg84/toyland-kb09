@@ -2,6 +2,8 @@
 #include "../Source/GUI/ClosePrompt.h"
 #include "../Source/GUI/UpdateInstructions.h"
 #include "../Source/GUI/KeyboardFeedback.h"
+#include "../Source/GUI/CheekMaterial.h"
+#include "../Source/GUI/RustMaterial.h"
 #include <BinaryData.h>
 #include <algorithm>
 #include <array>
@@ -552,7 +554,7 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
             if(moving.count>50&&moving.bounds.getWidth()<9*controlRenderScale)missing.add(faderIDs[i]);
         }
         const juce::StringArray expectedMissing=stage<2?juce::StringArray{}:stage==2?juce::StringArray{"vcoLevel"}
-            :stage==3?juce::StringArray{"lfoDelay","vcoLevel","extLevel"}:juce::StringArray{"lfoDelay","vcoLevel","extLevel","vcfMod","release"};
+            :stage==3?juce::StringArray{"lfoDelay","vcoLevel","extLevel"}:juce::StringArray{"lfoDelay","pulseWidth","vcoLevel","extLevel","release"};
         checks.expect(missing==expectedMissing,"actual cap/blade shapes match stage "+juce::String(stage)+" ("+missing.joinIntoString(", ")+")");
     }
     bool metadataSame=true,soundSame=true;
@@ -565,7 +567,7 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
     checks.expect(metadataSame&&soundSame,"cap loss preserves every fader identity, hit area, enablement and sound parameter value");
     // Compare two production positions at fixed Age: a slot alone must fail.
     setParameter(processor,"age",1.f);settleEditor();
-    for(const auto* id:{"lfoDelay","vcoLevel","extLevel","release","vcfMod"}) {
+    for(const auto* id:{"lfoDelay","vcoLevel","extLevel","release","pulseWidth"}) {
         auto* slider=dynamic_cast<juce::Slider*>(findComponent(editor,id));
         const auto at75=renderLinearControl(*slider,75,juce::Colour(0xff232927));
         const auto at100=renderLinearControl(*slider,100,juce::Colour(0xff232927));
@@ -616,8 +618,8 @@ void checkAgeEvents(SH09Processor& processor, juce::Component& editor, Checks& c
             "cheek has one fixed appearance throughout stage "+juce::String(stage));
         checks.expect(std::abs(processor.state.getRawParameterValue("age")->load()-juce::jlimit(0.f,1.f,centre+.04f))<1.e-6f,
             "legacy intermediate AGE remains stored without parameter quantization");
-        if(stage<4)checks.expect(changedPixels(before.getClippedImage(cheek),capture((stage+1)*.25f).getClippedImage(cheek),5)>200,
-            "successive cheek stages have distinct accumulated wear");
+        if(stage<4)checks.expect(changedPixels(before.getClippedImage(cheek),capture((stage+1)*.25f).getClippedImage(cheek),0)>200,
+            "successive cheek stages retain distinct material and local wear, including subtle early dulling");
     }
     const float width=float(keyboard->getWidth())/19;
     juce::Colour healthyIvory;
@@ -1389,15 +1391,18 @@ void checkPerformanceBayGeometry(juce::Component& editor,Checks& checks) {
     int painted=0;for(int x=310;x<326;++x)for(int y=490;y<680;++y)
         if(panel.getPixelAt(x,y).getBrightness()>.045f)++painted;
     checks.expect(painted>16*190*.95f,"bay photographic paint fills the margin up to the first key");
+    int seamPaint=0;for(int y=490;y<680;++y)
+        if(panel.getPixelAt(key->getX(),y).getBrightness()>.045f)++seamPaint;
+    checks.expect(seamPaint>180,"bay paint continues through the first ivory side clearance without a black gap");
     int topInk=0;for(int x=80;x<200;++x)
         if(panel.getPixelAt(x,404).getBrightness()>.6f)++topInk;
     checks.expect(topInk<10,"performance bay has no horizontal top outline");
-    checks.expect(vco->getX()+vco->getWidth()/2==128&&vcf->getX()+vcf->getWidth()/2==164
-        &&port->getX()+port->getWidth()/2==256&&key->getX()==326,
-        "surface extension preserves all accepted slider and keyboard positions");
+    checks.expect(vco->getX()+vco->getWidth()/2==136&&vcf->getX()+vcf->getWidth()/2==172
+        &&port->getX()+port->getWidth()/2==264&&key->getX()==326,
+        "centering shifts bay controls together while retaining keyboard dimensions");
     const float midpoint=.5f*(mod->getBounds().getCentreX()+range->getBounds().getCentreX());
     checks.expect(lineX>mod->getBounds().getCentreX()&&lineX<range->getBounds().getCentreX(),"rendered performance-bay right rule aligns below the MOD–RANGE gap");
-    checks.expect(key->getX()-lineX>=20&&key->getRight()==1428,"performance bay retains an interior painted margin before the keys and their right edge");
+    checks.expect(key->getX()-lineX>=15&&key->getRight()==1428,"performance bay retains an interior painted margin before the keys and their right edge");
 }
 
 void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& checks) {
@@ -1528,6 +1533,34 @@ void checkMovingControlPerformance(Checks& checks) {
     processor.releaseResources();
 }
 
+void checkRustGrowth(const juce::File& directory,Checks& checks) {
+    const auto photo=juce::SoftwareImageType().convert(juce::ImageFileFormat::loadFrom(BinaryData::chassispersonalaged_png,BinaryData::chassispersonalaged_pngSize));
+    const auto clean=juce::SoftwareImageType().convert(juce::ImageFileFormat::loadFrom(BinaryData::chassisblack_png,BinaryData::chassisblack_pngSize));
+    const auto stages=kb09_gui::makePanelWearStages(photo,clean);
+    int previous=0;
+    for(int stage=0;stage<5;++stage) {
+        juce::Image composite=clean.createCopy();{juce::Graphics g(composite);g.drawImageAt(stages[size_t(stage)],0,0);}
+        checks.expect(writePNG(composite,directory.getChildFile("rust_stage_"+juce::String(stage)+".png")),"rust stage actual material export");
+        const juce::Image::BitmapData image(stages[size_t(stage)],juce::Image::BitmapData::readOnly),original(photo,juce::Image::BitmapData::readOnly);
+        int mature=0;bool retained=true;
+        for(int y=0;y<photo.getHeight();++y)for(int x=0;x<photo.getWidth();++x) {
+            const auto c=original.getPixelColour(x,y),p=image.getPixelColour(x,y);
+            if(c.getFloatRed()<=.13f||c.getFloatRed()<=c.getFloatGreen()*1.11f||c.getFloatRed()<=c.getFloatBlue()*1.20f)continue;
+            if(p.getAlpha()>=228&&std::abs(int(p.getRed())-int(c.getRed()))<=2&&std::abs(int(p.getBlue())-int(c.getBlue()))<=2) {
+                ++mature;
+                for(int later=stage+1;later<5;++later) {
+                    const auto q=stages[size_t(later)].getPixelAt(x,y);
+                    retained&=q.getAlpha()>=p.getAlpha()&&std::abs(int(q.getRed())-int(p.getRed()))<=2&&std::abs(int(q.getBlue())-int(p.getBlue()))<=2;
+                }
+            }
+        }
+        std::cout<<"RUST stage="<<stage<<" mature_pixels="<<mature<<'\n';
+        checks.expect(stage==0?mature==0:mature>previous,"mature rust area grows at each appearance stage");
+        checks.expect(retained,"developed rust keeps its photographic colour and opacity at later stages");
+        previous=mature;
+    }
+}
+
 int main(int argc, char** argv) {
     if (argc != 2 || juce::String(argv[1]) == "--help") {
         std::cout << "Usage: SH09GUIRender <output-directory>\n"
@@ -1538,6 +1571,34 @@ int main(int argc, char** argv) {
     }
     juce::ScopedJuceInitialiser_GUI initialiseGUI;
     Checks checks;
+    if(juce::String(argv[1]).startsWith("--appearance-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));
+        directory.createDirectory();
+        for(const auto fixture:{Fixture{"minty",1,false,0.f,false,false},
+                Fixture{"seen_some",1,false,.25f,false,false},Fixture{"vintage",1,false,.5f,false,false},
+                Fixture{"personal_age7",1,false,.75f,false,false},Fixture{"fully_aged",1,false,1.f,false,false}})
+            renderFixture(fixture,directory,checks);
+        const auto summary="RESULT failures="+juce::String(checks.failures)+" checks="+juce::String(checks.total)+"\n";
+        std::cout<<summary;directory.getChildFile("GUIRender.log").replaceWithText(checks.log+summary);
+        return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--material-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));
+        directory.createDirectory();
+        for(int side=0;side<2;++side)for(int stage=0;stage<5;++stage) {
+            juce::Image image(juce::Image::ARGB,165,2196,true,juce::SoftwareImageType());
+            juce::Graphics g(image);g.addTransform(juce::AffineTransform::scale(3.f));
+            kb09_gui::cheekMaterial().paint(g,side,float(stage)*.25f,0,55);
+            checks.expect(writePNG(image,directory.getChildFile("cheek_"+juce::String(side)+"_"+juce::String(stage)+".png")),"cheek material actual-render export");
+        }
+        checkRustGrowth(directory,checks);
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        std::unique_ptr<juce::AudioProcessorEditor,EditorDeleter> editor(processor.createEditorAndMakeActive(),{&processor});
+        renderBenderPositions(processor,*editor,directory,checks);
+        processor.releaseResources();
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';
+        return checks.failures?1:0;
+    }
     if(juce::String(argv[1])=="--cache-regression") {
         checkCachedKeyboard(checks);return checks.failures?1:0;
     }
@@ -1549,6 +1610,7 @@ int main(int argc, char** argv) {
         if (auto result = directory.createDirectory(); result.failed()) throw std::runtime_error(result.getErrorMessage().toStdString());
         checks.expect(juce::MessageManager::getInstance()->isThisTheMessageThread(), "fixture runs on the JUCE message thread");
         checkPersonalArtwork(checks);
+        checkRustGrowth(directory,checks);
         checkCompatibility(checks);
         checkCachedKeyboard(checks);
         checkMovingControlPerformance(checks);
