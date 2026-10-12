@@ -1,6 +1,6 @@
 # Validation record
 
-Current release: [Toyland KB-09 1.5.0 validation](VALIDATION_1.5.0.md). The records below are retained as historical evidence.
+Current release: [Toyland KB-09 1.5.1 validation](VALIDATION_1.5.1.md). The records below are retained as historical evidence.
 
 ## Historical Windows build â€” Toyland KB-09 0.13.2, 2026-10-07
 
