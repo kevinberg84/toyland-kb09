@@ -25,7 +25,7 @@ The final authorized polish uses the disc's sharpened existing highlight on the 
 
 ## Distribution
 
-Final archive hashes, permanent Drive IDs, downloaded-byte matches, package CRC/manual-link/preset checks and local Host synchronization are recorded in `artifacts/Release151/validation`. The Desktop Host retains exactly its three existing platform folders; archives and backups stay outside it. All three current shared downloads have matching hashes. Update-feed publication is pending Kevin's specific approval after automatic approval review rejected that external distribution action.
+Final archive hashes, permanent Drive IDs, downloaded-byte matches, package CRC/manual-link/preset checks and local Host synchronization are recorded in `artifacts/Release151/validation`. The Desktop Host retains exactly its three existing platform folders; archives and backups stay outside it. All three current shared downloads have matching hashes. After Kevin approved the update notice, the public feed was published and verified over HTTPS: HTTP 200, exact version 1.5.1 metadata and the retained permanent download-folder URL.
 
 No sonic correction or hardware-level SH-09 accuracy is claimed. Slow VCO/self-oscillating-filter interactions remain under investigation; physical SH-09 recordings are needed for calibration. Live controller frame pacing, physical Arch playback/MIDI and every native DAW remain user evaluation items.
 
