@@ -5,9 +5,9 @@ namespace kb09_gui {
 namespace {
 const juce::Colour black(0xff090909);
 juce::Image logoMask() {
-    const auto source = juce::ImageCache::getFromMemory(BinaryData::marks_png, BinaryData::marks_pngSize);
+    const auto source = juce::SoftwareImageType().convert(juce::ImageFileFormat::loadFrom(BinaryData::marks_png, BinaryData::marks_pngSize));
     const auto crop = source.getClippedImage({90, 324, 715, 133});
-    juce::Image mask(juce::Image::ARGB, crop.getWidth(), crop.getHeight(), true);
+    juce::Image mask(juce::Image::ARGB, crop.getWidth(), crop.getHeight(), true,juce::SoftwareImageType());
     for (int y=0;y<crop.getHeight();++y) for(int x=0;x<crop.getWidth();++x) {
         const auto p=crop.getPixelAt(x,y);
         const float a=juce::jlimit(0.f,1.f,(float(p.getRed()+p.getGreen()+p.getBlue())/765.f-.065f)/.89f);

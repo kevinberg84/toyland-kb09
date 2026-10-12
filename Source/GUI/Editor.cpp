@@ -216,7 +216,7 @@ const juce::Image& panelDust() {
 }
 const juce::Image& railDust() {
     static const juce::Image layer=[] {
-        juce::Image image(juce::Image::ARGB,2764,86,true);juce::Graphics g(image);
+        juce::Image image(juce::Image::ARGB,2764,86,true,juce::SoftwareImageType());juce::Graphics g(image);
         g.addTransform(juce::AffineTransform::scale(2.0f));
         for(uint32_t i=0;i<145000;++i) {
             const auto seed=surfaceHash(113879u+i*3571u);
@@ -1749,7 +1749,7 @@ public:
                 const float xx=(p.x-2)*float(designW)/1770,yy=headerH+(p.y-7)*float(bodyH)/873;
                 juce::Graphics::ScopedSaveState patch(g);
                 if(p.y==457)g.reduceClipRegion(juce::Rectangle<int>(69,404,176,335));
-                juce::Image material(juce::Image::RGB,100,80,true);
+                juce::Image material(juce::Image::RGB,100,80,true,juce::SoftwareImageType());
                 {juce::Graphics fill(material);
                  fill.drawImage(art.chassis,0,0,100,80,p.x+35,p.y-23,59,47);
                  fill.setOpacity(.90f*std::pow(age,.85f));fill.drawImage(art.chassisAged,0,0,100,80,p.x+35,p.y-23,59,47);}

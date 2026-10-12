@@ -6,6 +6,8 @@ Modern TUNE now spans ±12 semitones; Authentic retains ±65 cents. The paramete
 
 The stationary panel is cached at display resolution. Keyboard note changes repaint affected areas, the bender rasterises at display resolution, and AGE preview warming waits until performance is idle. This prioritises moving controls without changing audio scheduling. Panel printing, power-button height, plastic chamfers and wear follow Kevin's SH-09 reference photographs. AGE never disables controls.
 
+Persistent artwork and control caches use CPU memory, including the aged rail texture and dialog logo. This fixes a graphics-driver wait observed when Windows unloaded an aged plug-in instance.
+
 The restored filter remains the shipping signal path. Slow VCO/filter pitch interactions are being measured separately; no hardware-accuracy or alias-elimination claim is made.
 
 # 1.3.0 — Toyland KB-09
