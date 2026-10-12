@@ -23,19 +23,50 @@ jobs:
       - name: Install native build and test dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build libasound2-dev libjack-jackd2-dev libcurl4-openssl-dev libfreetype6-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev libxi-dev xvfb
+          sudo apt-get install -y ninja-build ccache openbox x11-utils libasound2-dev libjack-jackd2-dev libcurl4-openssl-dev libfreetype6-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev libxi-dev xvfb
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ccache
+          key: linux-juce902-ccache-${{ github.run_id }}
+          restore-keys: linux-juce902-ccache-
       - name: Get matching JUCE source
         run: git clone --depth 1 --branch 9.0.2 https://github.com/juce-framework/JUCE.git "$RUNNER_TEMP/JUCE"
       - name: Configure generic x86-64 standalone
-        run: cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release -DJUCE_DIR="$RUNNER_TEMP/JUCE" -DKB09_STANDALONE_ONLY=ON -DKB09_BUILD_AU=OFF -DKB09_BUILD_AAX=OFF
+        run: cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DJUCE_DIR="$RUNNER_TEMP/JUCE" -DKB09_STANDALONE_ONLY=ON -DKB09_BUILD_AU=OFF -DKB09_BUILD_AAX=OFF
       - name: Build standalone and verification tools
         run: cmake --build build-linux --target SH09_Standalone SH09DSPTests SH09FilterNonlinearTests SH09ProcessorTests SH09PresetFilesTests SH09FactoryAudition KB09UpdateTests SH09GUIRender KB09DialogPreview --parallel 2
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: ~/.cache/ccache
+          key: linux-juce902-ccache-${{ github.run_id }}
+      - name: Preserve native validation executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: KB-09-Linux-validation-binaries
+          path: |
+            build-linux/SH09_artefacts/Release/Standalone/Toyland KB-09
+            build-linux/*_artefacts/Release/*
+            build-linux/SH09DSPTests
+            build-linux/SH09FilterNonlinearTests
+            build-linux/CTestTestfile.cmake
+          retention-days: 7
       - name: Run DSP and processor tests
         run: xvfb-run -a ctest --test-dir build-linux --output-on-failure
       - name: Check dialogs and editor rendering
         run: |
-          xvfb-run -a build-linux/KB09DialogPreview_artefacts/Release/KB09DialogPreview linux-dialog-validation
-          xvfb-run -a build-linux/SH09GUIRender_artefacts/Release/SH09GUIRender linux-gui-validation
+          xvfb-run -a bash -euo pipefail -c '
+            openbox >/tmp/kb09-openbox.log 2>&1 &
+            wm_pid=$!
+            trap "kill $wm_pid 2>/dev/null || true" EXIT
+            for attempt in {1..50}; do
+              if xprop -root _NET_SUPPORTING_WM_CHECK | grep -q "window id"; then break; fi
+              sleep 0.1
+            done
+            xprop -root _NET_SUPPORTING_WM_CHECK | grep -q "window id"
+            build-linux/KB09DialogPreview_artefacts/Release/KB09DialogPreview linux-dialog-validation
+            build-linux/SH09GUIRender_artefacts/Release/SH09GUIRender linux-gui-validation
+          '
       - name: Check executable and shared library dependencies
         run: |
           file 'build-linux/SH09_artefacts/Release/Standalone/Toyland KB-09'
