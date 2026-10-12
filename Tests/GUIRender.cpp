@@ -1340,6 +1340,10 @@ void checkCachedKeyboard(Checks& checks) {
     std::unique_ptr<juce::AudioProcessorEditor,EditorDeleter> editor(processor.createEditorAndMakeActive(),{&processor});
     settleEditor();
     auto* keyboard=findComponent(*editor,"keyboard");
+    auto* cutoffLabel=findText<juce::Label>(*editor,"CUTOFF\nFREQ");
+    auto* resonanceLabel=findText<juce::Label>(*editor,"RESONANCE");
+    checks.expect(cutoffLabel&&resonanceLabel&&!cutoffLabel->getBounds().intersects(resonanceLabel->getBounds()),
+        "closely spaced filter tracks retain separate cutoff and resonance captions");
     checks.expect(keyboard&&keyboard->getCachedComponentImage(),"keyboard has its shipping component cache");
     if(!keyboard||!keyboard->getCachedComponentImage())return;
     for(float age:{0.f,1.f})for(float scale:{1.f,1.5f,2.f}) {

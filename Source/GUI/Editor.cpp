@@ -1593,7 +1593,10 @@ public:
         addSwitch("pwmMode",566,104,51,121,{1,0,2},{"LFO","MANUAL","ENV"},"Pulse width: LFO, manual or envelope. LFO uses the undelayed sine.");
         addSwitch("subMode",633,104,60,121,{0,1,2},{"1 OCT\nDOWN","2 OCT\nDOWN","2 OCT\nDOWN"},"Sub oscillator: one octave down square, two octaves down square, or two octaves down pulse.");
         addFader("vcoLevel","VCO",732,96,37,129);addFader("subLevel","SUB\nOSC",770,96,37,129);addFader("extLevel","EXT",808,96,37,129);
-        addFader("cutoff","CUTOFF\nFREQ",884,96,33,129);addFader("resonance","RESONANCE",919,96,33,129);
+        addFader("cutoff","CUTOFF\nFREQ",884,96,33,129);
+        controls.back()->label->setBounds(866,headerH+89,36,20);
+        addFader("resonance","RESONANCE",919,96,33,129);
+        controls.back()->label->setBounds(903,headerH+98,65,20);
         addSwitch("vcfEnvMode",950,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"VCF envelope follower, positive envelope, or inverted envelope.",true);
         addFader("vcfEnv","ENV",1035,96,35,129);controls.back()->label->setVisible(false);addFader("vcfMod","MOD",1071,96,35,129);
         addSwitch("vcaMode",1110,104,56,121,{0,1,2},{"HOLD","ENV","GATE"},"HOLD passes audio without MIDI; ENV uses ADSR; GATE follows held keys.");
