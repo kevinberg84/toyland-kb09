@@ -1,3 +1,7 @@
+# 1.5.0 material update
+
+Runtime now uses `fader-smooth-overhead-v1.png` for smooth plastic caps with a native silver insert, and `cheeks-personal-independent-v1.png` for distinct left/right wear. Their matching provenance notes describe the source crops. The older textured cap remains a historical asset. Cheek damage has fixed birth stages; low-contrast material dulling is separated from scrapes. See the approved GUI review notes for geometry and stage details.
+
 # KB-09 artwork inventory — 0.13.2
 
 Kevin's personal SH-09 photographs guide the current geometry and wear. The reference photographs themselves are not embedded. The replacement Volume knob, bunny sticker and waveform tape are excluded; the original Range/Wave construction also guides the software Volume knob. This inventory describes the 0.13.2 integration, including the v5 knobs and the later POWER close-up. [VALIDATION.md](../../docs/VALIDATION.md) records release-specific binary hashes, completed checks and installed identity; owner visual acceptance remains separate.

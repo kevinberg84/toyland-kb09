@@ -2,6 +2,8 @@
 #include "KeyboardFeedback.h"
 #include "PresetFiles.h"
 #include "PowerDetails.h"
+#include "CheekMaterial.h"
+#include "AgeAppearance.h"
 #include "UpdateChecker.h"
 #include "AudioSettingsDialog.h"
 #include "DialogMessages.h"
@@ -13,11 +15,12 @@
 #include <array>
 
 namespace {
+using kb09_gui::appearanceAge;
 constexpr int designW=1500, bodyH=750, visibleBodyH=732, headerH=34, designH=816;
 constexpr float panelViewSin=.156434f,panelViewCos=.987688f;
 const juce::Colour ink(0xffe9e7dd), muted(0xffb4b7b5), amber(0xffdbb572);
 juce::Colour agedInk(float age) {
-    return ink.interpolatedWith(juce::Colour(0xffd1bd86),juce::jlimit(0.0f,1.0f,age)*.86f);
+    return ink.interpolatedWith(juce::Colour(0xffd1bd86),juce::jlimit(0.0f,1.0f,age)*.73f);
 }
 juce::Font font(float size,bool bold=false) {
     return juce::Font(juce::FontOptions("Arial",size,bold?juce::Font::bold:juce::Font::plain));
@@ -74,7 +77,7 @@ struct Artwork {
     // on-panel width. Only the upper knob is narrower, as in the owner's photo.
     juce::Image knob=load(BinaryData::knobpersonaloverheadv5_png,BinaryData::knobpersonaloverheadv5_pngSize)
         .getClippedImage({70,70,1114,1114});
-    juce::Image fader=load(BinaryData::faderpersonaloverhead_png,BinaryData::faderpersonaloverhead_pngSize);
+    juce::Image fader=load(BinaryData::fadersmoothoverheadv1_png,BinaryData::fadersmoothoverheadv1_pngSize);
     juce::Image faderDull;
     juce::Image rail=load(BinaryData::frontrailgrain_png,BinaryData::frontrailgrain_pngSize);
     juce::Image keys=load(BinaryData::keys_png,BinaryData::keys_pngSize);
@@ -82,19 +85,15 @@ struct Artwork {
     juce::Image blackKey=keys.getClippedImage({763,68,159,615});
     juce::Image marks,marksAged;
     Artwork() {
-        // Preserve the photographed strip and its wrap over both narrow sides.
-        // Its material is silver metal, independent of the yellowing panel ink.
+        // Smooth photographed plastic keeps its broad lighting. Compress the
+        // fresh highlight for the dull endpoint; the silver insert is native.
         faderDull=fader.createCopy();
-        juce::Image::BitmapData bright(fader,juce::Image::BitmapData::readWrite);
         juce::Image::BitmapData dull(faderDull,juce::Image::BitmapData::readWrite);
-        for(int y=465;y<583;++y)for(int x=125;x<1365;++x) {
-            const auto c=bright.getPixelColour(x,y);
-            const float light=(c.getFloatRed()+c.getFloatGreen()+c.getFloatBlue())/3.f;
-            const float coverage=juce::jlimit(0.f,1.f,(juce::jmin(c.getFloatRed(),c.getFloatGreen(),c.getFloatBlue())-.25f)/.4f);
-            const auto silver=juce::Colour::fromFloatRGBA(light*.98f,light,juce::jmin(1.f,light*1.02f),c.getFloatAlpha());
-            const float matte=.53f+.17f*light;
-            bright.setPixelColour(x,y,c.interpolatedWith(silver,coverage));
-            dull.setPixelColour(x,y,c.interpolatedWith(juce::Colour::fromFloatRGBA(matte*.98f,matte,matte*1.02f,c.getFloatAlpha()),coverage));
+        for(int y=0;y<faderDull.getHeight();++y)for(int x=0;x<faderDull.getWidth();++x) {
+            const auto c=dull.getPixelColour(x,y);
+            const float value=(c.getFloatRed()+c.getFloatGreen()+c.getFloatBlue())/3.f;
+            const float matte=.035f+.42f*value;
+            dull.setPixelColour(x,y,juce::Colour::fromFloatRGBA(matte*.98f,matte,matte,c.getFloatAlpha()));
         }
         auto original=load(BinaryData::marks_png,BinaryData::marks_pngSize);
         auto worn=load(BinaryData::marksaged_png,BinaryData::marksaged_pngSize);
@@ -165,7 +164,7 @@ void caseStains(juce::Graphics& g,float age) {
     if(age<.60f)return;
     juce::Graphics::ScopedSaveState save(g);
     juce::Path metal;metal.addRectangle(55.0f,float(headerH),1389.0f,365.0f);
-    metal.addRectangle(65.0f,float(headerH+366),182.0f,335.0f);g.reduceClipRegion(metal);
+    metal.addRectangle(65.0f,float(headerH+366),257.0f,335.0f);g.reduceClipRegion(metal);
     g.setOpacity(.22f);
     {
         // Preserve the user's favourite envelope coffee ring. All other old
@@ -191,7 +190,7 @@ const juce::Image& panelDust() {
         juce::Image result(juce::Image::ARGB,designW*2,designH*2,true,juce::SoftwareImageType());
         juce::Graphics g(result);g.addTransform(juce::AffineTransform::scale(2.0f));
         juce::Path metal;metal.addRectangle(60.0f,65.0f,1380.0f,326.0f);
-        metal.addRectangle(69.0f,404.0f,176.0f,335.0f);g.reduceClipRegion(metal);
+        metal.addRectangle(69.0f,404.0f,249.0f,335.0f);g.reduceClipRegion(metal);
         // Density varies near controls; every visible deposit is a discrete
         // grain. No blurred gradients or translucent clouds cover the paint.
         for(uint32_t i=0;i<26000;++i) {
@@ -215,15 +214,16 @@ const juce::Image& panelDust() {
                 // Performance bay perimeter, PORTAMENTO recess corners and
                 // bender opening lips. Keep its broad open paint clear.
                 const int edge=int(surfaceNoise(seed+17)*8);
+                if(edge>=3&&edge<=5)continue;
                 const float t=surfaceNoise(seed+31),inset=1+5*std::pow(surfaceNoise(seed+47),2);
                 if(edge==0){x=70+inset;y=409+322*t;}
-                else if(edge==1){x=244-inset;y=409+322*t;}
-                else if(edge==2){x=72+170*t;y=738-inset;}
-                else if(edge==3){x=175+inset;y=526+128*t;}
-                else if(edge==4){x=234-inset;y=526+128*t;}
-                else if(edge==5){x=177+55*t;y=654-inset;}
-                else if(edge==6){x=95+123*t;y=headerH+643+inset*.45f;}
-                else {x=95+123*t;y=headerH+672-inset*.45f;}
+                else if(edge==1){x=302-inset;y=409+322*t;}
+                else if(edge==2){x=72+226*t;y=738-inset;}
+                else if(edge==3){x=231+inset;y=526+128*t;}
+                else if(edge==4){x=310-inset;y=526+128*t;}
+                else if(edge==5){x=233+75*t;y=654-inset;}
+                else if(edge==6){x=102+165*t;y=headerH+643+inset*.45f;}
+                else {x=102+165*t;y=headerH+672-inset*.45f;}
             }
             // A fine powder, occasional lint, and sparse brighter grains.
             const float size=.27f+.45f*std::pow(surfaceNoise(seed+89),2.0f);
@@ -336,13 +336,18 @@ void keySurfaceWear(juce::Graphics& g,juce::Rectangle<float> r,int serial,bool b
             g.setColour(juce::Colour(nick%3?0xff9b9b91:0xff020403).withAlpha(age*age*.23f));
             g.drawLine(x,y,x+.3f+1.6f*surfaceNoise(seed+nick*113),y+.4f*surfaceNoise(seed+nick*29),.19f);
         }
-        for(uint32_t scratch=0;scratch<12;++scratch) {
+    }
+    if(age>0) {
+        juce::Graphics::ScopedSaveState scratched(g);
+        g.reduceClipRegion(r.withTrimmedBottom(black?17.f:6.f).reduced(1).toNearestInt());
+        const float ivoryWear=black?0.f:kb09_gui::power_detail::smoothRange(.5f,1.f,age);
+        for(uint32_t scratch=0;scratch<(black?54u:uint32_t(45+10*ivoryWear));++scratch) {
             const float x=r.getX()+r.getWidth()*(.14f+.68f*surfaceNoise(seed+scratch*127));
-            const float y=r.getY()+r.getHeight()*(.12f+.68f*surfaceNoise(seed+scratch*419));
-            const float dx=(surfaceNoise(seed+scratch*199)-.5f)*7,dy=3+9*surfaceNoise(seed+scratch*733);
+            const float y=r.getY()+r.getHeight()*(black?(.12f+.68f*surfaceNoise(seed+scratch*419)):(.68f+.25f*surfaceNoise(seed+scratch*419)));
+            const float dx=(surfaceNoise(seed+scratch*199)-.5f)*16,dy=1+(9+2*ivoryWear)*surfaceNoise(seed+scratch*733);
             juce::Path trace;trace.startNewSubPath(x,y);trace.quadraticTo(x+dx*.2f+1,y+dy*.5f,x+dx,y+dy);
-            g.setColour(juce::Colour(0xffb7b9ae).withAlpha(age*age*.12f));
-            g.strokePath(trace,juce::PathStrokeType(.16f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+            g.setColour(juce::Colour(black?0xffb7b9ae:0xff696e68).withAlpha(age*age*(1+.65f*ivoryWear)*(.12f+.12f*surfaceNoise(seed+scratch*37))));
+            g.strokePath(trace,juce::PathStrokeType(.11f+.08f*surfaceNoise(seed+scratch*59)+.025f*ivoryWear,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
         }
     }
     // Fine dust follows protected back edges, gaps and the long side bevels.
@@ -370,7 +375,7 @@ void keySurfaceWear(juce::Graphics& g,juce::Rectangle<float> r,int serial,bool b
     }
 }
 
-void sliderPost(juce::Graphics& g,juce::Rectangle<float> capBounds,float age,bool releasePost) {
+void sliderPost(juce::Graphics& g,juce::Rectangle<float> capBounds,float age,bool releasePost,float lean=0) {
     // The blade's broad plane follows the slot. Seen almost from above and
     // without camera yaw, its narrow longitudinal edge is the visible surface.
     // The owner's photos establish this orientation, not physical dimensions.
@@ -381,8 +386,8 @@ void sliderPost(juce::Graphics& g,juce::Rectangle<float> capBounds,float age,boo
     const float top=capBounds.getCentreY()-edgeLength*.5f-lift;
     const float bottom=capBounds.getCentreY()+edgeLength*.5f;
     const float half=1.02f,shoulder=1.52f,step=bottom-2.7f;
-    juce::Path edge;edge.startNewSubPath(cx-half,top);
-    edge.lineTo(cx+half,top+.20f);edge.lineTo(cx+half,step);
+    juce::Path edge;edge.startNewSubPath(cx-half+lean,top);
+    edge.lineTo(cx+half+lean,top+.20f);edge.lineTo(cx+half,step);
     edge.lineTo(cx+shoulder,step+.25f);edge.lineTo(cx+shoulder,bottom);
     edge.lineTo(cx-shoulder,bottom);edge.lineTo(cx-shoulder,step-.20f);
     edge.lineTo(cx-half,step-.20f);edge.closeSubPath();
@@ -394,11 +399,11 @@ void sliderPost(juce::Graphics& g,juce::Rectangle<float> capBounds,float age,boo
     metal.addColour(releasePost?.36:.60,juce::Colour(0xff686e68));
     g.setGradientFill(metal);g.fillPath(edge);
     g.setColour(juce::Colour(0xff202523));
-    g.drawLine(cx-half,top+.35f,cx-half,step-.35f,.42f);
+    g.drawLine(cx-half+lean,top+.35f,cx-half,step-.35f,.42f);
     // The cut edge is a thin lengthwise glint, not a wide horizontal paddle.
     g.setColour(juce::Colour(0xffd4d6cb));
-    g.drawLine(cx+.13f,top+.30f,cx+.13f,step-.45f,.45f);
-    g.drawLine(cx-half+.12f,top+.18f,cx+half-.12f,top+.33f,.45f);
+    g.drawLine(cx+.13f+lean,top+.30f,cx+.13f,step-.45f,.45f);
+    g.drawLine(cx-half+.12f+lean,top+.18f,cx+half-.12f+lean,top+.33f,.45f);
     g.setColour(juce::Colour(0xff92988f));
     g.drawLine(cx+half+.10f,step+.35f,cx+shoulder-.08f,step+.35f,.38f);
     g.setColour(juce::Colour(0xffb1b4a8).withAlpha(age*.20f));
@@ -418,7 +423,7 @@ void sliderPost(juce::Graphics& g,juce::Rectangle<float> capBounds,float age,boo
     g.drawLine(cx-.36f,markY,cx+.34f,markY+.28f,.34f);
 }
 
-void cap(juce::Graphics& g,juce::Rectangle<float> r,bool small=false,bool indexed=true,float age=0) {
+void cap(juce::Graphics& g,juce::Rectangle<float> r,bool small=false,bool indexed=true,float age=0,uint32_t wearSeed=0) {
     const auto ink=agedInk(age);
     if(!small) {
         juce::Graphics::ScopedSaveState save(g);
@@ -440,6 +445,52 @@ void cap(juce::Graphics& g,juce::Rectangle<float> r,bool small=false,bool indexe
             g.setOpacity(age*.90f);
             g.drawImage(artwork().faderDull,photo.getX(),photo.getY(),photo.getWidth(),photo.getHeight(),
                         source.getX(),source.getY(),source.getWidth(),source.getHeight());
+        }
+        g.setOpacity(1);
+        const auto strip=juce::Rectangle<float>(photo.getX()+1.2f,photo.getCentreY()-1.8f,photo.getWidth()-2.4f,2.25f);
+        // Native silver geometry stays sharp at any editor scale, including the
+        // two tiny side wraps. It is independent of the photographed plastic.
+        juce::Path insert;const float left=photo.getX(),right=photo.getRight(),cy=photo.getCentreY();
+        insert.startNewSubPath(left+1.4f,cy-1.8f);insert.lineTo(right-1.4f,cy-1.8f);
+        insert.quadraticTo(right-.45f,cy-1.8f,right-.25f,cy-.8f);insert.lineTo(right-.15f,cy+1.6f);
+        insert.quadraticTo(right-.2f,cy+1.9f,right-.65f,cy+1.35f);insert.lineTo(right-1.6f,cy+.45f);
+        insert.lineTo(left+1.6f,cy+.45f);insert.lineTo(left+.65f,cy+1.35f);
+        insert.quadraticTo(left+.2f,cy+1.9f,left+.15f,cy+1.6f);insert.lineTo(left+.25f,cy-.8f);
+        insert.quadraticTo(left+.45f,cy-1.8f,left+1.4f,cy-1.8f);insert.closeSubPath();
+        const auto metal=[age](juce::Colour fresh,juce::Colour old){return fresh.interpolatedWith(old,age);};
+        juce::ColourGradient silver(metal(juce::Colour(0xffa2abad),juce::Colour(0xff727a78)),left,cy-1,
+            metal(juce::Colour(0xffbdc5c4),juce::Colour(0xff8c918e)),right,cy+1,false);
+        silver.addColour(.18,metal(juce::Colour(0xffe8eeee),juce::Colour(0xff8e9491)));
+        silver.addColour(.40,metal(juce::Colour(0xffa9b3b4),juce::Colour(0xff7b827f)));
+        silver.addColour(.68,metal(juce::Colour(0xffd5dcda),juce::Colour(0xff8a908c)));
+        g.setGradientFill(silver);g.fillPath(insert);
+        g.setColour(juce::Colours::white.withAlpha(.65f*(1-age)));
+        g.drawLine(left+1.8f,cy-1.65f,right-1.8f,cy-1.65f,.28f);
+        if(age<1) {
+            // A compact left-hand reflection, visible at normal window sizes.
+            juce::ColourGradient halo(juce::Colours::white.withAlpha(.55f*(1-age)),left+3,cy-.7f,
+                juce::Colours::transparentWhite,left+4.5f,cy+.8f,true);
+            g.setGradientFill(halo);g.fillEllipse(left+1.5f,cy-2.2f,3,3);
+            g.setColour(juce::Colours::white.withAlpha(.93f*(1-age)));g.fillEllipse(left+2.55f,cy-1.15f,.9f,.9f);
+        }
+        if(age>0) {
+            juce::Graphics::ScopedSaveState metalClip(g);g.reduceClipRegion(insert);
+            for(uint32_t i=0;i<88;++i) {
+                const auto seed=surfaceHash(wearSeed+i*7919u+3119u);
+                const float x=strip.getX()+strip.getWidth()*surfaceNoise(seed),y=strip.getY()+strip.getHeight()*surfaceNoise(seed+19);
+                const float size=.10f+.32f*surfaceNoise(seed+31);
+                g.setColour(juce::Colour(i%4?0xff555b59:0xffd2d7d3).withAlpha(age*age*(i%4?.30f:.22f)));
+                g.fillEllipse(x,y,size,size*.66f);
+            }
+        }
+        // Polished plastic develops only fine, independently placed handling
+        // scuffs. There is no molded pebbled texture on the new cap surface.
+        if(age>0)for(uint32_t i=0;i<uint32_t(28*age);++i) {
+            const auto seed=surfaceHash(wearSeed+i*733u+1487u);
+            const float x=left+3+21*surfaceNoise(seed),y=cy+(i%2?-6.9f:2.f)+3.8f*surfaceNoise(seed+13);
+            juce::Path scuff;scuff.startNewSubPath(x,y);scuff.quadraticTo(x+.3f,y+.7f,x+.4f+1.5f*surfaceNoise(seed+31),y+1.3f);
+            g.setColour(juce::Colour(0xffa0a6a0).withAlpha(age*age*.19f));
+            g.strokePath(scuff,juce::PathStrokeType(.11f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
         }
         return;
     }
@@ -642,7 +693,7 @@ public:
                           const juce::Slider::SliderStyle style,juce::Slider& slider) override {
         if(!g.clipRegionIntersects(juce::Rectangle<int>(-30,-14,slider.getWidth()+60,slider.getHeight()+28)))return;
         const auto ink=agedInk(age);
-        const float cx=float(x)+float(w)*.5f,cy=float(y)+float(h)*.5f;
+        const float cx=float(x)+float(w)*.5f,cy=float(y)+float(h)*.5f-((style==juce::Slider::LinearHorizontal&&slider.getY()>=headerH+visibleBodyH)?4.f:0.f);
         if(style==juce::Slider::LinearVertical) {
             const bool compact=bool(slider.getProperties().getWithDefault("compact",false));
             const auto rim=juce::Rectangle<float>(cx-4.8f,float(y)-2,9.6f,float(h)+4);
@@ -659,23 +710,30 @@ public:
             g.drawLine(cx-4.5f,float(y)+4,cx-4.5f,float(y+h)-4,.45f);
             const auto capBounds=juce::Rectangle<float>(cx-(compact?12.5f:15),pos-10,compact?25.0f:30.0f,23);
             const bool releasePost=slider.getComponentID()=="release";
-            const bool missing=(slider.getComponentID()=="lfoDelay"&&age>=.60f)||(slider.getComponentID()=="vcoLevel"&&age>=.64f)||(releasePost&&age>=.88f);
+            const auto id=slider.getComponentID();
+            const bool missing=(id=="vcoLevel"&&age>=.50f)||(id=="lfoDelay"&&age>=.75f)
+                ||(id=="extLevel"&&age>=.75f)||(releasePost&&age>=1.f)||(id=="vcfMod"&&age>=1.f);
             // Cap loss is a discrete visual event. The original slider, hit
             // area, attachment and value remain available beneath the drawing.
-            if(missing)sliderPost(g,capBounds,age,releasePost);
+            const auto seed=uint32_t(id.hashCode());
+            const float progress=std::pow(juce::jlimit(0.f,1.f,(age-.20f)/.80f),1.18f);
+            const float lean=(surfaceNoise(seed+197)>.5f?1.f:-1.f)*(.35f+1.35f*surfaceNoise(seed+277))*progress;
+            if(missing)sliderPost(g,capBounds,age,releasePost,lean);
             else {
                 juce::Graphics::ScopedSaveState aligned(g);
-                const auto id=slider.getComponentID();
-                const float twist=id=="subLevel"?-.045f*juce::jlimit(0.f,1.f,(age-.25f)/.75f)
-                    :id=="vcfEnv"?.065f*juce::jlimit(0.f,1.f,(age-.55f)/.45f):0.f;
+                g.addTransform(juce::AffineTransform::translation(lean,0));
+                const float direction=surfaceNoise(seed+31)>.5f?1.f:-1.f;
+                const float twist=direction*(.035f+.115f*surfaceNoise(seed))*progress;
                 g.addTransform(juce::AffineTransform::rotation(twist,capBounds.getCentreX(),capBounds.getCentreY()));
-                cap(g,capBounds,false,true,age);
+                cap(g,capBounds,false,true,age,uint32_t(id.hashCode()));
             }
         } else {
             if(slider.getComponentID()=="bender") {
                 const float amount=float(slider.getValue());
                 const float centre=float(slider.getWidth())*.5f;
-                auto well=juce::Rectangle<float>(8,13,float(slider.getWidth())-16,22);
+                juce::Graphics::ScopedSaveState wheelGeometry(g);
+                g.addTransform(juce::AffineTransform::scale(float(slider.getWidth())/143.f,1.f,centre,0));
+                auto well=juce::Rectangle<float>(centre-63.5f,13,127,22);
                 g.setColour(juce::Colour(0xff080909));g.fillRoundedRectangle(well.expanded(1.3f),1.1f);
                 g.setColour(juce::Colour(0xff393b38).withAlpha(.55f));g.drawLine(well.getX(),well.getBottom()+.6f,well.getRight(),well.getBottom()+.6f,.65f);
                 g.setGradientFill(juce::ColourGradient(juce::Colour(0xff030303),well.getX(),well.getY(),
@@ -692,12 +750,12 @@ public:
                     return 5.4f+7.4f*t*t*(3-2*t);
                 };
                 const float wheelBaseline=13.0f+radius*panelViewSin;
-                const bool broken=age>=.80f;
+                const bool broken=age>=1.f;
                 const auto project=[centre,wheelBaseline,sa,ca](juce::Point<float> p,float axleDepth) {
                     const float xx=p.x*ca+p.y*sa,zz=p.y*ca-p.x*sa;
                     return juce::Point<float>(centre+xx,wheelBaseline-zz*panelViewSin+axleDepth*panelViewCos);
                 };
-                constexpr int circleSegments=256,vertexCapacity=circleSegments+24;
+                constexpr int circleSegments=256,vertexCapacity=circleSegments+64;
                 std::array<juce::Point<float>,vertexCapacity> outline{};
                 int count=0;
                 const float rootAngle=std::asin((broken?21.0f:rootWidth)/radius),rootHeight=std::sqrt(radius*radius-rootWidth*rootWidth);
@@ -719,8 +777,8 @@ public:
                     for(const auto p:tab)outline[size_t(count++)]=p;
                 } else {
                     outline[size_t(count++)]={-9.0f,rootHeight+1.2f};
-                    for(int i=0;i<=5;++i){const float a=juce::MathConstants<float>::pi-float(i)*juce::MathConstants<float>::halfPi/5;outline[size_t(count++)]={-4.5f+4.5f*std::cos(a),80.5f+4.5f*std::sin(a)};}
-                    for(int i=0;i<=5;++i){const float a=juce::MathConstants<float>::halfPi-float(i)*juce::MathConstants<float>::halfPi/5;outline[size_t(count++)]={4.5f+4.5f*std::cos(a),80.5f+4.5f*std::sin(a)};}
+                    for(int i=0;i<=24;++i){const float a=juce::MathConstants<float>::pi-float(i)*juce::MathConstants<float>::halfPi/24;outline[size_t(count++)]={-2.5f+6.5f*std::cos(a),80.5f+6.5f*std::sin(a)};}
+                    for(int i=0;i<=24;++i){const float a=juce::MathConstants<float>::halfPi-float(i)*juce::MathConstants<float>::halfPi/24;outline[size_t(count++)]={2.5f+6.5f*std::cos(a),80.5f+6.5f*std::sin(a)};}
                     outline[size_t(count++)]={9.0f,rootHeight+1.2f};
                 }
                 // Each shared fracture edge leans by a different fixed amount
@@ -833,7 +891,7 @@ public:
                         // a broad reflection would soften the jagged cut.
                         const float diffuse=juce::jmax(0.0f,-.54f*nx+.842f*nz);
                         const float value=fracture?.029f+.185f*diffuse*diffuse
-                            +.024f*surfaceNoise(uint32_t(i)*917u):plasticLight(nx,0,nz,axial);
+                            +.024f*surfaceNoise(uint32_t(i)*917u):plasticLight(nx,0,nz,axial)*(1+(!broken&&a.y>radius?.22f*(1-age):0.f));
                         auto colour=juce::Colour::fromFloatRGBA(value,value*.99f,value*.96f,1);
                         if(fracture)colour=colour.interpolatedWith(juce::Colour(0xff777777),.08f);
                         return colour;
@@ -1125,7 +1183,7 @@ public:
     void paint(juce::Graphics& g) override {
         g.fillAll(juce::Colour(0xff06090b));
         const auto* material=dynamic_cast<const HardwareLook*>(&getLookAndFeel());
-        const float age=juce::jlimit(0.0f,1.0f,material!=nullptr&&material->renderingPreview?material->age:processor.state.getRawParameterValue("age")->load());
+        const float age=juce::jlimit(0.0f,1.0f,material!=nullptr&&material->renderingPreview?material->age:appearanceAge(processor.state.getRawParameterValue("age")->load()));
         const float gloss=1.0f-age*.90f;
         std::array<bool,128> held{};
         int effectiveNote=-1;
@@ -1177,7 +1235,7 @@ public:
                 // The photographed edge is oblique; use symmetric physical
                 // corner geometry instead of inheriting its cropped left corner.
                 juce::Path outline;outline.addRoundedRectangle(r.reduced(.65f,0),5.2f);g.reduceClipRegion(outline);
-                const auto ivory=juce::Colour(0xffefede6).interpolatedWith(juce::Colour(0xffd1bd86),age*.85f);
+                const auto ivory=juce::Colour(0xffefede6).interpolatedWith(juce::Colour(0xffd1bd86),age*.72f);
                 auto key=r.reduced(.65f,0);
                 const float frontHeight=down?0.f:2.8f;
                 auto face=key.withTrimmedTop(key.getHeight()-frontHeight);
@@ -1211,7 +1269,7 @@ public:
                 const float variation=float(n-53)/31;
                 // Polymer and printing age separately. Strong warm ivory at the
                 // endpoint follows the uneven cream keys in original-unit photos.
-                g.setColour(juce::Colour(0xffb9a267).withAlpha(.008f+variation*.025f+age*(.08f+variation*.04f)));
+                g.setColour(juce::Colour(0xffb9a267).withAlpha(.008f+variation*.025f+age*(.067f+variation*.034f)));
                 g.fillRoundedRectangle(key.reduced(.5f),4.7f);
             } else {
                 for(int i=5;i>0;--i){g.setColour(juce::Colours::black.withAlpha(.07f));g.fillRoundedRectangle(r.expanded(float(i)*.45f).translated(2,3),1.8f);}
@@ -1231,17 +1289,19 @@ public:
                 g.drawLine(face.getX()+2,face.getY(),face.getRight()-2,face.getY(),.7f);
                 // Keep a little uneven photographic reflection at full age:
                 // the black plastic wears, but does not turn into flat paint.
-                const float reflected=.42f+.08f*surfaceNoise(uint32_t(n)*6197u);
+                const float reflected=.34f+.06f*surfaceNoise(uint32_t(n)*6197u);
                 g.setOpacity(1.0f-age*(1.0f-reflected));g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
                 g.drawImage(artwork().blackKey,r,juce::RectanglePlacement::stretchToFit);
                 g.setOpacity(1.0f);
                 // The moulded front chamfer is visible from the centred view.
                 // Paint it after the photographic surface, so that it survives.
-                juce::Path bevel;bevel.startNewSubPath(r.getX()+4,r.getBottom()-6);
-                bevel.lineTo(r.getRight()-4,r.getBottom()-6);bevel.lineTo(r.getRight()-1,r.getBottom()-1);
+                juce::Path bevel;bevel.startNewSubPath(r.getX()+4,r.getBottom()-10);
+                bevel.lineTo(r.getRight()-4,r.getBottom()-10);bevel.lineTo(r.getRight()-1,r.getBottom()-1);
                 bevel.lineTo(r.getX()+1,r.getBottom()-1);bevel.closeSubPath();
-                g.setGradientFill(juce::ColourGradient(juce::Colour(0xff333531),0,r.getBottom()-6,
+                g.setGradientFill(juce::ColourGradient(juce::Colour(0xff555953),0,r.getBottom()-10,
                     juce::Colour(0xff0b0d0c),0,r.getBottom()-1,false));g.fillPath(bevel);
+                g.setColour(juce::Colour(0xffaeb6b2).withAlpha(.24f*(1-age*.5f)));
+                g.drawLine(r.getX()+4,r.getBottom()-10,r.getRight()-4,r.getBottom()-10,.65f);
                 // A worn surface spreads its reflected light across a wider area.
                 juce::ColourGradient reflection(juce::Colours::transparentWhite,top.getX(),top.getY(),
                     juce::Colours::transparentWhite,top.getRight(),top.getY(),false);
@@ -1328,7 +1388,7 @@ private:
         const float w=float(getWidth())/19;
         if(isBlack(n))return {float(whites)*w-w*.31f,0,w*.62f,float(getHeight())*.64f};
         const auto* material=dynamic_cast<const HardwareLook*>(&getLookAndFeel());
-        const float age=material&&material->renderingPreview?material->age:processor.state.getRawParameterValue("age")->load();
+        const float age=material&&material->renderingPreview?material->age:appearanceAge(processor.state.getRawParameterValue("age")->load());
         const float shift=(n==64?-1.25f:n==65?1.15f:(surfaceNoise(uint32_t(n)*7919u)-.5f)*.75f)*age;
         const float narrowing=(n==71?.85f:.18f)*age;
         return {float(whites)*w+shift+narrowing*.5f,0,w-narrowing,float(getHeight())};
@@ -1396,7 +1456,8 @@ public:
     }
     std::function<void()> onPowerChanged;
     void paintButton(juce::Graphics& g,bool over,bool down) override {
-        const float age=juce::jlimit(0.0f,1.0f,processor.state.getRawParameterValue("age")->load());
+        const auto* appearance=dynamic_cast<const HardwareLook*>(&getLookAndFeel());
+        const float age=appearance&&appearance->renderingPreview?appearance->age:appearanceAge(processor.state.getRawParameterValue("age")->load());
         const bool pressed=processor.isPowerEnabled()||down;
         const auto recess=getLocalBounds().toFloat().withTrimmedTop(10).reduced(.7f);
         // The grey pushbutton stands tall when OFF. Project its estimated
@@ -1409,10 +1470,10 @@ public:
         const auto top=footprint.translated(0,-wallHeight);
         g.setColour(juce::Colours::black.withAlpha(pressed?.35f:.47f));
         g.fillRoundedRectangle(footprint.translated(.45f,.25f+wallHeight*.34f),1.1f);
-        const auto grey=juce::Colour(0xff858780).interpolatedWith(juce::Colour(0xff78786c),age*.76f);
+        const auto grey=juce::Colour(0xff959b98).interpolatedWith(juce::Colour(0xff85877e),age*.65f);
         const auto wall=juce::Rectangle<float>(top.getX(),top.getBottom()-2,top.getWidth(),wallHeight+2);
         g.setGradientFill(juce::ColourGradient(grey.darker(.13f),0,wall.getY(),grey.darker(.23f),0,wall.getBottom(),false));
-        g.fillRoundedRectangle(wall,3.8f);
+        g.fillRoundedRectangle(wall,2.0f);
         g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
         g.drawImage(capSurface(top.getWidth(),top.getHeight(),age,over),top,juce::RectanglePlacement::stretchToFit);
     }
@@ -1423,11 +1484,11 @@ private:
         // diffuse highlight. Dimensions are photo-informed visual estimates.
         const auto* look=dynamic_cast<const HardwareLook*>(&getLookAndFeel());
         const float scale=look!=nullptr&&look->conditionDragging?2.0f:6.0f;
-        constexpr float bevel=2.3f,radius=3.8f;
+        constexpr float bevel=1.1f,radius=2.1f;
         const int w=juce::roundToInt(width*scale),h=juce::roundToInt(height*scale);
         if(cap.isValid()&&cap.getWidth()==w&&cap.getHeight()==h&&capAge==age&&capOver==over)return cap;
         cap=juce::Image(juce::Image::ARGB,w,h,true,juce::SoftwareImageType());capAge=age;capOver=over;
-        const auto base=juce::Colour(0xff858780).interpolatedWith(juce::Colour(0xff78786c),age*.76f);
+        const auto base=juce::Colour(0xff959b98).interpolatedWith(juce::Colour(0xff85877e),age*.65f);
         juce::Image::BitmapData pixels(cap,juce::Image::BitmapData::writeOnly);
         for(int y=0;y<h;++y)for(int x=0;x<w;++x) {
             const float px=(x+.5f)*width/w-width*.5f,py=(y+.5f)*height/h-height*.5f;
@@ -1444,9 +1505,12 @@ private:
             const float nx=gx*std::sin(angle),ny=gy*std::sin(angle),nz=std::cos(angle);
             const float diffuse=juce::jmax(0.0f,nx*.35f+ny*.42f+nz*.84f);
             const float specular=std::pow(juce::jmax(0.0f,nx*.19f+ny*.23f+nz*.953f),16)*(.075f-age*.035f);
-            const float grain=(surfaceNoise(uint32_t(x/2)*7919u+uint32_t(y/2)*104729u+9457u)-.5f)*.012f;
-            const float cloud=.008f*std::sin(px*.31f+std::sin(py*.47f))-.009f*age*(1-t);
-            const float shade=.73f+.28f*diffuse+specular+grain+cloud+(over?.009f:0);
+            const float grain=(kb09_gui::power_detail::smoothNoise((px+width)*7,(py+height)*7,9457u)-.5f)*(.045f+age*.015f);
+            const float edgeReflection=.22f*(1-age)*std::exp(-std::pow((px-width*.5f+1.55f)/.50f,2.f))
+                *std::exp(-std::pow(py/(height*.40f),4.f));
+            const float cloud=.014f*std::sin(px*.17f+std::sin(py*.23f))-.009f*age*(1-t)
+                +.035f*std::exp(-std::pow((px+width*.20f)/(width*.55f),2.f)-std::pow((py+height*.22f)/(height*.4f),2.f));
+            const float shade=.73f+.28f*diffuse+specular+grain+cloud+edgeReflection+(over?.009f:0);
             pixels.setPixelColour(x,y,juce::Colour::fromFloatRGBA(
                 juce::jlimit(0.0f,1.0f,base.getFloatRed()*shade),
                 juce::jlimit(0.0f,1.0f,base.getFloatGreen()*shade),
@@ -1543,7 +1607,7 @@ public:
         setLookAndFeel(&look);setSize(designW,designH);
         addAndMakeVisible(header);header.setBounds(0,0,designW,headerH);
         addAndMakeVisible(updates);updates.setBounds(25,5,132,24);updates.setButtonText("TOYLAND / KB-09");updates.setComponentID("updates");updates.onClick=[this]{kb09::Updates::instance().showMenu(&updates);};
-        addAndMakeVisible(keyboard);keyboard.setBounds(286,headerH+370,1142,337);
+        addAndMakeVisible(keyboard);keyboard.setBounds(326,headerH+370,1102,337);
         for(int i=0;i<processor.getNumPrograms();++i)presets.addItem(processor.getProgramName(i),i+1);
         addAndMakeVisible(presets);presets.setBounds(441,5,336,24);presets.setComponentID("factoryPreset");
         presets.setTooltip("Factory patch. Loading replaces current sound settings.");
@@ -1620,10 +1684,10 @@ public:
         addSwitch("envMode",1175,104,55,121,{0,1,2},{"GATE +\nTRIG","GATE","LFO"},"Gate+Trigger re-attacks on low-note changes. Gate preserves legato. LFO repeats while held.",true);
         addFader("attack","A",1260,96,31,129,true);addFader("decay","D",1292,96,31,129,true);
         addFader("sustain","S",1324,96,31,129,true);addFader("release","R",1356,96,31,129,true);
-        addKnob("volume",117,442,79);
-        addAndMakeVisible(power);power.setBounds(183,headerH+398,44,44);power.onPowerChanged=[this]{repaint();};
-        addFader("bendVco","VCO",102,496,35,112,true);addFader("bendVcf","VCF",138,496,35,112,true);
-        addFader("portamento","PORTAMENTO",205,496,37,112,true);
+        addKnob("volume",140,442,88);
+        addAndMakeVisible(power);power.setBounds(231,headerH+398,50,44);power.onPowerChanged=[this]{repaint();};
+        addFader("bendVco","VCO",128,496,35,96,true);addFader("bendVcf","VCF",164,496,35,96,true);
+        addFader("portamento","PORTAMENTO",256,496,43,112,true);
         // The original has continuous shared rules between adjacent tracks,
         // with numbers at the outside edges of each group only.
         const auto sharedScale=[this](std::initializer_list<const char*> ids) {
@@ -1640,7 +1704,7 @@ public:
         sharedScale({"lfoRate","lfoDelay"});sharedScale({"vcoLevel","subLevel","extLevel"});
         sharedScale({"cutoff","resonance"});sharedScale({"vcfEnv","vcfMod"});
         sharedScale({"attack","decay","sustain","release"});sharedScale({"bendVco","bendVcf"});
-        addAndMakeVisible(bender);bender.setBounds(85,headerH+638,143,48);bender.setComponentID("bender");
+        addAndMakeVisible(bender);bender.setBounds(95,headerH+638,179,48);bender.setComponentID("bender");
         bender.setRange(-1,1,.001);
         lastBendSerial=processor.displayedPitchBendSerial.load(std::memory_order_acquire);
         bender.setValue(processor.displayedPitchBend.load(std::memory_order_relaxed),juce::dontSendNotification);
@@ -1663,6 +1727,7 @@ public:
         addSwitch("modern",25,designH-headerH-44,131,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
         // Keep a consistent 52-unit gap between bottom-row control groups.
         addUtility("age","CONDITION / AGE",290,170);
+        controls.back()->slider->setRange(0,1,.25);
         controls.back()->slider->onDragStart=[this]{
             look.conditionDragging=true;
             // Only hide hardware when a complete replacement can be drawn.
@@ -1675,7 +1740,7 @@ public:
         };
         controls.back()->slider->onDragEnd=[this]{
             look.conditionDragging=false;conditionBackdrop={};previousCondition={};
-            look.age=processor.state.getRawParameterValue("age")->load();
+            look.age=appearanceAge(processor.state.getRawParameterValue("age")->load());
             for(auto& c:hiddenForCondition)if(c!=nullptr)c->setVisible(true);
             hiddenForCondition.clear();repaint();keyboard.repaint();
         };
@@ -1716,18 +1781,16 @@ public:
     void paint(juce::Graphics& g) override {
         if(!renderingCondition&&resizeBackdrop.isValid()&&resizeCacheUntil>0){g.drawImage(resizeBackdrop,getLocalBounds().toFloat());return;}
         if(look.conditionDragging&&!renderingCondition&&agePreviews.front().isValid()&&agePreviews.back().isValid()) {
-            const float amount=juce::jlimit(0.0f,1.0f,processor.state.getRawParameterValue("age")->load())*4;
-            const int low=juce::jmin(3,int(amount));
+            const int stage=kb09_gui::appearanceStage(processor.state.getRawParameterValue("age")->load());
             const juce::Rectangle<float> body(0,float(headerH),float(designW),float(visibleBodyH));
-            g.drawImage(agePreviews[size_t(low)],body);
-            g.setOpacity(amount-low);g.drawImage(agePreviews[size_t(low+1)],body);g.setOpacity(1);
+            g.setOpacity(1);g.drawImage(agePreviews[size_t(stage)],body);
             paintFooter(g);return;
         }
         if(renderingCondition){paintChassis(g);return;}
         // Hardware movement only exposes the same stationary panel beneath it.
         // Rasterise that material once at the actual display resolution, rather
         // than rebuilding grain, corrosion and photographic patches per repaint.
-        const float age=processor.state.getRawParameterValue("age")->load();
+        const float age=appearanceAge(processor.state.getRawParameterValue("age")->load());
         const bool powered=processor.isPowerEnabled();
         const float scale=juce::jlimit(1.0f,4.0f,g.getInternalContext().getPhysicalPixelScaleFactor());
         if(!staticPanel.isValid()||staticPanelAge!=age||staticPanelPower!=powered||std::abs(staticPanelScale-scale)>.01f) {
@@ -1739,7 +1802,7 @@ public:
         g.drawImage(staticPanel,getLocalBounds().toFloat());
     }
     void paintChassis(juce::Graphics& g) {
-        look.age=previewAge>=0?previewAge:processor.state.getRawParameterValue("age")->load();
+        look.age=previewAge>=0?previewAge:appearanceAge(processor.state.getRawParameterValue("age")->load());
         const float age=look.age;
         const auto ink=agedInk(age);
         const auto& art=artwork();g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
@@ -1757,141 +1820,27 @@ public:
                 // rust does not spill onto the molded side cheeks or empty keybed.
                 juce::Path metal;
                 metal.addRectangle(55.0f,float(headerH),1389.0f,365.0f);
-                metal.addRectangle(65.0f,float(headerH+366),182.0f,335.0f);
+                metal.addRectangle(65.0f,float(headerH+366),257.0f,335.0f);
                 g.reduceClipRegion(metal);g.setOpacity(.90f*std::pow(age,.85f));
                 g.drawImage(art.chassisAged,0,headerH,designW,bodyH,source.getX(),source.getY(),source.getWidth(),source.getHeight());
             }
-            // The close-up places the upper POWER screw on the cap axis.
-            // Cover its earlier baked corner location with nearby registered
-            // panel material before drawing the relocated head and panel ink.
-            const float mountX=(277.0f-2)*designW/1770,mountY=headerH+(457.0f-7)*bodyH/873;
-            const float materialShift=32.0f*designW/1770;
-            for(int edge=0;edge<6;++edge) {
-                juce::Graphics::ScopedSaveState patch(g);
-                const float radius=12.5f-edge*.3f,opacity=float(edge+1)/6;
-                juce::Path mask;mask.addEllipse(mountX-radius,mountY-radius,radius*2,radius*2);g.reduceClipRegion(mask);
-                g.setOpacity(opacity);g.drawImage(art.chassis,juce::roundToInt(materialShift),headerH,designW,bodyH,
-                    source.getX(),source.getY(),source.getWidth(),source.getHeight());
-                g.setOpacity(opacity*.90f*std::pow(age,.85f));
-                g.drawImage(art.chassisAged,juce::roundToInt(materialShift),headerH,designW,bodyH,
-                    source.getX(),source.getY(),source.getWidth(),source.getHeight());
-            }
         }
+        // Rebuild the widened performance bay from unoccupied photographic
+        // paint, rather than stretching baked screws or leaving the old seam.
         {
-            // Replace unwanted photographic heads with neighboring material
-            // from the same horizontal rail, at both aging endpoints.
-            for(const auto p:{juce::Point<int>(100,457)}) {
-                const float xx=(p.x-2)*float(designW)/1770,yy=headerH+(p.y-7)*float(bodyH)/873;
-                juce::Graphics::ScopedSaveState patch(g);
-                if(p.y==457)g.reduceClipRegion(juce::Rectangle<int>(69,404,176,335));
-                juce::Image material(juce::Image::RGB,100,80,true,juce::SoftwareImageType());
-                {juce::Graphics fill(material);
-                 fill.drawImage(art.chassis,0,0,100,80,p.x+35,p.y-23,59,47);
-                 fill.setOpacity(.90f*std::pow(age,.85f));fill.drawImage(art.chassisAged,0,0,100,80,p.x+35,p.y-23,59,47);}
-                for(int ring=0;ring<14;++ring) {
-                    juce::Graphics::ScopedSaveState blend(g);
-                    const float t=float(ring+1)/14,previous=float(ring)/14;
-                    juce::Path mask;mask.addEllipse(xx-25+ring*.65f,yy-20+ring*.45f,50-ring*1.3f,40-ring*.9f);
-                    g.reduceClipRegion(mask);g.setOpacity((t-previous)/(1-previous));
-                    g.drawImage(material,{xx-25,yy-20,50,40});
-                }
-            }
+            juce::Graphics::ScopedSaveState bay(g);
+            g.addTransform(juce::AffineTransform::translation(0,float(headerH)));
+            const juce::Rectangle<float> outer(60,364,267,344),face(60,364,267,344);
+            g.setColour(juce::Colour(0xff030505));g.fillRect(outer.expanded(1,0));
+            // Painted bay extends behind the outline-to-key margin; no grey rim.
+            g.setColour(juce::Colour(0xff101413));g.fillRoundedRectangle(outer,3);
+            juce::Path clip;clip.addRoundedRectangle(face,3);g.reduceClipRegion(clip);
+            g.drawImage(art.chassis,face.getX(),face.getY(),face.getWidth(),face.getHeight(),105,530,158,220);
+            g.setOpacity(.90f*std::pow(age,.85f));
+            g.drawImage(art.chassisAged,face.getX(),face.getY(),face.getWidth(),face.getHeight(),105,530,158,220);
+            g.setOpacity(1);
         }
-        // Sparse, individually sized plastic scuffs and faint handling smears.
-        if(age>0)for(int side=0;side<2;++side) {
-            juce::Graphics::ScopedSaveState cheek(g);
-            g.reduceClipRegion(juce::Rectangle<int>(side?1447:5,headerH+12,45,bodyH-24));
-            // Handling polishes the high spots and dulls the broad plastic face.
-            // Fine, irregular material grain breaks up the glossy fresh photo.
-            const float faceX=side?1452.f:10.f;
-            juce::ColourGradient dulled(juce::Colour(0xff898982).withAlpha(age*.27f),faceX,headerH+40.f,
-                juce::Colour(0xff313432).withAlpha(age*.06f),faceX,float(headerH+visibleBodyH),false);
-            g.setGradientFill(dulled);g.fillRoundedRectangle(faceX,headerH+14.f,35.f,float(visibleBodyH-23),6.f);
-            for(uint32_t grain=0;grain<8500;++grain) {
-                const uint32_t seed=surfaceHash(grain*7919u+uint32_t(side)*17777u+8361u);
-                const float xx=faceX+35*surfaceNoise(seed),yy=headerH+16+float(visibleBodyH-28)*surfaceNoise(seed+17);
-                const float size=.25f+.65f*surfaceNoise(seed+31);
-                g.setColour(juce::Colour(grain%3?0xff999a91:0xff080b0a).withAlpha(age*(.025f+.065f*surfaceNoise(seed+53))));
-                g.fillEllipse(xx,yy,size,size*.7f);
-            }
-            for(int rub=0;rub<2;++rub) {
-                const auto seed=uint32_t(side*971+rub*331+87);
-                const float x=(side?1450.0f:8.0f)+30*surfaceNoise(seed),y=headerH+90+560*surfaceNoise(seed+13);
-                const float w=7+9*surfaceNoise(seed+31),h=14+24*surfaceNoise(seed+71);
-                juce::ColourGradient smear(juce::Colour(0xff777b79).withAlpha(age*age*.11f),x,y,
-                    juce::Colours::transparentBlack,x+w,y+h,true);
-                g.setGradientFill(smear);g.fillEllipse(x-w,y-h,w*2,h*2);
-            }
-            for(uint32_t i=0;i<42;++i) {
-                const uint32_t seed=surfaceHash(15077u+uint32_t(side)*191911u+i*7919u);
-                const float x=(side?1447.0f:5.0f)+45*surfaceNoise(seed),y=headerH+20+705*surfaceNoise(seed+31);
-                const float length=(i%7==0?9.0f:3.0f)+(i%7==0?20.0f:13.0f)*surfaceNoise(seed+53);
-                const float dy=(surfaceNoise(seed+71)-.5f)*(i%3==0?35.0f:8.0f);
-                const float width=.45f+1.25f*std::pow(surfaceNoise(seed+97),1.6f);
-                const float contrast=age*age*(.18f+.22f*surfaceNoise(seed+131));
-                // Abraded plastic has feathered, uneven edges and tapered ends,
-                // rather than a constant-width pen stroke. Keep its gray tone.
-                for(int layer=0;layer<3;++layer) {
-                    juce::Path scuff;
-                    const float spread=layer==0?1.8f:layer==1?1.3f:1.0f;
-                    for(int edge=0;edge<2;++edge)for(int step=0;step<=12;++step) {
-                        const int j=edge?12-step:step;
-                        const float t=float(j)/12;
-                        const float taper=std::pow(juce::jmax(0.0f,std::sin(juce::MathConstants<float>::pi*t)),.55f);
-                        const float uneven=.65f+.35f*surfaceNoise(seed+uint32_t(j)*173);
-                        const float yy=y+dy*t+.28f*(surfaceNoise(seed+uint32_t(j)*307)-.5f);
-                        const float half=width*spread*.5f*taper*uneven;
-                        const juce::Point<float> p(x+length*t,yy+(edge?-half:half));
-                        if(edge==0&&step==0)scuff.startNewSubPath(p);else scuff.lineTo(p);
-                    }
-                    scuff.closeSubPath();
-                    g.setColour(juce::Colour(i%4?0xff858985:0xff16191a).withAlpha(contrast*(layer==0?.12f:layer==1?.25f:.75f)));
-                    g.fillPath(scuff);
-                }
-            }
-        }
-        // Broad moulded lower cheek bevels. Corner damage is confined to plastic,
-        // exposing dark substrate rather than adding the panel's metal rust.
-        for(int side=0;side<2;++side) {
-            const float x=side?1447.f:5.f,bottom=float(headerH+visibleBodyH);
-            juce::Graphics::ScopedSaveState cheek(g);
-            g.reduceClipRegion(juce::Rectangle<int>(int(x),headerH+12,45,visibleBodyH-12));
-            juce::Path bevel;bevel.startNewSubPath(x,bottom-16);bevel.lineTo(x+45,bottom-16);
-            bevel.lineTo(x+34,bottom);bevel.lineTo(x+11,bottom);bevel.closeSubPath();
-            g.setGradientFill(juce::ColourGradient(juce::Colour(0xff373a39),0,bottom-16,
-                juce::Colour(0xff080a0a),0,bottom,false));g.fillPath(bevel);
-            if(age>0)for(int cut=0;cut<7;++cut) {
-                const float edge=side?x+43:x+2;
-                const uint32_t seed=surfaceHash(uint32_t(cut)*701u+uint32_t(side)*3947u+1943u);
-                const float yy=cut==0?float(headerH+20):cut==1?bottom-12:cut==2?bottom-37:
-                    headerH+95+float(cut-3)*133+35*surfaceNoise(seed);
-                const float inward=side?-1.f:1.f,depth=(cut<3?5.f:2.5f)*age*age*(.7f+.6f*surfaceNoise(seed+17));
-                const float length=(cut<3?17.f:10.f)*age;
-                juce::Path gouge,lip;gouge.startNewSubPath(edge,yy-length*.5f);
-                for(int j=0;j<=14;++j) {
-                    const float t=float(j)/14;
-                    // Float sin(pi) can be slightly negative. Fractional powers
-                    // require a nonnegative profile or the path gets NaN points.
-                    const float profile=std::pow(juce::jmax(0.f,std::sin(juce::MathConstants<float>::pi*t)),.65f);
-                    const float bite=depth*profile*(.55f+.45f*surfaceNoise(seed+uint32_t(j)*137u));
-                    const juce::Point<float> p(edge+inward*bite,yy-length*.5f+t*length);
-                    gouge.lineTo(p);if(j==0)lip.startNewSubPath(p);else lip.lineTo(p);
-                }
-                gouge.closeSubPath();
-                g.setGradientFill(juce::ColourGradient(juce::Colour(0xff040606).withAlpha(age*.92f),edge,yy,
-                    juce::Colour(0xff4b4e48).withAlpha(age*.75f),edge+inward*depth,yy+length*.35f,false));
-                g.fillPath(gouge);
-                g.setColour(juce::Colour(0xff989c8d).withAlpha(age*.24f));
-                g.strokePath(lip,juce::PathStrokeType(.38f));
-                {juce::Graphics::ScopedSaveState rough(g);g.reduceClipRegion(gouge);
-                    for(uint32_t fleck=0;fleck<95;++fleck) {
-                        const uint32_t f=surfaceHash(seed+fleck*331u);
-                        g.setColour(juce::Colour(fleck%2?0xff92968b:0xff030505).withAlpha(age*.18f));
-                        g.fillEllipse(edge+inward*depth*surfaceNoise(f),yy-length*.5f+length*surfaceNoise(f+13),.5f,.35f);
-                    }
-                }
-            }
-        }
+        for(int side=0;side<2;++side)kb09_gui::cheekMaterial().paint(g,side,age,float(headerH));
         caseStains(g,age);
         paintPanelDust(g,age);
         // The narrow rail below the keys has a fine pebble finish. It is a
@@ -1955,60 +1904,47 @@ public:
             raisedLip.addColour(.23,juce::Colour(0xffd0d0cc).withAlpha(.09f-.02f*age));
             raisedLip.addColour(.47,juce::Colour(0xffbfc1bd).withAlpha(.065f-.01f*age));
             g.setGradientFill(raisedLip);g.fillRect(60.0f,317.0f,1381.0f,47.0f);
-            // Move the original photographic lower screw row above the bender,
-            // replacing the old seats with neighbouring unoccupied panel material.
-            for(const auto p:{juce::Point<int>(98,799),{277,799}}) {
-                const float xx=float(p.x-2)*designW/1770,yy=float(p.y-7)*bodyH/873;
-                g.setOpacity(1);g.drawImage(art.chassis,juce::roundToInt(xx-13),juce::roundToInt(yy-13),26,26,p.x-15,p.y-60,30,30);
-                g.setOpacity(age*.94f);g.drawImage(art.chassisAged,juce::roundToInt(xx-13),juce::roundToInt(yy-13),26,26,p.x-15,p.y-60,30,30);
-            }
-            g.setOpacity(1);
-            g.setColour(ink.withAlpha(.82f));g.drawRoundedRectangle(69,370,176,335,3,1);
-            g.drawLine(170,374,170,484,.85f);
-            caption(g,"VOLUME",{80,376,75,13},10,juce::Justification::centred,true,ink);
+            g.setColour(ink.withAlpha(.82f));
+            juce::Path bayRule;bayRule.startNewSubPath(69,370);bayRule.lineTo(69,702);
+            bayRule.quadraticTo(69,705,72,705);bayRule.lineTo(299,705);
+            bayRule.quadraticTo(302,705,302,702);bayRule.lineTo(302,370);
+            g.strokePath(bayRule,juce::PathStrokeType(1));
+            g.drawLine(210,374,210,484,.85f);
+            caption(g,"VOLUME",{96,376,88,13},10,juce::Justification::centred,true,ink);
             for(int i=0;i<=10;++i) {
                 const float a=juce::MathConstants<float>::pi*(1.25f+1.5f*float(i)/10);
-                const juce::Point<float> c(117,442),direction(std::sin(a),-std::cos(a));
+                const juce::Point<float> c(140,442),direction(std::sin(a),-std::cos(a));
                 g.setColour(ink);g.drawLine({c+direction*41,c+direction*47},1.0f);
                 if(i==0||i==10) {const auto p=c+direction*53;caption(g,juce::String(i),{p.x-10,p.y-5,20,10},7.5f,juce::Justification::centred,true,ink);}
             }
-            kb09_gui::drawPowerLegend(g,ink,age);
-            g.setColour(juce::Colour(0xff080b0e));g.fillEllipse(200.5f,475,9,9);
-            g.setColour(juce::Colour(processor.isPowerEnabled()?0xffe54c35:0xff491c16));g.fillEllipse(202.5f,477,5,5);
-            if(processor.isPowerEnabled()) {g.setColour(juce::Colour(0xffffaa6f).withAlpha(.65f));g.fillEllipse(203.0f,477.5f,1.8f,1.8f);}
-            g.setColour(ink.withAlpha(.76f));g.drawRoundedRectangle(174.0f,489.0f,61.0f,134.0f,3.0f,.8f);
-            juce::Path bendOutline;bendOutline.startNewSubPath(75,489);bendOutline.lineTo(170,489);
-            bendOutline.lineTo(170,627);bendOutline.lineTo(235,627);bendOutline.lineTo(235,699);
+            {juce::Graphics::ScopedSaveState powerPrint(g);g.addTransform(juce::AffineTransform::translation(51,0));kb09_gui::drawPowerLegend(g,ink,age);}
+            g.setColour(juce::Colour(0xff080b0e));g.fillEllipse(251.5f,475,9,9);
+            g.setColour(juce::Colour(processor.isPowerEnabled()?0xffe54c35:0xff491c16));g.fillEllipse(253.5f,477,5,5);
+            if(processor.isPowerEnabled()) {g.setColour(juce::Colour(0xffffaa6f).withAlpha(.65f));g.fillEllipse(254.0f,477.5f,1.8f,1.8f);}
+            g.setColour(ink.withAlpha(.76f));g.drawRoundedRectangle(214.0f,489.0f,81.0f,134.0f,3.0f,.8f);
+            juce::Path bendOutline;bendOutline.startNewSubPath(75,489);bendOutline.lineTo(209,489);
+            bendOutline.lineTo(209,627);bendOutline.lineTo(295,627);bendOutline.lineTo(295,699);
             bendOutline.lineTo(75,699);bendOutline.closeSubPath();
             g.strokePath(bendOutline.createPathWithRoundedCorners(2.5f),juce::PathStrokeType(.8f));
-            juce::Path bendLink;bendLink.startNewSubPath(98,600);bendLink.lineTo(98,614);bendLink.quadraticTo(98,617,101,617);bendLink.lineTo(153,617);bendLink.quadraticTo(156,617,156,620);bendLink.lineTo(156,624);
-            bendLink.startNewSubPath(142,600);bendLink.lineTo(142,617);
+            juce::Path bendLink;bendLink.startNewSubPath(128,583);bendLink.lineTo(128,608);bendLink.quadraticTo(128,611,131,611);bendLink.lineTo(182,611);bendLink.quadraticTo(185,611,185,614);bendLink.lineTo(185,624);
+            bendLink.startNewSubPath(164,583);bendLink.lineTo(164,611);
             g.setColour(ink);g.strokePath(bendLink,juce::PathStrokeType(.9f));
-            caption(g,"BENDER",{105,628,103,13},10,juce::Justification::centred,true,ink);
-            g.setColour(ink);g.drawLine(104,682,150,682,.9f);g.drawLine(163,682,209,682,.9f);
-            juce::Path arrows;arrows.startNewSubPath(99,682);arrows.lineTo(105,679.5f);arrows.lineTo(105,684.5f);arrows.closeSubPath();arrows.startNewSubPath(214,682);arrows.lineTo(208,679.5f);arrows.lineTo(208,684.5f);arrows.closeSubPath();g.fillPath(arrows);
-            caption(g,"-",{86,676,12,12},10,juce::Justification::centred,true,ink);
-            caption(g,"0",{150,676,13,12},8,juce::Justification::centred,true,ink);
-            caption(g,"+",{215,676,12,12},10,juce::Justification::centred,true,ink);
-            // Screw heads and contact shadows are a foreground layer over ink.
-            // Repaint tightly clipped registered photographic heads after rules.
-            for(const auto p: {juce::Point<float>(98,799),{277,799}}) {
-                juce::Graphics::ScopedSaveState save(g);
-                const float shift=p.y>790?-40.0f:0.0f;
-                const float xx=(p.x-2)*float(designW)/1770,yy=(p.y-7)*float(bodyH)/873+shift;
-                juce::Path head;head.addEllipse(xx-11.5f,yy-11.5f,23,23);g.reduceClipRegion(head);
-                g.setOpacity(1);g.drawImage(art.chassis,0,juce::roundToInt(shift),designW,bodyH,2,7,1770,873);
-                g.setOpacity(age*.94f);g.drawImage(art.chassisAged,0,juce::roundToInt(shift),designW,bodyH,2,7,1770,873);
-            }
+            caption(g,"BENDER",{133,628,103,13},10,juce::Justification::centred,true,ink);
+            g.setColour(ink);g.drawLine(132,682,178,682,.9f);g.drawLine(191,682,237,682,.9f);
+            juce::Path arrows;arrows.startNewSubPath(127,682);arrows.lineTo(133,679.5f);arrows.lineTo(133,684.5f);arrows.closeSubPath();arrows.startNewSubPath(242,682);arrows.lineTo(236,679.5f);arrows.lineTo(236,684.5f);arrows.closeSubPath();g.fillPath(arrows);
+            caption(g,"-",{114,676,12,12},10,juce::Justification::centred,true,ink);
+            caption(g,"0",{178,676,13,12},8,juce::Justification::centred,true,ink);
+            caption(g,"+",{243,676,12,12},10,juce::Justification::centred,true,ink);
+            kb09_gui::drawPowerScrew(g,{98,642},age,false);
+            kb09_gui::drawPowerScrew(g,{272,642},age,true);
             uint32_t screwSeed=5011;
             for(const auto p:{juce::Point<float>(88,37),{1686,37},
-                              {88,328},{1686,328},{83,399},{1692,399},
-                              {98,799},{277,799}}) {
+                              {88,328},{1686,328},{83,399},{1692,399}}) {
                 screwOxidation(g,{(p.x-2)*float(designW)/1770,(p.y-7)*float(bodyH)/873+(p.y>790?-40.0f:0.0f)},age,screwSeed);
                 screwSeed+=7717;
             }
-            kb09_gui::drawPowerScrew(g,{205,401},age,false);
-            kb09_gui::drawPowerScrew(g,{205,449},age,true);
+            kb09_gui::drawPowerScrew(g,{256,401},age,false);
+            kb09_gui::drawPowerScrew(g,{256,449},age,true);
         }
         for(auto& c:controls)if(c->slider&&c->slider->getSliderStyle()==juce::Slider::LinearVertical)
             look.drawFaderScale(g,*c->slider);
@@ -2020,6 +1956,19 @@ private:
                                             juce::Colour(0xff121618),0,float(designH),false));
         g.fillRect(0,headerH+visibleBodyH,designW,designH-headerH-visibleBodyH);
         g.setColour(juce::Colour(0xff58605f));g.drawLine(0,float(headerH+visibleBodyH),float(designW),float(headerH+visibleBodyH),.65f);
+        for(const auto& c:controls)if(c->slider&&c->slider->getSliderStyle()==juce::Slider::LinearHorizontal) {
+            const auto id=c->slider->getComponentID();
+            if(id!="age"&&id!="velocity"&&id!="aftertouch"&&id!="extGain")continue;
+            const auto r=look.getSliderLayout(*c->slider).sliderBounds.translated(c->slider->getX(),c->slider->getY());
+            const int steps=id=="age"?4:10;
+            const auto colour=ink.withAlpha(c->slider->isEnabled()?.83f:.28f);
+            for(int i=0;i<=steps;++i) {
+                const float x=r.getX()+float(r.getWidth())*i/steps;
+                const bool major=id=="age"||i%5==0;
+                g.setColour(colour);g.drawLine(x,802,x,major?807.f:805.f,major?1.05f:.65f);
+                if(id!="age"&&i%5==0)caption(g,juce::String(i),{x-7,807,14,8},6.f,juce::Justification::centred,false,colour);
+            }
+        }
     }
     using SliderAttachment=juce::AudioProcessorValueTreeState::SliderAttachment;
     struct Control {
@@ -2117,7 +2066,7 @@ private:
         if(heldNote!=lastHeldNote){keyboard.repaintNote(lastHeldNote);keyboard.repaintNote(heldNote);lastHeldNote=heldNote;keysChanged=true;}
         const bool holdMode=processor.state.getRawParameterValue("vcaMode")->load()<.5f;
         if(holdMode!=lastHoldMode){lastHoldMode=holdMode;keyboard.repaint();}
-        const float age=processor.state.getRawParameterValue("age")->load();
+        const float age=appearanceAge(processor.state.getRawParameterValue("age")->load());
         // Coalesce full-instrument wear redraws while the AGE thumb remains live.
         const auto now=juce::Time::getMillisecondCounterHiRes();
         if(age!=lastAge && (!look.conditionDragging||now-lastConditionPaint>=110)){
@@ -2220,7 +2169,7 @@ private:
         if(juce::String(id)=="bendVco")slider.setTooltip("Set how much the spring-return bender changes oscillator pitch.");
         if(juce::String(id)=="bendVcf")slider.setTooltip("Set how much the bender changes filter cutoff.");
         if(juce::String(id)=="volume")slider.setTooltip("Set instrument output volume, from silence to full level.");
-        if(juce::String(id)=="age")slider.setTooltip("Age the circuitry and appearance. Click anywhere on the track to jump there, or drag; SHIFT gives fine adjustment. Appearance previews update while dragging; full visual detail returns on release.");
+        if(juce::String(id)=="age")slider.setTooltip("Choose one of five named condition stages. Click a tick or drag to select; existing preset and host-automation AGE values remain compatible. Selection updates while dragging; release restores full rendering detail.");
         if(juce::String(id)=="velocity")slider.setTooltip("In Modern mode, set how strongly playing velocity affects the sound.");
         if(juce::String(id)=="aftertouch")slider.setTooltip("In Modern mode, channel aftertouch opens the filter. Set the pressure amount here; maximum pressure and amount raise cutoff by up to three octaves.");
         if(juce::String(id)=="extGain")slider.setTooltip("In Modern mode, adjust external input gain before the follower and mixer.");
@@ -2228,10 +2177,7 @@ slider.setDoubleClickReturnValue(true,spec.initial);}
         addAndMakeVisible(slider);c->attachment=std::make_unique<SliderAttachment>(processor.state,id,slider);
         for(const auto& spec:sh09::specs)if(juce::String(spec.id)==id&&spec.choices[0]==0) {
             if(juce::String(id)=="age")slider.textFromValueFunction=[](double v){
-                constexpr std::array<const char*,10> phrases{{"Nice 'n' New","Barely Broken In","Like New-ish",
-                    "Lightly Loved","Seen Some Shit","Vintage, Baby!","Sold As-Is","Smells Like 1983",
-                    "Fire Hazard","Who Let You Have This?"}};
-                return juce::String(phrases[size_t(juce::jlimit(0,9,int(std::floor(v*10+1.0e-6))))]);
+                return juce::String(kb09_gui::ageNames[size_t(kb09_gui::appearanceStage(float(v)))]);
             };
             else if(juce::String(id)=="tune")slider.textFromValueFunction=[this](double v){
                 const bool modern=processor.state.getRawParameterValue("modern")->load()>.5f;
@@ -2252,7 +2198,7 @@ slider.setDoubleClickReturnValue(true,spec.initial);}
         c.label->setBorderSize(juce::BorderSize<int>(0));c.label->setInterceptsMouseClicks(false,false);addAndMakeVisible(*c.label);
         const bool hardware=headerH+y<headerH+visibleBodyH;
         c.label->getProperties().set("hardwarePrint",hardware);
-        if(hardware)c.label->setColour(juce::Label::textColourId,agedInk(processor.state.getRawParameterValue("age")->load()));
+        if(hardware)c.label->setColour(juce::Label::textColourId,agedInk(appearanceAge(processor.state.getRawParameterValue("age")->load())));
     }
     void addFader(const char* id,const char* name,int centre,int y,int w,int h,bool compact=false) {
         addSlider(id,name,centre-w/2,y+20,w,h-11,juce::Slider::LinearVertical);
@@ -2260,7 +2206,7 @@ slider.setDoubleClickReturnValue(true,spec.initial);}
         // Printed scale numerals extend past the narrow hit area, without
         // overlapping the neighbouring fader's interaction bounds.
         c.slider->setPaintingIsUnclipped(true);
-        addLabel(c,name,centre-w/2-8,y-1,w+16,20,juce::String(id)=="portamento"?7.1f:8.4f);
+        addLabel(c,name,centre-w/2-8,y-1,w+16,20,8.4f);
     }
     void addKnob(const char* id,int cx,int cy,int d) {
         addSlider(id,id,cx-d/2,cy-d/2,d,d,juce::Slider::RotaryHorizontalVerticalDrag);

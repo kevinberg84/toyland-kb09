@@ -1,4 +1,4 @@
-# Toyland KB-09 1.4.0 — source/build instructions
+# Toyland KB-09 1.5.0 — source/build instructions
 
 JUCE **9.0.2** is an external dependency; this project does not modify it. The development toolchain is MSVC 19.51.36260.0, Visual Studio 18 2026, the Windows SDK and C++20. CMake's generator selects the compiler without changing PowerShell execution policy.
 
@@ -24,7 +24,7 @@ The project adds the generated `Info.txt` dependency to JUCE 9's Windows resourc
 
 ## Targets and source contents
 
-The internal target remains `SH09`; the public product is **Toyland KB-09**. CMake sets version 1.4.0. Windows builds **VST3** and **Standalone** by default. Native macOS builds also enable **AU** by default; **AAX Native** is an explicit option on Windows/macOS. Target configuration does not establish that a particular format was built, signed or host-tested. Consult [VALIDATION.md](VALIDATION.md) for the actual release artifacts. `Assets/Branding.h` defines the visible identity; compatibility keys remain unchanged as described in [REBRANDING.md](REBRANDING.md).
+The internal target remains `SH09`; the public product is **Toyland KB-09**. CMake sets version 1.5.0. Windows builds **VST3** and **Standalone** by default. Native macOS builds also enable **AU** by default; **AAX Native** is an explicit option on Windows/macOS. Target configuration does not establish that a particular format was built, signed or host-tested. Consult [VALIDATION.md](VALIDATION.md) for the actual release artifacts. `Assets/Branding.h` defines the visible identity; compatibility keys remain unchanged as described in [REBRANDING.md](REBRANDING.md).
 
 | Target | Release output relative to build directory |
 |---|---|
@@ -39,19 +39,20 @@ The internal target remains `SH09`; the public product is **Toyland KB-09**. CMa
 | `SH09DSPTests` | `Release/SH09DSPTests.exe` |
 | `SH09Render` | `Release/SH09Render.exe` |
 
-The source package must retain `CMakeLists.txt`, `Source`, `Tests`, `VSTLab`, `Assets`, scripts and documentation: the top-level build includes the test/lab directories. `KB09Artwork` compiles **nine PNGs** from `Assets/Photoreal`:
+The source package must retain `CMakeLists.txt`, `Source`, `Tests`, `VSTLab`, `Assets`, scripts and documentation: the top-level build includes the test/lab directories. `KB09Artwork` compiles **ten PNGs** from `Assets/Photoreal`:
 
 - `chassis-black.png`
 - `chassis-personal-aged.png`
 - `chassis-stains.png` — only the retained envelope coffee-ring region is rendered.
 - `knob-personal-overhead-v5.png`
-- `fader-personal-overhead.png`
+- `fader-smooth-overhead-v1.png`
+- `cheeks-personal-independent-v1.png`
 - `front-rail-grain.png`
 - `keys.png`
 - `marks.png`
 - `marks-aged.png`
 
-Retain every listed input. The new knob is a complete 1254 × 1254 photographic sprite derived from the owner's selected object, with its grouped ribs and silver skirt. The camera-edit constraint preserves physical barrel height; it does not prove measured CAD. Native code supplies the moving black top tick and a shared 9° target for tick, bender and blade projection. The 0.13 native-cylinder/18° material mapping is historical. The approved overhead fader is unchanged. The old wear atlas is not compiled or used. Native code also supplies independently seeded key dust/grime, the single thin crack, knob rim/tarnish details, labels/symbols, switches, exposed stepped fader posts and the bender. Kevin's multi-angle photographs guide the geometry and wear; his replacement volume knob, sticker and taped waveform marks are excluded. `CMakeLists.txt` and `Assets/Photoreal/README.md` distinguish compiled layers from provenance-only files, including the non-runtime ticked knob preview. No runtime Assets directory is required. Asset provenance/prompts are retained in `Assets/Photoreal`.
+Retain every listed input. The new knob is a complete 1254 × 1254 photographic sprite derived from the owner's selected object, with its grouped ribs and silver skirt. The camera-edit constraint preserves physical barrel height; it does not prove measured CAD. Native code supplies the moving black top tick and a shared 9° target for tick, bender and blade projection. The 0.13 native-cylinder/18° material mapping is historical. The smooth photographic fader body uses a native silver insert; the independent cheek atlas supplies distinct left/right wear. The old wear atlas is not compiled or used. Native code also supplies independently seeded key dust/grime, the single thin crack, knob rim/tarnish details, labels/symbols, switches, exposed stepped fader posts and the bender. Kevin's multi-angle photographs guide the geometry and wear; his replacement volume knob, sticker and taped waveform marks are excluded. `CMakeLists.txt` and `Assets/Photoreal/README.md` distinguish compiled layers from provenance-only files, including the non-runtime ticked knob preview. No runtime Assets directory is required. Asset provenance/prompts are retained in `Assets/Photoreal`.
 
 The offline manual is `docs/manual/index.html`. The 0.13.2 package uses `styles.css`, `assets/marks.png` and `assets/panel-0.13.2.png` with it. The consumer guide excludes the separate technical `reference/evidence.html`, development-only `qa` folder and historical images. Check the version-matched guide's local links and illustrations before packaging. External vendor links still require internet access.
 
@@ -81,7 +82,7 @@ The output is `build-linux/SH09_artefacts/Release/Standalone/Toyland KB-09`. The
 
 ## Native macOS / AU build
 
-AU means Audio Unit. The conventional desktop AU target is macOS-only; this is not an AUv3/mobile build. `KB09_BUILD_AU` defaults to `ON` on Apple platforms and `OFF` elsewhere. Explicitly enabling it on Windows fails with a clear native-macOS requirement. The 1.4.0 universal build passed native CI tests and Apple AU validation on the arm64 macOS runner. These commands remain a build recipe; see the release validation record for the exact tested artifacts. Intel execution and individual DAW behavior need their own checks.
+AU means Audio Unit. The conventional desktop AU target is macOS-only; this is not an AUv3/mobile build. `KB09_BUILD_AU` defaults to `ON` on Apple platforms and `OFF` elsewhere. Explicitly enabling it on Windows fails with a clear native-macOS requirement. Native CI and Apple AU validation results for 1.5.0 must be recorded after the release build completes; see its validation record. These commands remain a build recipe; see the release validation record for the exact tested artifacts. Intel execution and individual DAW behavior need their own checks.
 
 On a Mac with Xcode and JUCE 9.0.2, run from the source directory:
 

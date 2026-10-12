@@ -42,7 +42,7 @@ void checkPersonalArtwork(Checks& checks) {
     const auto chassis=juce::ImageFileFormat::loadFrom(BinaryData::chassispersonalaged_png,BinaryData::chassispersonalaged_pngSize);
     checks.expect(chassis.isValid()&&chassis.getWidth()==1774&&chassis.getHeight()==887,
                   "personal wear endpoint keeps the clean chassis registration and dimensions");
-    const auto cap=juce::ImageFileFormat::loadFrom(BinaryData::faderpersonaloverhead_png,BinaryData::faderpersonaloverhead_pngSize);
+    const auto cap=juce::ImageFileFormat::loadFrom(BinaryData::fadersmoothoverheadv1_png,BinaryData::fadersmoothoverheadv1_pngSize);
     checks.expect(cap.isValid()&&cap.hasAlphaChannel(),"corrected top-and-side-stripe cap has a transparent surrounding canvas");
 
 }
@@ -373,13 +373,13 @@ void checkFineGestures(SH09Processor& processor,juce::Component& editor,Checks& 
     checks.expect(age!=nullptr,"AGE click-to-position control exists");
     if(age) {
         const double saved=age->getValue();
-        const std::array<const char*,10> phrases{{"Nice 'n' New","Barely Broken In","Like New-ish",
-            "Lightly Loved","Seen Some Shit","Vintage, Baby!","Sold As-Is","Smells Like 1983",
-            "Fire Hazard","Who Let You Have This?"}};
-        for(int i=0;i<10;++i)for(double fraction:{0.0,.05,.099})
-            checks.expect(age->getTextFromValue(i*.1+fraction)==phrases[size_t(i)],
-                          "AGE phrase band "+juce::String(i)+" at "+juce::String(fraction,3));
-        checks.expect(age->getTextFromValue(1)==phrases.back(),"AGE maximum uses final phrase");
+        const std::array<const char*,5> phrases{{"Minty","Seen Some Shit","Vintage, Baby!","Sold As-Is","Fire Hazard"}};
+        checks.expect(age->getInterval()==.25,"AGE GUI has five discrete positions");
+        for(int i=0;i<5;++i) {
+            checks.expect(age->getTextFromValue(i*.25)==phrases[size_t(i)],"one AGE name per stage "+juce::String(i));
+            age->setValue(i*.25,juce::sendNotificationSync);
+            checks.expect(std::abs(processor.state.getRawParameterValue("age")->load()-i*.25f)<1.e-6f,"AGE tick selection updates stored control value");
+        }
         age->setValue(0,juce::sendNotificationSync);
         const juce::Point<float> point(age->getWidth()*.8f,age->getHeight()*.5f);
         const auto now=juce::Time::getCurrentTime();
@@ -541,18 +541,19 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
             images[i]=sliders[i]->createComponentSnapshot(sliders[i]->getLocalBounds(),true,2.0f);
         return images;
     };
-    struct Event {const char* id;float onset;};
-    for(const auto event:{Event{"lfoDelay",.60f},Event{"vcoLevel",.64f},Event{"release",.88f}}) {
-        const auto before=capture(event.onset-.0001f),after=capture(event.onset+.0001f),later=capture(event.onset+.003f);
-        juce::StringArray changed;
-        bool targetFixed=false;
+    for(int stage=0;stage<5;++stage) {
+        setParameter(processor,"age",stage*.25f);settleEditor();
+        juce::StringArray missing;
         for(size_t i=0;i<sliders.size();++i) {
-            if(changedPixels(before[i],after[i],12)>40)changed.add(faderIDs[i]);
-            if(juce::String(faderIDs[i])==event.id)targetFixed=changedPixels(after[i],later[i],12)==0;
+            const auto at75=renderLinearControl(*sliders[i],75,juce::Colour(0xff232927));
+            const auto at100=renderLinearControl(*sliders[i],100,juce::Colour(0xff232927));
+            const auto roi=controlPixels({26,61,54,27});
+            const auto moving=visibleChanges(at75.getClippedImage(roi),at100.getClippedImage(roi));
+            if(moving.count>50&&moving.bounds.getWidth()<9*controlRenderScale)missing.add(faderIDs[i]);
         }
-        checks.expect(changed.size()==1&&changed[0]==event.id,
-                      juce::String("Age ")+juce::String(event.onset,2)+" abruptly removes only the "+event.id+" cap");
-        checks.expect(targetFixed,juce::String(event.id)+" post appears at full size and stays fixed after cap loss");
+        const juce::StringArray expectedMissing=stage<2?juce::StringArray{}:stage==2?juce::StringArray{"vcoLevel"}
+            :stage==3?juce::StringArray{"lfoDelay","vcoLevel","extLevel"}:juce::StringArray{"lfoDelay","vcoLevel","extLevel","vcfMod","release"};
+        checks.expect(missing==expectedMissing,"actual cap/blade shapes match stage "+juce::String(stage)+" ("+missing.joinIntoString(", ")+")");
     }
     bool metadataSame=true,soundSame=true;
     for(size_t i=0;i<sliders.size();++i)
@@ -563,8 +564,8 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
         soundSame=soundSame&&std::abs(expected[i]-processor.state.getParameter(legacyParameterIDs[i])->getValue())<1.e-6f;
     checks.expect(metadataSame&&soundSame,"cap loss preserves every fader identity, hit area, enablement and sound parameter value");
     // Compare two production positions at fixed Age: a slot alone must fail.
-    setParameter(processor,"age",.95f);settleEditor();
-    for(const auto* id:{"lfoDelay","vcoLevel","release"}) {
+    setParameter(processor,"age",1.f);settleEditor();
+    for(const auto* id:{"lfoDelay","vcoLevel","extLevel","release","vcfMod"}) {
         auto* slider=dynamic_cast<juce::Slider*>(findComponent(editor,id));
         const auto at75=renderLinearControl(*slider,75,juce::Colour(0xff232927));
         const auto at100=renderLinearControl(*slider,100,juce::Colour(0xff232927));
@@ -594,7 +595,7 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
     bool roundTrips=true;
     for(const auto* id:legacyParameterIDs)
         roundTrips=roundTrips&&std::abs(processor.state.getParameter(id)->getValue()-restored.state.getParameter(id)->getValue())<1.e-6f;
-    checks.expect(roundTrips,"aged state with three missing caps round-trips all 35 existing parameters");
+    checks.expect(roundTrips,"aged state with five missing caps round-trips all 35 existing parameters");
     setParameter(processor,"age",initialAge);settleEditor();
 }
 
@@ -606,29 +607,17 @@ void checkAgeEvents(SH09Processor& processor, juce::Component& editor, Checks& c
         setParameter(processor,"age",age);settleEditor();
         return panel->createComponentSnapshot(panel->getLocalBounds(),true,1.0f);
     };
-    // Compare the real renderer across tiny threshold crossings. An ordinary
-    // continuous tint cannot create this many >12-level pixel changes.
-    for(const float onset:{.60f}) {
-        const auto before=capture(onset-.0001f),appeared=capture(onset+.0001f),later=capture(onset+.005f);
-        const int jump=changedPixels(before,appeared,12),drift=changedPixels(appeared,later,12);
-        checks.expect(jump>30,"stain event "+juce::String(onset,2)+" appears abruptly in actual panel pixels");
-        checks.expect(drift<juce::jmax(20,jump/5),"stain event "+juce::String(onset,2)+" stays fixed after appearance");
-    }
-    for(const float onset:{.56f,.94f}) {
-        capture(onset-.0001f);
-        const auto before=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,2.0f);
-        capture(onset+.0001f);
-        const auto appeared=keyboard->createComponentSnapshot(keyboard->getLocalBounds(),true,2.0f);
-        if(onset<.9f) {
-            int changedKeys=0;
-            for(int key=0;key<19;++key) {
-                const int left=juce::roundToInt(float(key)*before.getWidth()/19)+2;
-                const int right=juce::roundToInt(float(key+1)*before.getWidth()/19)-2;
-                const juce::Rectangle<int> face(left,before.getHeight()*64/100,right-left,before.getHeight()*36/100);
-                if(changedPixels(before.getClippedImage(face),appeared.getClippedImage(face),20)>10)++changedKeys;
-            }
-            checks.expect(changedKeys==1,"exactly one white key gains a discrete hairline crack at Age .56");
-        } else checks.expect(changedPixels(before,appeared,20)==0,"no second key crack appears at the former Age .94 threshold");
+    for(int stage=0;stage<5;++stage) {
+        const float centre=stage*.25f;
+        const auto before=capture(centre);
+        const auto same=capture(juce::jlimit(0.f,1.f,centre+.04f));
+        const auto cheek=juce::Rectangle<int>(0,34,55,732);
+        checks.expect(changedPixels(before.getClippedImage(cheek),same.getClippedImage(cheek))==0,
+            "cheek has one fixed appearance throughout stage "+juce::String(stage));
+        checks.expect(std::abs(processor.state.getRawParameterValue("age")->load()-juce::jlimit(0.f,1.f,centre+.04f))<1.e-6f,
+            "legacy intermediate AGE remains stored without parameter quantization");
+        if(stage<4)checks.expect(changedPixels(before.getClippedImage(cheek),capture((stage+1)*.25f).getClippedImage(cheek),5)>200,
+            "successive cheek stages have distinct accumulated wear");
     }
     const float width=float(keyboard->getWidth())/19;
     juce::Colour healthyIvory;
@@ -864,7 +853,7 @@ void renderBenderPositions(SH09Processor& processor, juce::Component& editor,
     checks.expect(bender->getCurrentPopupDisplay()!=nullptr,"bender mouse gesture opens the actual value popup");
     bender->mouseUp(down);settleEditor();
     const std::array<const char*, 3> names {"left", "neutral", "right"};
-    for(const auto age:{0.0f,.79f,.80f}) {
+    for(const auto age:{0.0f,.75f,1.0f}) {
         setParameter(processor,"age",age);settleEditor();
         std::array<juce::Image,3> positions;
         const auto prefix=age==0.0f?juce::String("bender_"):"bender_age"+juce::String(juce::roundToInt(age*100))+"_";
@@ -900,13 +889,13 @@ void renderBenderPositions(SH09Processor& processor, juce::Component& editor,
     };
     // Isolate the bender so moving lamps/keys and other Age events cannot pass
     // the break test. Adjacent samples distinguish an abrupt break from patina.
-    const auto below=capture(.7999f),at=capture(.80f),above=capture(.8001f);
+    const auto below=capture(.8749f),at=capture(.875f),above=capture(.8751f);
     checks.expect(changedPixels(below,at,12)>=100,
-                  "bender tip visibly breaks at FIRE HAZARD (Age .80) in actual renderer");
+                  "bender tip visibly breaks at Fire Hazard (fifth GUI stage) in actual renderer");
     checks.expect(changedPixels(at,above,12)==0,
                   "bender break is discrete; adjacent post-onset Age adds no visible damage event");
-    checks.expect(changedPixels(below,capture(.7999f))==0,
-                  "lowering Age below .80 restores the identical intact bender tip");
+    checks.expect(changedPixels(below,capture(.8749f))==0,
+                  "lowering Age below the Fire Hazard stage restores the identical intact bender tip");
     setParameter(processor,"age",initialAge);bender->setValue(initialBend,juce::sendNotificationSync);settleEditor();
 }
 
@@ -925,7 +914,7 @@ void renderHardwareDetails(SH09Processor& processor,juce::Component& editor,
         for(const bool enabled:{true,false}) {
             if(processor.isPowerEnabled()!=enabled)power->onClick();
             settleEditor();
-            const auto detail=panel->createComponentSnapshot({170,432,75,91},true,4.0f);
+            const auto detail=panel->createComponentSnapshot({221,432,81,91},true,4.0f);
             checks.expect(processor.isPowerEnabled()==enabled&&writePNG(detail,directory.getChildFile(
                 "power_"+suffix+(enabled?"_on.png":"_off.png"))),"POWER "+suffix+(enabled?" ON":" OFF")+" actual-panel export and click state");
         }
@@ -933,7 +922,7 @@ void renderHardwareDetails(SH09Processor& processor,juce::Component& editor,
         settleEditor();
         checks.expect(writePNG(panel->createComponentSnapshot({310,130,280,225},true,3.0f),
             directory.getChildFile("knobs_"+suffix+".png")),"knobs "+suffix+" actual-panel detail export");
-        checks.expect(writePNG(panel->createComponentSnapshot({65,420,183,320},true,3.0f),
+        checks.expect(writePNG(panel->createComponentSnapshot({65,420,259,320},true,3.0f),
             directory.getChildFile("performance_"+suffix+".png")),"performance controls "+suffix+" actual-panel detail export");
     }
     if(processor.isPowerEnabled()!=originalPower)power->onClick();
@@ -968,7 +957,7 @@ void checkBenderAudioCallbacks(SH09Processor& processor,juce::Component& editor,
         }
         return peak>.01f?double(cycles)*sampleRate/double(measuredBlocks*blockSize):0.0;
     };
-    for(const auto age:{.79f,.80f}) {
+    for(const auto age:{.75f,1.f}) {
         setParameter(processor,"age",age);processor.reset();
         bender->setValue(0,juce::sendNotificationSync);bender->onDragEnd();
         processMidi(processor,juce::MidiMessage::noteOn(1,69,juce::uint8(100)));
@@ -1125,7 +1114,7 @@ void checkOptionalDescriptions(SH09Processor& processor,juce::Component& editor,
     age->setValue(.81,juce::sendNotificationSync);
     auto live=panel->createComponentSnapshot(panel->getLocalBounds(),true,.75f);
     const auto frameMs=juce::Time::getMillisecondCounterHiRes()-start;
-    checks.expect(std::abs(age->getValue()-.81)<.00001&&age->isVisible()&&live.isValid(),"AGE thumb and parameter update while gesture remains held");
+    checks.expect(std::abs(age->getValue()-.75)<.00001&&std::abs(processor.state.getRawParameterValue("age")->load()-.75)<.00001&&age->isVisible()&&live.isValid(),"AGE thumb and parameter update while gesture remains held");
     checks.expect(frameMs<60,"AGE cached instrument preview renders within 60 ms");
     age->onDragEnd();
     checks.expect(bender->isVisible(),"AGE release restores all live hardware controls");
@@ -1379,6 +1368,38 @@ void checkCachedKeyboard(Checks& checks) {
     processor.releaseResources();
 }
 
+void checkPerformanceBayGeometry(juce::Component& editor,Checks& checks) {
+    auto* vco= findComponent(editor,"bendVco");auto* vcf=findComponent(editor,"bendVcf");
+    auto* port=findComponent(editor,"portamento");auto* key=findComponent(editor,"keyboard");
+    auto* mod=findComponent(editor,"vcoMod");auto* range=findComponent(editor,"range");
+    auto* main=findComponent(editor,"pulseWidth");
+    if(!(vco&&vcf&&port&&key&&mod&&range&&main)) {
+        checks.expect(false,"performance geometry has every required control");return;
+    }
+    checks.expect(vco->getHeight()<main->getHeight()*.8f&&vcf->getHeight()<main->getHeight()*.8f,
+        "both bender-depth tracks are shorter than the main panel tracks");
+    checks.expect(!vco->getBounds().intersects(vcf->getBounds())&&!vcf->getBounds().intersects(port->getBounds())
+        &&!port->getBounds().intersects(key->getBounds()),"wider bay retains separate slider and keyboard hit areas");
+    const auto panel=port->getParentComponent()->createComponentSnapshot(port->getParentComponent()->getLocalBounds(),true,1.f);
+    int lineX=298;float best=-1;
+    for(int x=298;x<=324;++x) {
+        float light=0;for(int y=450;y<700;++y)light+=panel.getPixelAt(x,y).getBrightness();
+        if(light>best){best=light;lineX=x;}
+    }
+    int painted=0;for(int x=310;x<326;++x)for(int y=490;y<680;++y)
+        if(panel.getPixelAt(x,y).getBrightness()>.045f)++painted;
+    checks.expect(painted>16*190*.95f,"bay photographic paint fills the margin up to the first key");
+    int topInk=0;for(int x=80;x<200;++x)
+        if(panel.getPixelAt(x,404).getBrightness()>.6f)++topInk;
+    checks.expect(topInk<10,"performance bay has no horizontal top outline");
+    checks.expect(vco->getX()+vco->getWidth()/2==128&&vcf->getX()+vcf->getWidth()/2==164
+        &&port->getX()+port->getWidth()/2==256&&key->getX()==326,
+        "surface extension preserves all accepted slider and keyboard positions");
+    const float midpoint=.5f*(mod->getBounds().getCentreX()+range->getBounds().getCentreX());
+    checks.expect(lineX>mod->getBounds().getCentreX()&&lineX<range->getBounds().getCentreX(),"rendered performance-bay right rule aligns below the MOD–RANGE gap");
+    checks.expect(key->getX()-lineX>=20&&key->getRight()==1428,"performance bay retains an interior painted margin before the keys and their right edge");
+}
+
 void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& checks) {
     SH09Processor processor;
     processor.setCurrentProgram(0);
@@ -1388,6 +1409,7 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
     editor->setVisible(true);
     settleEditor();
     if (fixture.program == 0) {
+        checkPerformanceBayGeometry(*editor,checks);
         checkSizeChoices(*editor,directory,checks);
         checkSwitchAttachment(processor, *editor, checks);
         checkOptionalDescriptions(processor,*editor,directory,checks);
@@ -1581,8 +1603,12 @@ int main(int argc, char** argv) {
                                    Fixture{"aged_modern",14,true,.82f,true,false},
                                    Fixture{"external_follower",12,false,0.0f,false,true},
                                    Fixture{"worn",14,true,1.0f,true,false},
-                                   Fixture{"personal_age7",14,true,.7f,false,false},
-                                   Fixture{"fully_aged",14,true,1.0f,false,false}})
+                                   Fixture{"minty",1,false,0.f,false,false},
+                                   Fixture{"modern_scale",1,true,.5f,false,false},
+                                   Fixture{"personal_age7",1,false,.75f,false,false},
+                                   Fixture{"seen_some",1,false,.25f,false,false},
+                                   Fixture{"vintage",1,false,.50f,false,false},
+                                   Fixture{"fully_aged",1,false,1.0f,false,false}})
             renderFixture(fixture, directory, checks);
     } catch (const std::exception& error) {
         checks.expect(false, juce::String("fixture exception: ") + error.what());

@@ -1,3 +1,7 @@
+# Current 1.5.0 GUI
+
+The approved five-stage GUI, footer scales, performance-bay spacing and material changes are described in `GUI_REVIEW_2026_10_12_REV3.md`. The release adds lighter white-key scuffs at Sold As-Is while retaining the approved Fire Hazard endpoint. Current user instructions are in `manual/index.html`; material details and image provenance are in `Assets/Photoreal`. The historical UI notes below do not define the current controls.
+
 # Toyland KB-09 0.12.0 user interface
 
 This describes the current 0.12 source and artwork integration plan. A completed new build, final visual acceptance and host validation are not claimed here; [VALIDATION.md](VALIDATION.md) records build-specific evidence. The 0.11 observations below are historical.

@@ -1,3 +1,15 @@
+# 1.5.0 — Toyland KB-09
+
+CONDITION / AGE now has five marked GUI positions and five matching appearances: Minty, Seen Some Shit, Vintage, Baby!, Sold As-Is and Fire Hazard. Existing saved finer AGE values and host automation remain continuous in the circuit model and display the nearest visual stage. All 35 parameter identities and the 24 factory presets are retained.
+
+Adds footer scales for VELOCITY, AFTERTOUCH and INPUT TRIM; AFTERTOUCH remains a variable Modern filter-depth control. The performance bay follows the supplied SH-09 proportions with shorter bender-depth tracks, smaller screws, a painted margin up to the keyboard and an open top outline.
+
+Smooth plastic caps develop varied twist, lean and micro-scuffs. Sharp native silver inserts reflect when fresh, then dull and pit without yellowing or rusting. Cap loss progresses from one at Vintage, Baby! to three at Sold As-Is and five at Fire Hazard. The bender pointer breaks at Fire Hazard.
+
+Independent cheek scrapes accumulate at fixed contrast, with the right cheek darker under left-side lighting. Black-key bevels and micro-scuffs, white-key scuffs, a smoother bender tip and refined POWER reflections follow the approved preview. White-key scuffs are lighter at Sold As-Is and strongest at Fire Hazard. Overall yellowing is reduced.
+
+The illustrated manual describes these controls and conditions. The audio engine is unchanged. Windows, Mac and Linux are rebuilt; Linux retains its UNVERIFIED tag pending physical Arch playback and MIDI confirmation. Release-specific validation is recorded separately.
+
 # 1.4.0 — Toyland KB-09
 
 Adds a native Linux x86-64 standalone package, with launch and optional desktop-shortcut scripts and the local manual. Windows and Mac packages keep their existing formats.
