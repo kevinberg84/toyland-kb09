@@ -50,7 +50,9 @@ juce_add_plugin(SH09
     FORMATS ${KB09_PLUGIN_FORMATS} IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE VST3_CATEGORIES Instrument Synth
     AU_MAIN_TYPE kAudioUnitType_MusicDevice AAX_CATEGORY SWGenerators
-    EDITOR_WANTS_KEYBOARD_FOCUS TRUE)
+    # JUCE links Linux HTTPS dependencies only when explicitly requested;
+    # setting JUCE_USE_CURL alone does not add libcurl to the link line.
+    NEEDS_CURL TRUE EDITOR_WANTS_KEYBOARD_FOCUS TRUE)
 
 # JUCE 9's rcfile rule omits Info.txt from its dependencies. Without this,
 # an incremental version change leaves stale Explorer file-version metadata.
