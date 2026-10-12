@@ -880,7 +880,16 @@ void renderBenderPositions(SH09Processor& processor, juce::Component& editor,
                       && changedPixels(positions[0], positions[2], 12) >= 100,
                       prefix + "left, neutral and right positions visibly differ");
         const bool springCallback=bool(bender->onDragEnd);
-        if(springCallback){bender->onDragEnd();settleEditor();}
+        if(springCallback) {
+            bender->onDragEnd();
+            // Native message loops may return before the next animation timer
+            // is delivered. Wait for the observable endpoint, with a bounded
+            // deadline, rather than assuming one dispatch slice advances it.
+            const auto deadline=juce::Time::getMillisecondCounterHiRes()+2000.0;
+            do {settleEditor();}
+            while(std::abs(bender->getValue())>=1.0e-12
+                  &&juce::Time::getMillisecondCounterHiRes()<deadline);
+        }
         const auto restored=bender->createComponentSnapshot(bender->getLocalBounds(),true,3.0f);
         checks.expect(springCallback&&std::abs(bender->getValue())<1.0e-12&&changedPixels(positions[1],restored)==0,
                       prefix + "actual drag-end callback restores zero and identical neutral pixels");
