@@ -104,6 +104,41 @@ struct Artwork {
     }
 };
 const Artwork& artwork() {static const Artwork a;return a;}
+// Keep component caches in CPU memory too, including offscreen host editors.
+// A host's temporary graphics context must not make our caches retain GPU
+// resources across plug-in unload. Repaints invalidate only the affected area.
+class SoftwareComponentCache final : public juce::CachedComponentImage {
+public:
+    explicit SoftwareComponentCache(juce::Component& component):owner(component) {}
+    void paint(juce::Graphics& g) override {
+        const auto bounds=owner.getLocalBounds();
+        const float scale=juce::jlimit(1.f,4.f,g.getInternalContext().getPhysicalPixelScaleFactor());
+        const int width=juce::jmax(1,juce::roundToInt(bounds.getWidth()*scale));
+        const int height=juce::jmax(1,juce::roundToInt(bounds.getHeight()*scale));
+        if(image.getWidth()!=width||image.getHeight()!=height) {
+            image=juce::Image(juce::Image::ARGB,width,height,true,juce::SoftwareImageType());valid.clear();
+        }
+        if(!valid.containsRectangle(bounds)) {
+            juce::Graphics raster(image);raster.addTransform(juce::AffineTransform::scale(scale));
+            for(const auto& area:valid)raster.excludeClipRegion(area);
+            raster.getInternalContext().setFill(juce::Colours::transparentBlack);
+            raster.getInternalContext().fillRect(bounds,true);
+            owner.paintEntireComponent(raster,true);valid=bounds;
+        }
+        g.setOpacity(owner.getAlpha());g.drawImage(image,bounds.toFloat());
+    }
+    bool invalidateAll() override {valid.clear();return true;}
+    bool invalidate(const juce::Rectangle<int>& area) override {valid.subtract(area);return true;}
+    void releaseResources() override {image={};valid.clear();}
+private:
+    juce::Component& owner;juce::Image image;juce::RectangleList<int> valid;
+};
+void bufferInSoftware(juce::Component& component,bool enabled) {
+    if(enabled) {
+        if(dynamic_cast<SoftwareComponentCache*>(component.getCachedComponentImage())==nullptr)
+            component.setCachedComponentImage(new SoftwareComponentCache(component));
+    } else component.setCachedComponentImage(nullptr);
+}
 void caseStains(juce::Graphics& g,float age) {
     if(age<.60f)return;
     juce::Graphics::ScopedSaveState save(g);
@@ -1455,21 +1490,21 @@ void arcLabels(juce::Graphics& g,juce::Point<float> centre,
 class SH09Editor::Panel final : public juce::Component, private juce::Timer, private juce::KeyListener {
 public:
     void bufferUnchangedHardware() {
-        keyboard.setBufferedToImage(true);bender.setBufferedToImage(true);power.setBufferedToImage(true);
+        bufferInSoftware(keyboard,true);bufferInSoftware(bender,true);bufferInSoftware(power,true);
         for(auto& c:controls) {
             // Cache expensive knob material; lightweight fader caps stay live.
-            if(c->slider)c->slider->setBufferedToImage(c->slider->isRotary());
-            if(c->selector)c->selector->setBufferedToImage(true);
+            if(c->slider)bufferInSoftware(*c->slider,c->slider->isRotary());
+            if(c->selector)bufferInSoftware(*c->selector,true);
         }
     }
     void cacheForResize() {
         if(!resizeBackdrop.isValid()) {
-            resizeBackdrop=juce::Image(juce::Image::RGB,designW,designH,true);
+            resizeBackdrop=juce::Image(juce::Image::RGB,designW,designH,true,juce::SoftwareImageType());
             renderingCondition=true;{juce::Graphics frame(resizeBackdrop);paint(frame);}renderingCondition=false;
         }
         resizeCacheUntil=juce::Time::getMillisecondCounterHiRes()+180;
-        keyboard.setBufferedToImage(true);bender.setBufferedToImage(true);power.setBufferedToImage(true);
-        for(auto& c:controls) {if(c->slider)c->slider->setBufferedToImage(true);if(c->selector)c->selector->setBufferedToImage(true);}
+        bufferInSoftware(keyboard,true);bufferInSoftware(bender,true);bufferInSoftware(power,true);
+        for(auto& c:controls) {if(c->slider)bufferInSoftware(*c->slider,true);if(c->selector)bufferInSoftware(*c->selector,true);}
     }
     Panel(SH09Processor& p,sh09::WindowSizing& s)
         :processor(p),sizing(s),presetFiles(p,*this),keyboard(p),header(s),maximise(s),power(p),meter(p) {
@@ -1634,7 +1669,7 @@ public:
         // across the bank so a first gesture never renders a bare chassis or
         // forces detailed hardware painting onto every mouse event.
         renderingCondition=true;look.conditionDragging=true;look.renderingPreview=true;
-        const auto initialPreview=createComponentSnapshot({0,headerH,designW,visibleBodyH},true,900.0f/designW);
+        const auto initialPreview=createComponentSnapshot({0,headerH,designW,visibleBodyH},true,900.0f/designW,juce::SoftwareImageType());
         renderingCondition=false;look.conditionDragging=false;look.renderingPreview=false;
         agePreviews.fill(initialPreview);
         bufferUnchangedHardware();
@@ -2044,9 +2079,9 @@ private:
                 const float originalAge=look.age;
                 previewAge=float(i)/4;renderingCondition=true;look.age=previewAge;look.renderingPreview=true;
                 look.conditionDragging=true; // Low-cost material rasterisation while caching.
-                keyboard.setBufferedToImage(false);bender.setBufferedToImage(false);power.setBufferedToImage(false);
-                for(auto& c:controls){if(c->slider)c->slider->setBufferedToImage(false);if(c->selector)c->selector->setBufferedToImage(false);}
-                pendingAgePreviews[i]=createComponentSnapshot({0,headerH,designW,visibleBodyH},true,900.0f/designW);
+                bufferInSoftware(keyboard,false);bufferInSoftware(bender,false);bufferInSoftware(power,false);
+                for(auto& c:controls){if(c->slider)bufferInSoftware(*c->slider,false);if(c->selector)bufferInSoftware(*c->selector,false);}
+                pendingAgePreviews[i]=createComponentSnapshot({0,headerH,designW,visibleBodyH},true,900.0f/designW,juce::SoftwareImageType());
                 look.conditionDragging=false;look.renderingPreview=false;
                 previewAge=-1;renderingCondition=false;look.age=originalAge;
                 bufferUnchangedHardware();

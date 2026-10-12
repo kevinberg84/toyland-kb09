@@ -12,8 +12,8 @@ inline constexpr bool linuxUpdateInstructions = true;
 #else
 inline constexpr bool linuxUpdateInstructions = false;
 #endif
-inline juce::String updateInstructions(bool mac, bool linux = false) {
-    if(linux)return
+inline juce::String updateInstructions(bool mac, bool isLinux = false) {
+    if(isLinux)return
         "Save your current patch before closing KB-09. Your saved presets and audio/MIDI preferences stay in your user account. "
         "Keep any personal presets you saved inside the old download folder.\n\n"
         "1. Download Toyland KB-09 for Linux (Standalone Only).zip and extract the entire ZIP.\n"
