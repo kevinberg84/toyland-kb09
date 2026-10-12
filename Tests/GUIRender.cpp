@@ -1417,6 +1417,50 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
 }
 }
 
+void checkMovingControlPerformance(Checks& checks) {
+    SH09Processor processor;processor.prepareToPlay(48000,128);
+    std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditor());
+    editor->setSize(1500,816);settleEditor();
+    // Expire the temporary resize backdrop and buffered children first.
+    // Otherwise this measures resize-cache blits, not live performance painting.
+    juce::MessageManager::getInstance()->runDispatchLoopUntil(300);
+    auto* bender=dynamic_cast<juce::Slider*>(findComponent(*editor,"bender"));
+    auto* mod=dynamic_cast<juce::Slider*>(findComponent(*editor,"vcoMod"));
+    auto* keyboard=findComponent(*editor,"keyboard");
+    checks.expect(bender&&mod&&keyboard,"performance fixture exposes moving controls and keys");
+    if(!bender||!mod||!keyboard)return;
+    auto* panel=bender->getParentComponent();
+    juce::Image frame(juce::Image::ARGB,1500,816,true);
+    {juce::Graphics g(frame);panel->paintEntireComponent(g,true);}
+    const int initial=int(panel->getProperties().getWithDefault("chassisRasterCount",0));
+    std::vector<double> milliseconds;
+    juce::AudioBuffer<float> audio(2,128);juce::MidiBuffer midi;
+    for(int i=0;i<120;++i) {
+        midi.clear();audio.clear();
+        if(i%12==0)midi.addEvent(juce::MidiMessage::noteOn(1,60+i/12%3,juce::uint8(100)),0);
+        if(i%12==8)midi.addEvent(juce::MidiMessage::noteOff(1,60+i/12%3),0);
+        midi.addEvent(juce::MidiMessage::pitchWheel(1,(i*137)%16384),0);
+        processor.processBlock(audio,midi);
+        if(i%12==0||i%12==8)keyboard->repaint(200,0,160,keyboard->getHeight());
+        bender->setValue(processor.displayedPitchBend.load(),juce::dontSendNotification);
+        mod->setValue(float(i%60)/59,juce::dontSendNotification);
+        const auto start=juce::Time::getMillisecondCounterHiRes();
+        {juce::Graphics g(frame);juce::RectangleList<int> dirty;
+         dirty.add(bender->getBounds().expanded(5));dirty.add(mod->getBounds().expanded(25));
+         dirty.add(juce::Rectangle<int>(keyboard->getX()+200,keyboard->getY(),130,keyboard->getHeight()));
+         g.reduceClipRegion(dirty);panel->paintEntireComponent(g,true);}
+        milliseconds.push_back(juce::Time::getMillisecondCounterHiRes()-start);
+    }
+    std::sort(milliseconds.begin(),milliseconds.end());
+    const double median=milliseconds[milliseconds.size()/2],p95=milliseconds[milliseconds.size()*95/100];
+    const int final=int(panel->getProperties().getWithDefault("chassisRasterCount",0));
+    checks.expect(initial>0&&final==initial,"MIDI, bender, modulation and played keys reuse stationary panel material");
+    std::cout<<"PERFORMANCE dirty-region control+keys render median_ms="<<median<<" p95_ms="<<p95
+             <<" chassis_rebuilds="<<final-initial<<" (offscreen paint, not measured display FPS)\n";
+    checks.expect(p95<40,"moving-control paint budget avoids long rendering stalls");
+    processor.releaseResources();
+}
+
 int main(int argc, char** argv) {
     if (argc != 2 || juce::String(argv[1]) == "--help") {
         std::cout << "Usage: SH09GUIRender <output-directory>\n"
@@ -1427,12 +1471,16 @@ int main(int argc, char** argv) {
     }
     juce::ScopedJuceInitialiser_GUI initialiseGUI;
     Checks checks;
+    if(juce::String(argv[1])=="--performance") {
+        checkMovingControlPerformance(checks);return checks.failures?1:0;
+    }
     const auto directory = juce::File::getCurrentWorkingDirectory().getChildFile(juce::String::fromUTF8(argv[1]));
     try {
         if (auto result = directory.createDirectory(); result.failed()) throw std::runtime_error(result.getErrorMessage().toStdString());
         checks.expect(juce::MessageManager::getInstance()->isThisTheMessageThread(), "fixture runs on the JUCE message thread");
         checkPersonalArtwork(checks);
         checkCompatibility(checks);
+        checkMovingControlPerformance(checks);
         {
             juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Standalone);
             SH09Processor standalone;

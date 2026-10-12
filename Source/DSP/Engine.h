@@ -4,6 +4,11 @@
 #include <cstdint>
 
 namespace sh09 {
+// Keep the stored/automated TUNE range at -65..65 for existing sessions.
+// Modern expands its physical effect to one octave in either direction.
+inline double oscillatorTuneCents(double storedTune, bool modern) noexcept {
+ return storedTune*(modern?1200.0/65.0:1.0);
+}
 struct Controls {
  float tune=0,range=2,wave=1,pulseWidth=.5f,pwmMode=0;
  float vcoLevel=.8f,subLevel=0,extLevel=0,subMode=0;

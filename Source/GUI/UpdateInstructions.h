@@ -7,7 +7,21 @@ inline constexpr bool macUpdateInstructions = true;
 #else
 inline constexpr bool macUpdateInstructions = false;
 #endif
-inline juce::String updateInstructions(bool mac) {
+#if JUCE_LINUX
+inline constexpr bool linuxUpdateInstructions = true;
+#else
+inline constexpr bool linuxUpdateInstructions = false;
+#endif
+inline juce::String updateInstructions(bool mac, bool linux = false) {
+    if(linux)return
+        "Save your current patch before closing KB-09. Your saved presets and audio/MIDI preferences stay in your user account. "
+        "Keep any personal presets you saved inside the old download folder.\n\n"
+        "1. Download Toyland KB-09 for Linux (Standalone Only).zip and extract the entire ZIP.\n"
+        "2. Close KB-09, then replace the old extracted files with the new ones.\n"
+        "3. Run Start KB-09.sh, or mark Toyland KB-09 Standalone executable and open it.\n"
+        "4. If you used Create desktop shortcut.sh, run it again after moving the folder.\n"
+        "5. Open TOYLAND / KB-09 and confirm the new version.\n\n"
+        "No DAW or plug-in installation is needed. No files are downloaded or installed automatically.";
     juce::String text =
         "Installation is manual and usually takes a few minutes, depending on your download speed. "
         "Installing the update is optional.\n\n"
@@ -33,7 +47,7 @@ inline juce::String updateInstructions(bool mac) {
 class UpdateInstructions final : public kb09_gui::ThemedAlert {
 public:
     explicit UpdateInstructions(const juce::String& link, juce::Component* owner = nullptr, bool mac = macUpdateInstructions, float age = -1)
-        : ThemedAlert("How to update KB-09", updateInstructions(mac),
+        : ThemedAlert("How to update KB-09", updateInstructions(mac,linuxUpdateInstructions),
                       juce::MessageBoxIconType::InfoIcon, owner, age), downloadLink(link) {
         controls.setSize(450, 36);
         controls.addAndMakeVisible(download);
@@ -43,8 +57,8 @@ public:
         download.setBounds(0, 2, 240, 30);
         copy.setBounds(250, 2, 200, 30);
         download.onClick = [this] { juce::URL(downloadLink).launchInDefaultBrowser(); };
-        copy.onClick = [this] {
-            juce::SystemClipboard::copyTextToClipboard(updateInstructions(macUpdateInstructions)
+        copy.onClick = [this,mac] {
+            juce::SystemClipboard::copyTextToClipboard(updateInstructions(mac,linuxUpdateInstructions)
                                                        + "\n\nDownload: " + downloadLink);
             copy.setButtonText("Copied!");
         };

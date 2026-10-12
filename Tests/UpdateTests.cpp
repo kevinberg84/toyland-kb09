@@ -11,4 +11,7 @@ for(bool mac : {false,true}) {
  check(kb09::updateInstructions(mac).contains("Keep any personal presets"));
  check(kb09::updateInstructions(mac).contains("Save your current patch"));
 }
+check(kb09::updateInstructions(false,true).contains("Linux (Standalone Only).zip"));
+check(!kb09::updateInstructions(false,true).contains("Standalone.exe"));
+check(kb09::updateInstructions(false,true).contains("desktop shortcut"));
 std::cout<<"Update version checks: "<<fails<<" failures\n";return fails?1:0;}

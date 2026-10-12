@@ -188,7 +188,7 @@ float Engine::process(float externalMono) noexcept {
    if(glide<1e-5)pitch=selected;else pitch+=(selected-pitch)*(1-std::exp(-std::log(1000.0)/(glide*internalFs)));
   }
   const double conditionCents=smooth.age*(2.0+.08*(pitch-60));
-  const double semitone=pitch+12*(choice(smooth.range,4)-2)+smooth.tune/100.0+conditionCents/100.0+controlBend*smooth.bendVco*12+lfo*smooth.vcoMod*vcoModSemitones;
+  const double semitone=pitch+12*(choice(smooth.range,4)-2)+oscillatorTuneCents(smooth.tune,modern)/100.0+conditionCents/100.0+controlBend*smooth.bendVco*12+lfo*smooth.vcoMod*vcoModSemitones;
   const double hz=clamp(440*std::exp2((semitone-69)/12),.01,internalFs*.2),dt=hz/internalFs;
   const double rawNoise=random();noiseLP+=pole*(rawNoise*noiseScale-noiseLP);noiseDC+=dc*(noiseLP-noiseDC);const double noise=noiseLP-noiseDC;
   double width=.5+.45*smooth.pulseWidth;

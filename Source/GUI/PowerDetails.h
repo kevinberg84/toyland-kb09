@@ -125,7 +125,7 @@ struct ScrewMaterial {
             const float dark = 1.0f - smoothRange(.27f, .47f, s.patch);
             const float base = lower ? .76f - .14f * wear : .68f - .305f * wear;
             float light = base + wear * (lower ? .035f * pale - .31f * dark
-                                                : .39f * pale - .12f * dark);
+                                                : .12f * pale - .12f * dark);
             light += s.grain * (.045f + .13f * wear);
             light -= smoothRange(.69f, .88f, s.pore) * (.025f + .085f * wear);
             // Broad chalky deposits diffuse the lower head's reflections;
@@ -133,8 +133,10 @@ struct ScrewMaterial {
             const float dome = lower ? s.dome + .18f * wear * (.84f - s.dome) : s.dome;
             light *= dome;
             float red = light, green = light + .013f, blue = light - .017f;
+            const float rust=lower?0.f:wear*wear*smoothRange(.58f,.80f,s.patch)*.10f;
+            red+=rust;green-=rust*.25f;blue-=rust*.55f;
 
-            const float edge = s.socket + s.grain * (.007f + .015f * wear);
+            const float edge = s.socket + s.grain * (.007f + .015f * wear) - (lower?.018f:0.f)*wear;
             if (edge < .035f) {
                 const float opening = 1.0f - smoothRange(-.075f, .025f, edge);
                 // The opposing inner wall catches light while the cavity

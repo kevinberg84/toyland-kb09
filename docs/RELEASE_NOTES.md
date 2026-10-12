@@ -1,3 +1,13 @@
+# 1.4.0 — Toyland KB-09
+
+Adds a native Linux x86-64 standalone package, with launch and optional desktop-shortcut scripts and the local manual. Windows and Mac packages keep their existing formats.
+
+Modern TUNE now spans ±12 semitones; Authentic retains ±65 cents. The parameter ID, stored range and centre are unchanged. Modern presets/automation with nonzero TUNE values intentionally cover a wider pitch range.
+
+The stationary panel is cached at display resolution. Keyboard note changes repaint affected areas, the bender rasterises at display resolution, and AGE preview warming waits until performance is idle. This prioritises moving controls without changing audio scheduling. Panel printing, power-button height, plastic chamfers and wear follow Kevin's SH-09 reference photographs. AGE never disables controls.
+
+The restored filter remains the shipping signal path. Slow VCO/filter pitch interactions are being measured separately; no hardware-accuracy or alias-elimination claim is made.
+
 # 1.3.0 — Toyland KB-09
 
 Restored the pre-upgrade 1.1.3 oscillator, filter, saturation and output engine after listening feedback on 1.2.0. Four-times processing and 128-sample reported latency return with it. The preserved 1.1.3 engine is compiled separately for sample-for-sample regression comparison. The manual now describes the restored circuit-informed approximation without claiming the superseded component model.

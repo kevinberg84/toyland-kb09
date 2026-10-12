@@ -30,6 +30,15 @@ double aliasDb(const std::vector<double>& signal,int bin){std::vector<std::compl
 }
 int main(){
  const auto start=std::chrono::steady_clock::now();
+ for(double sr:{44100.,48000.,96000.}) for(bool modern:{false,true}) for(float tune:{-65.f,0.f,65.f}) {
+  sh09::Engine e;e.prepare(sr);auto c=clean();c.modern=modern?1.f:0.f;c.tune=tune;
+  e.setControls(c);e.noteOn(69,127);render(e,.12,sr);
+  const double measured=frequency(render(e,.3,sr),sr);
+  const double expected=440*std::exp2((modern?tune*12.0/65.0:tune/100.0)/12.0);
+  check(std::abs(measured/expected-1)<.001,
+        std::string(modern?"Modern octave":"Authentic fine")+" TUNE "+std::to_string(tune)+
+        " sr="+std::to_string(int(sr))+" measuredHz="+std::to_string(measured));
+ }
  for(double sr:{44100.,48000.,88200.,96000.,192000.}){
   for(int range:{0,2,4}){sh09::Engine e;e.prepare(sr);auto c=clean();c.range=float(range);e.setControls(c);e.noteOn(69,127);render(e,.12,sr);auto audio=render(e,.20,sr);const double measured=frequency(audio,sr),expected=440*std::exp2(range-2);check(std::abs(measured/expected-1)<.001,"pitch "+std::to_string(int(sr))+" range "+std::to_string(range)+" Hz="+std::to_string(measured));}
   for(int mode=0;mode<3;++mode){sh09::Engine e;e.prepare(sr);auto c=clean();c.vcoLevel=0;c.subLevel=1;c.subMode=float(mode);e.setControls(c);e.noteOn(69,127);render(e,.10,sr);auto audio=render(e,.20,sr);const double measured=frequency(audio,sr),expected=mode==0?220:110;check(std::abs(measured/expected-1)<.001,"divider "+std::to_string(int(sr))+" mode "+std::to_string(mode));}

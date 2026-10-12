@@ -3,6 +3,7 @@
 #include <new>
 #include <iostream>
 #include <cmath>
+#include <vector>
 namespace {thread_local bool track=false;thread_local unsigned allocations=0;}
 void* operator new(std::size_t n){if(track)++allocations;if(void* p=std::malloc(n?n:1))return p;throw std::bad_alloc();}
 void* operator new[](std::size_t n){return ::operator new(n);}
@@ -15,6 +16,14 @@ int main(){
  int failed=0;auto expect=[&](bool ok,const char* text){std::cout<<(ok?"PASS ":"FAIL ")<<text<<'\n';if(!ok)++failed;};
  juce::AudioBuffer<float> audio(2,127);juce::MidiBuffer midi;midi.ensureSize(8192);
  auto process=[&]{audio.clear();track=true;p.processBlock(audio,midi);track=false;};
+ {
+  std::vector<float> before;for(auto* parameter:p.getParameters())before.push_back(parameter->getValue());
+  for(int channel:{1,2,16})for(int cc:{7,11,16,17,18,19,20,21,22,23,71,74})
+      midi.addEvent(juce::MidiMessage::controllerEvent(channel,cc,(cc*7)%128),0);
+  process();bool untouched=true;
+  for(size_t i=0;i<before.size();++i)untouched&=p.getParameters()[int(i)]->getValue()==before[i];
+  expect(untouched,"ordinary controller fader CCs do not remap or alter KB-09 parameters behind host mappings");
+ }
  for(int i=0;i<300;++i)p.queueKeyboard(60,true);
  p.queueKeyboard(60,false);process();expect(p.displayedNote.load()==-1&&p.keyDisplay[60].load()==0,"queue overflow discards stale note-ons and prevents stuck keys");
  p.queueKeyboard(60,true);process();expect(p.displayedNote.load()==60,"keyboard recovers after overflow");

@@ -68,6 +68,8 @@ private:
             if(body.getSize()<=65536){auto json=juce::JSON::parse(body.toString());v=json["version"].toString();ok=json["product"].toString()=="KB-09"&&validVersion(v);
 #if JUCE_MAC
                 link=json["mac"].toString();
+#elif JUCE_LINUX
+                link=json["linux"].toString();
 #else
                 link=json["windows"].toString();
 #endif
