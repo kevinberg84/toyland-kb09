@@ -1932,8 +1932,8 @@ public:
             caption(g,"TUNE",{315,75.5f,30,15},8.4f,juce::Justification::centred,true,ink);
             arcLabels(g,{356,163},{{"32'",-1.134464f},{"16'",-.567232f},{"8'",0.0f},{"4'",.567232f},{"2'",1.134464f}},40,age);
             arcLabels(g,{468,163},{{"NOISE",-1.047198f},{"SAW",-.349066f},{"SQR",.349066f},{"PULSE",1.047198f}},40,age);
-            caption(g,"PULSE WIDTH MOD",{526,96,89,12},7.6f,juce::Justification::centredLeft,true,ink);
-            juce::Path pwmLink;pwmLink.startNewSubPath(526,124);pwmLink.lineTo(520,124);pwmLink.lineTo(520,105);pwmLink.quadraticTo(520,102,523,102);pwmLink.lineTo(524,102);
+            caption(g,"PULSE WIDTH MOD",{532,96,83,12},7.6f,juce::Justification::centredLeft,true,ink);
+            juce::Path pwmLink;pwmLink.startNewSubPath(512,131);pwmLink.lineTo(512,106);pwmLink.quadraticTo(512,102,516,102);pwmLink.lineTo(529,102);
             g.setColour(ink);g.strokePath(pwmLink,juce::PathStrokeType(.9f));
             juce::Path vcfLink;vcfLink.startNewSubPath(999,116);vcfLink.lineTo(999,106);vcfLink.quadraticTo(999,103,1002,103);vcfLink.lineTo(1027,103);vcfLink.quadraticTo(1030,103,1030,106);vcfLink.lineTo(1030,115);
             g.strokePath(vcfLink,juce::PathStrokeType(.85f));
