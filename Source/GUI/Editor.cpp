@@ -119,10 +119,17 @@ public:
             image=juce::Image(juce::Image::ARGB,width,height,true,juce::SoftwareImageType());valid.clear();
         }
         if(!valid.containsRectangle(bounds)) {
-            juce::Graphics raster(image);raster.addTransform(juce::AffineTransform::scale(scale));
-            for(const auto& area:valid)raster.excludeClipRegion(area);
-            raster.getInternalContext().setFill(juce::Colours::transparentBlack);
-            raster.getInternalContext().fillRect(bounds,true);
+            juce::RectangleList<int> dirty(bounds);dirty.subtract(valid);
+            juce::RectangleList<int> pixels;
+            for(const auto& area:dirty)
+                pixels.add((area.toFloat()*scale).getSmallestIntegerContainer());
+            for(const auto& area:pixels)image.clear(area);
+            juce::Graphics raster(image);raster.reduceClipRegion(pixels);
+            raster.addTransform(juce::AffineTransform::scale(scale));
+            // Image blits inherit the current fill's opacity. Reset it after
+            // clearing. Clip in physical pixels to avoid half-pixel cache seams
+            // at fractional Windows display scales.
+            raster.setColour(juce::Colours::black);
             owner.paintEntireComponent(raster,true);valid=bounds;
         }
         g.setOpacity(owner.getAlpha());g.drawImage(image,bounds.toFloat());
@@ -515,7 +522,7 @@ void projectedKnob(juce::Graphics& g,juce::Rectangle<float> area,float angle,flo
     g.drawLine({top+direction*d*.079f,top+direction*d*.245f},d*.028f);
     // Matching radial index on the flared metal collar; body lighting stays fixed.
     const auto collar=juce::Point<float>(top.x,sprite.getY()+d*.505f);
-    g.drawLine({collar+direction*d*.390f,collar+direction*d*.455f},d*.014f);
+    g.drawLine({collar+direction*d*.390f,collar+direction*d*.440f},d*.028f);
 }
 void screwOxidation(juce::Graphics& g,juce::Point<float> c,float age,uint32_t seed) {
     if(age<=0)return;
@@ -599,7 +606,7 @@ public:
             for(int t=0;t<=10;++t) {
                 const float yy=float(y)+float(h)*float(t)/10;
                 const bool major=t%5==0;
-                const float arm=compact?(major?8.0f:6.0f):(major?12.0f:10.0f);
+                const float arm=compact?(major?7.0f:5.5f):(major?9.5f:7.5f);
                 const float left=float(slider.getProperties().getWithDefault("tickLeftSpan",arm+5));
                 const float right=float(slider.getProperties().getWithDefault("tickRightSpan",arm+5));
                 g.setColour(ink.withAlpha(major?.90f:.73f));
@@ -621,10 +628,18 @@ public:
         const float cx=float(x)+float(w)*.5f,cy=float(y)+float(h)*.5f;
         if(style==juce::Slider::LinearVertical) {
             const bool compact=bool(slider.getProperties().getWithDefault("compact",false));
-            g.setColour(juce::Colour(0xff62696a));g.fillRoundedRectangle(cx-4.8f,float(y)-2,9.6f,float(h)+4,2.4f);
-            g.setColour(juce::Colour(0xff06090b));g.fillRoundedRectangle(cx-4.0f,float(y)-1,8.0f,float(h)+2,2.0f);
-            g.setColour(juce::Colour(0xff000204));g.drawLine(cx-3.3f,float(y),cx-3.3f,float(y+h),1);
-            g.setColour(juce::Colours::white.withAlpha(.10f));g.drawLine(cx+4.4f,float(y),cx+4.4f,float(y+h),.55f);
+            const auto rim=juce::Rectangle<float>(cx-4.8f,float(y)-2,9.6f,float(h)+4);
+            // A dark, pill-ended opening with a narrow rolled lip. Avoid a
+            // bright uniform outline that makes the track look drawn on.
+            g.setGradientFill(juce::ColourGradient(juce::Colour(0xff363937),rim.getX(),rim.getY(),
+                juce::Colour(0xff101211),rim.getRight(),rim.getY(),false));
+            g.fillRoundedRectangle(rim,4.8f);
+            const auto opening=rim.reduced(.85f,.7f);
+            g.setGradientFill(juce::ColourGradient(juce::Colour(0xff010202),opening.getX(),opening.getY(),
+                juce::Colour(0xff080a09),opening.getRight(),opening.getY(),false));
+            g.fillRoundedRectangle(opening,opening.getWidth()*.5f);
+            g.setColour(juce::Colour(0xff96998f).withAlpha(.08f*(1-age*.6f)));
+            g.drawLine(cx-4.5f,float(y)+4,cx-4.5f,float(y+h)-4,.45f);
             const auto capBounds=juce::Rectangle<float>(cx-(compact?12.5f:15),pos-10,compact?25.0f:30.0f,23);
             const bool releasePost=slider.getComponentID()=="release";
             const bool missing=(slider.getComponentID()=="lfoDelay"&&age>=.60f)||(slider.getComponentID()=="vcoLevel"&&age>=.64f)||(releasePost&&age>=.88f);
@@ -1567,7 +1582,7 @@ public:
         maximise.setBounds(1428,0,47,34);maximise.setComponentID("maximise");
         sizing.onChange=[this]{header.repaint();maximise.repaint();};
         addSwitch("lfoWave",116,104,49,121,{0,1,2},{"SINE","SQUARE","RANDOM\n(S/H)"},"Modulator: sine, square or random sample-and-hold.");
-        addFader("lfoRate","RATE",182,96,43,129);controls.back()->label->setVisible(false);addFader("lfoDelay","DELAY",224,96,43,129);
+        addFader("lfoRate","RATE",186,96,33,129);controls.back()->label->setVisible(false);addFader("lfoDelay","DELAY",220,96,33,129);
         controls.back()->label->setVisible(false); // Sine + DELAY TIME is printed by the panel.
         addAndMakeVisible(rateLamp);rateLamp.setBounds(122,headerH+98,8,8);rateLamp.setInterceptsMouseClicks(false,false);
         addFader("vcoMod","MOD",284,96,45,129);
@@ -1577,17 +1592,17 @@ public:
         controls.back()->label->setVisible(false); // Shared PULSE WIDTH MOD bracket replaces this caption.
         addSwitch("pwmMode",566,104,51,121,{1,0,2},{"LFO","MANUAL","ENV"},"Pulse width: LFO, manual or envelope. LFO uses the undelayed sine.");
         addSwitch("subMode",633,104,60,121,{0,1,2},{"1 OCT\nDOWN","2 OCT\nDOWN","2 OCT\nDOWN"},"Sub oscillator: one octave down square, two octaves down square, or two octaves down pulse.");
-        addFader("vcoLevel","VCO",721,96,41,129);addFader("subLevel","SUB\nOSC",770,96,41,129);addFader("extLevel","EXT",819,96,41,129);
-        addFader("cutoff","CUTOFF\nFREQ",880,96,43,129);addFader("resonance","RESONANCE",923,96,45,129);
+        addFader("vcoLevel","VCO",732,96,37,129);addFader("subLevel","SUB\nOSC",770,96,37,129);addFader("extLevel","EXT",808,96,37,129);
+        addFader("cutoff","CUTOFF\nFREQ",884,96,33,129);addFader("resonance","RESONANCE",919,96,33,129);
         addSwitch("vcfEnvMode",950,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"VCF envelope follower, positive envelope, or inverted envelope.",true);
-        addFader("vcfEnv","ENV",1030,96,40,129);controls.back()->label->setVisible(false);addFader("vcfMod","MOD",1075,96,40,129);
+        addFader("vcfEnv","ENV",1035,96,35,129);controls.back()->label->setVisible(false);addFader("vcfMod","MOD",1071,96,35,129);
         addSwitch("vcaMode",1110,104,56,121,{0,1,2},{"HOLD","ENV","GATE"},"HOLD passes audio without MIDI; ENV uses ADSR; GATE follows held keys.");
         addSwitch("envMode",1175,104,55,121,{0,1,2},{"GATE +\nTRIG","GATE","LFO"},"Gate+Trigger re-attacks on low-note changes. Gate preserves legato. LFO repeats while held.",true);
-        addFader("attack","A",1249,96,35,129,true);addFader("decay","D",1288,96,35,129,true);
-        addFader("sustain","S",1327,96,35,129,true);addFader("release","R",1366,96,35,129,true);
+        addFader("attack","A",1260,96,31,129,true);addFader("decay","D",1292,96,31,129,true);
+        addFader("sustain","S",1324,96,31,129,true);addFader("release","R",1356,96,31,129,true);
         addKnob("volume",117,442,79);
         addAndMakeVisible(power);power.setBounds(183,headerH+398,44,44);power.onPowerChanged=[this]{repaint();};
-        addFader("bendVco","VCO",98,496,37,112,true);addFader("bendVcf","VCF",142,496,37,112,true);
+        addFader("bendVco","VCO",102,496,35,112,true);addFader("bendVcf","VCF",138,496,35,112,true);
         addFader("portamento","PORTAMENTO",205,496,37,112,true);
         // The original has continuous shared rules between adjacent tracks,
         // with numbers at the outside edges of each group only.
@@ -1766,6 +1781,19 @@ public:
         if(age>0)for(int side=0;side<2;++side) {
             juce::Graphics::ScopedSaveState cheek(g);
             g.reduceClipRegion(juce::Rectangle<int>(side?1447:5,headerH+12,45,bodyH-24));
+            // Handling polishes the high spots and dulls the broad plastic face.
+            // Fine, irregular material grain breaks up the glossy fresh photo.
+            const float faceX=side?1452.f:10.f;
+            juce::ColourGradient dulled(juce::Colour(0xff898982).withAlpha(age*.27f),faceX,headerH+40.f,
+                juce::Colour(0xff313432).withAlpha(age*.06f),faceX,float(headerH+visibleBodyH),false);
+            g.setGradientFill(dulled);g.fillRoundedRectangle(faceX,headerH+14.f,35.f,float(visibleBodyH-23),6.f);
+            for(uint32_t grain=0;grain<8500;++grain) {
+                const uint32_t seed=surfaceHash(grain*7919u+uint32_t(side)*17777u+8361u);
+                const float xx=faceX+35*surfaceNoise(seed),yy=headerH+16+float(visibleBodyH-28)*surfaceNoise(seed+17);
+                const float size=.25f+.65f*surfaceNoise(seed+31);
+                g.setColour(juce::Colour(grain%3?0xff999a91:0xff080b0a).withAlpha(age*(.025f+.065f*surfaceNoise(seed+53))));
+                g.fillEllipse(xx,yy,size,size*.7f);
+            }
             for(int rub=0;rub<2;++rub) {
                 const auto seed=uint32_t(side*971+rub*331+87);
                 const float x=(side?1450.0f:8.0f)+30*surfaceNoise(seed),y=headerH+90+560*surfaceNoise(seed+13);
@@ -1774,11 +1802,11 @@ public:
                     juce::Colours::transparentBlack,x+w,y+h,true);
                 g.setGradientFill(smear);g.fillEllipse(x-w,y-h,w*2,h*2);
             }
-            for(uint32_t i=0;i<70;++i) {
+            for(uint32_t i=0;i<42;++i) {
                 const uint32_t seed=surfaceHash(15077u+uint32_t(side)*191911u+i*7919u);
                 const float x=(side?1447.0f:5.0f)+45*surfaceNoise(seed),y=headerH+20+705*surfaceNoise(seed+31);
                 const float length=(i%7==0?9.0f:3.0f)+(i%7==0?20.0f:13.0f)*surfaceNoise(seed+53);
-                const float dy=(surfaceNoise(seed+71)-.5f)*(i%5==0?15.0f:3.0f);
+                const float dy=(surfaceNoise(seed+71)-.5f)*(i%3==0?35.0f:8.0f);
                 const float width=.45f+1.25f*std::pow(surfaceNoise(seed+97),1.6f);
                 const float contrast=age*age*(.18f+.22f*surfaceNoise(seed+131));
                 // Abraded plastic has feathered, uneven edges and tapered ends,
@@ -1812,16 +1840,36 @@ public:
             bevel.lineTo(x+34,bottom);bevel.lineTo(x+11,bottom);bevel.closeSubPath();
             g.setGradientFill(juce::ColourGradient(juce::Colour(0xff373a39),0,bottom-16,
                 juce::Colour(0xff080a0a),0,bottom,false));g.fillPath(bevel);
-            if(age>0)for(int cut=0;cut<3;++cut) {
+            if(age>0)for(int cut=0;cut<7;++cut) {
                 const float edge=side?x+43:x+2;
-                const float yy=cut==0?float(headerH+20):cut==1?bottom-12:bottom-37;
-                const float inward=side?-1.f:1.f,depth=(4+cut*1.3f)*age*age;
-                juce::Path gouge;gouge.startNewSubPath(edge,yy-5*age);
-                gouge.lineTo(edge+inward*depth,yy-2*age);gouge.lineTo(edge+inward*depth*.55f,yy+4*age);
-                gouge.lineTo(edge,yy+8*age);gouge.closeSubPath();
-                g.setColour(juce::Colour(0xff060909).withAlpha(age*.90f));g.fillPath(gouge);
-                g.setColour(juce::Colour(0xff828880).withAlpha(age*.32f));
-                g.drawLine(edge+inward*depth,yy-2*age,edge+inward*depth*.55f,yy+4*age,.55f);
+                const uint32_t seed=surfaceHash(uint32_t(cut)*701u+uint32_t(side)*3947u+1943u);
+                const float yy=cut==0?float(headerH+20):cut==1?bottom-12:cut==2?bottom-37:
+                    headerH+95+float(cut-3)*133+35*surfaceNoise(seed);
+                const float inward=side?-1.f:1.f,depth=(cut<3?5.f:2.5f)*age*age*(.7f+.6f*surfaceNoise(seed+17));
+                const float length=(cut<3?17.f:10.f)*age;
+                juce::Path gouge,lip;gouge.startNewSubPath(edge,yy-length*.5f);
+                for(int j=0;j<=14;++j) {
+                    const float t=float(j)/14;
+                    // Float sin(pi) can be slightly negative. Fractional powers
+                    // require a nonnegative profile or the path gets NaN points.
+                    const float profile=std::pow(juce::jmax(0.f,std::sin(juce::MathConstants<float>::pi*t)),.65f);
+                    const float bite=depth*profile*(.55f+.45f*surfaceNoise(seed+uint32_t(j)*137u));
+                    const juce::Point<float> p(edge+inward*bite,yy-length*.5f+t*length);
+                    gouge.lineTo(p);if(j==0)lip.startNewSubPath(p);else lip.lineTo(p);
+                }
+                gouge.closeSubPath();
+                g.setGradientFill(juce::ColourGradient(juce::Colour(0xff040606).withAlpha(age*.92f),edge,yy,
+                    juce::Colour(0xff4b4e48).withAlpha(age*.75f),edge+inward*depth,yy+length*.35f,false));
+                g.fillPath(gouge);
+                g.setColour(juce::Colour(0xff989c8d).withAlpha(age*.24f));
+                g.strokePath(lip,juce::PathStrokeType(.38f));
+                {juce::Graphics::ScopedSaveState rough(g);g.reduceClipRegion(gouge);
+                    for(uint32_t fleck=0;fleck<95;++fleck) {
+                        const uint32_t f=surfaceHash(seed+fleck*331u);
+                        g.setColour(juce::Colour(fleck%2?0xff92968b:0xff030505).withAlpha(age*.18f));
+                        g.fillEllipse(edge+inward*depth*surfaceNoise(f),yy-length*.5f+length*surfaceNoise(f+13),.5f,.35f);
+                    }
+                }
             }
         }
         caseStains(g,age);

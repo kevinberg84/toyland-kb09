@@ -1334,6 +1334,38 @@ struct Fixture {
     bool external;
 };
 
+void checkCachedKeyboard(Checks& checks) {
+    SH09Processor processor;
+    processor.prepareToPlay(sampleRate,blockSize);
+    std::unique_ptr<juce::AudioProcessorEditor,EditorDeleter> editor(processor.createEditorAndMakeActive(),{&processor});
+    settleEditor();
+    auto* keyboard=findComponent(*editor,"keyboard");
+    checks.expect(keyboard&&keyboard->getCachedComponentImage(),"keyboard has its shipping component cache");
+    if(!keyboard||!keyboard->getCachedComponentImage())return;
+    for(float age:{0.f,1.f})for(float scale:{1.f,1.5f,2.f}) {
+        setParameter(processor,"age",age);settleEditor();
+        auto* cache=keyboard->getCachedComponentImage();
+        cache->invalidateAll();
+        // Snapshotting the keyboard itself bypasses its component cache. Exercise
+        // the cache entry point used by a real desktop peer instead.
+        const auto render=[&] {
+            juce::Image image(juce::Image::ARGB,juce::roundToInt(keyboard->getWidth()*scale),
+                juce::roundToInt(keyboard->getHeight()*scale),true,juce::SoftwareImageType());
+            juce::Graphics g(image);g.addTransform(juce::AffineTransform::scale(scale));cache->paint(g);return image;
+        };
+        const auto initial=render();
+        const auto probe=juce::Point<int>(juce::roundToInt(30*scale),juce::roundToInt(300*scale));
+        const auto c=initial.getPixelAt(probe.x,probe.y);
+        checks.expect(c.getAlpha()>240&&c.getRed()>130&&c.getGreen()>110,
+            "cached ivory remains visible: AGE "+juce::String(age)+" scale "+juce::String(scale));
+        cache->invalidate({0,0,juce::roundToInt(keyboard->getWidth()/19.f)+5,keyboard->getHeight()});
+        const auto refreshed=render();
+        const int changed=changedPixels(initial,refreshed,3);
+        checks.expect(changed==0,"partial cache repaint preserves released keys (changed="+juce::String(changed)+")");
+    }
+    processor.releaseResources();
+}
+
 void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& checks) {
     SH09Processor processor;
     processor.setCurrentProgram(0);
@@ -1471,6 +1503,9 @@ int main(int argc, char** argv) {
     }
     juce::ScopedJuceInitialiser_GUI initialiseGUI;
     Checks checks;
+    if(juce::String(argv[1])=="--cache-regression") {
+        checkCachedKeyboard(checks);return checks.failures?1:0;
+    }
     if(juce::String(argv[1])=="--performance") {
         checkMovingControlPerformance(checks);return checks.failures?1:0;
     }
@@ -1480,6 +1515,7 @@ int main(int argc, char** argv) {
         checks.expect(juce::MessageManager::getInstance()->isThisTheMessageThread(), "fixture runs on the JUCE message thread");
         checkPersonalArtwork(checks);
         checkCompatibility(checks);
+        checkCachedKeyboard(checks);
         checkMovingControlPerformance(checks);
         {
             juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Standalone);

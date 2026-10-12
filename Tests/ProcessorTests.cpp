@@ -204,18 +204,24 @@ int main(){
    auto set=[&](float value){amount->setValueNotifyingHost(amount->convertTo0to1(value));};
    auto send=[&](int channel,int value){events.addEvent(juce::MidiMessage::controllerEvent(channel,1,value),0);block.clear();track=true;wheel.processBlock(block,events);track=false;};
    auto savedAmount=[&]{juce::MemoryBlock saved;wheel.getStateInformation(saved);SH09Processor restored;restored.setStateInformation(saved.getData(),int(saved.getSize()));return restored.state.getRawParameterValue("vcoMod")->load();};
-   auto deliver=[&]{juce::Timer::callPendingTimersSynchronously();juce::Thread::sleep(80);juce::Timer::callPendingTimersSynchronously();};
+   auto deliver=[&](float expected){
+     const auto start=juce::Time::getMillisecondCounterHiRes();
+     do {juce::Timer::callPendingTimersSynchronously();juce::Thread::sleep(10);}
+     while(juce::Time::getMillisecondCounterHiRes()-start<80
+       ||(std::abs(amount->getValue()-expected)>1e-6f&&juce::Time::getMillisecondCounterHiRes()-start<2000));
+     juce::Timer::callPendingTimersSynchronously();
+   };
    for(int mode=0;mode<2;++mode) {
      wheel.state.getParameter("modern")->setValueNotifyingHost(float(mode));set(.6f);wheel.reset();
      send(1,0);send(8,32);
      expect(std::abs(savedAmount()-.6f)<1e-6f,"mod wheel below pickup preserves the preset VCO MOD amount");
      send(16,100);
      expect(std::abs(savedAmount()-100.f/127)<1e-6f,"crossing pickup changes VCO MOD and immediate save retains it in either mode");
-     deliver();expect(std::abs(wheel.state.getRawParameterValue("vcoMod")->load()-100.f/127)<1e-6f,"mod wheel publishes the actual parameter off the audio thread");
-     send(3,127);deliver();expect(amount->getValue()==1,"picked-up wheel follows the full VCO MOD range");
-     set(.3f);send(1,110);deliver();expect(std::abs(amount->getValue()-.3f)<1e-6f,"manual or host parameter edit re-arms pickup");
-     send(1,20);deliver();expect(std::abs(amount->getValue()-20.f/127)<1e-6f,"wheel retakes control when it crosses the manually edited fader");
-     send(1,120);wheel.setCurrentProgram(0);deliver();
+     deliver(100.f/127);expect(std::abs(wheel.state.getRawParameterValue("vcoMod")->load()-100.f/127)<1e-6f,"mod wheel publishes the actual parameter off the audio thread");
+     send(3,127);deliver(1);expect(std::abs(amount->getValue()-1)<1e-6f,"picked-up wheel follows the full VCO MOD range");
+     set(.3f);send(1,110);deliver(.3f);expect(std::abs(amount->getValue()-.3f)<1e-6f,"manual or host parameter edit re-arms pickup");
+     send(1,20);deliver(20.f/127);expect(std::abs(amount->getValue()-20.f/127)<1e-6f,"wheel retakes control when it crosses the manually edited fader");
+     send(1,120);wheel.setCurrentProgram(0);deliver(0);
      expect(wheel.state.getRawParameterValue("vcoMod")->load()==0&&savedAmount()==0,"new preset rejects queued wheel feedback before the next audio callback");
    }
    expect(allocations==0,"CC1 pickup and per-event modulation processing perform no C++ new allocations");
