@@ -75,12 +75,27 @@ struct Artwork {
     juce::Image knob=load(BinaryData::knobpersonaloverheadv5_png,BinaryData::knobpersonaloverheadv5_pngSize)
         .getClippedImage({70,70,1114,1114});
     juce::Image fader=load(BinaryData::faderpersonaloverhead_png,BinaryData::faderpersonaloverhead_pngSize);
+    juce::Image faderDull;
     juce::Image rail=load(BinaryData::frontrailgrain_png,BinaryData::frontrailgrain_pngSize);
     juce::Image keys=load(BinaryData::keys_png,BinaryData::keys_pngSize);
     juce::Image whiteKey=keys.getClippedImage({303,65,198,1070});
     juce::Image blackKey=keys.getClippedImage({763,68,159,615});
     juce::Image marks,marksAged;
     Artwork() {
+        // Preserve the photographed strip and its wrap over both narrow sides.
+        // Its material is silver metal, independent of the yellowing panel ink.
+        faderDull=fader.createCopy();
+        juce::Image::BitmapData bright(fader,juce::Image::BitmapData::readWrite);
+        juce::Image::BitmapData dull(faderDull,juce::Image::BitmapData::readWrite);
+        for(int y=465;y<583;++y)for(int x=125;x<1365;++x) {
+            const auto c=bright.getPixelColour(x,y);
+            const float light=(c.getFloatRed()+c.getFloatGreen()+c.getFloatBlue())/3.f;
+            const float coverage=juce::jlimit(0.f,1.f,(juce::jmin(c.getFloatRed(),c.getFloatGreen(),c.getFloatBlue())-.25f)/.4f);
+            const auto silver=juce::Colour::fromFloatRGBA(light*.98f,light,juce::jmin(1.f,light*1.02f),c.getFloatAlpha());
+            const float matte=.53f+.17f*light;
+            bright.setPixelColour(x,y,c.interpolatedWith(silver,coverage));
+            dull.setPixelColour(x,y,c.interpolatedWith(juce::Colour::fromFloatRGBA(matte*.98f,matte,matte*1.02f,c.getFloatAlpha()),coverage));
+        }
         auto original=load(BinaryData::marks_png,BinaryData::marks_pngSize);
         auto worn=load(BinaryData::marksaged_png,BinaryData::marksaged_pngSize);
         marks=juce::Image(juce::Image::ARGB,original.getWidth(),original.getHeight(),true,juce::SoftwareImageType());
@@ -420,9 +435,11 @@ void cap(juce::Graphics& g,juce::Rectangle<float> r,bool small=false,bool indexe
         if(age>0) {
             g.setColour(juce::Colours::black.withAlpha(age*.10f));
             g.fillPath(solid);
-            // Registered top stripe warms gradually with the other printing.
-            g.setColour(juce::Colour(0xffc2a15d).withAlpha(age*.46f));
-            g.fillRect(photo.getX()+photo.getWidth()*.055f,photo.getY()+photo.getHeight()*.405f,photo.getWidth()*.89f,photo.getHeight()*.12f);
+            // Silver loses its narrow photographic shine gradually; it neither
+            // yellows with the printing nor acquires the exposed posts' rust.
+            g.setOpacity(age*.90f);
+            g.drawImage(artwork().faderDull,photo.getX(),photo.getY(),photo.getWidth(),photo.getHeight(),
+                        source.getX(),source.getY(),source.getWidth(),source.getHeight());
         }
         return;
     }
@@ -1496,8 +1513,8 @@ void arcLabels(juce::Graphics& g,juce::Point<float> centre,
         if(text=="NOISE")label.y-=6;
         if(text=="SAW"||text=="SQR"||text=="PULSE")
             panelGlyph(g,text=="SAW"?PanelGlyph::saw:text=="SQR"?PanelGlyph::square:PanelGlyph::pulse,
-                       {label.x-9,label.y-5,18,10},ink,1.15f);
-        else caption(g,text,{label.x-21,label.y-7,42,14},8.4f,juce::Justification::centred,true,ink);
+                       {label.x-7.5f,label.y-4,15,8},ink,.95f);
+        else caption(g,text,{label.x-21,label.y-7,42,14},text=="NOISE"?7.4f:8.4f,juce::Justification::centred,true,ink);
     }
 }
 }
@@ -1588,7 +1605,7 @@ public:
         addFader("vcoMod","MOD",284,96,45,129);
         controls.back()->slider->getProperties().set("scaleLeft",true);
         addKnob("range",356,169,87);addKnob("wave",468,169,87);addKnob("tune",356,86,22);
-        addFader("pulseWidth","PULSE\nWIDTH",536,96,45,129);
+        addFader("pulseWidth","PULSE\nWIDTH",543,96,37,129);
         controls.back()->label->setVisible(false); // Shared PULSE WIDTH MOD bracket replaces this caption.
         addSwitch("pwmMode",566,104,51,121,{1,0,2},{"LFO","MANUAL","ENV"},"Pulse width: LFO, manual or envelope. LFO uses the undelayed sine.");
         addSwitch("subMode",633,104,60,121,{0,1,2},{"1 OCT\nDOWN","2 OCT\nDOWN","2 OCT\nDOWN"},"Sub oscillator: one octave down square, two octaves down square, or two octaves down pulse.");
@@ -1915,8 +1932,8 @@ public:
             caption(g,"TUNE",{315,75.5f,30,15},8.4f,juce::Justification::centred,true,ink);
             arcLabels(g,{356,163},{{"32'",-1.134464f},{"16'",-.567232f},{"8'",0.0f},{"4'",.567232f},{"2'",1.134464f}},40,age);
             arcLabels(g,{468,163},{{"NOISE",-1.047198f},{"SAW",-.349066f},{"SQR",.349066f},{"PULSE",1.047198f}},40,age);
-            caption(g,"PULSE WIDTH MOD",{515,96,100,12},7.6f,juce::Justification::centredLeft,true,ink);
-            juce::Path pwmLink;pwmLink.startNewSubPath(509,130);pwmLink.lineTo(509,105);pwmLink.quadraticTo(509,102,512,102);pwmLink.lineTo(513,102);
+            caption(g,"PULSE WIDTH MOD",{526,96,89,12},7.6f,juce::Justification::centredLeft,true,ink);
+            juce::Path pwmLink;pwmLink.startNewSubPath(526,124);pwmLink.lineTo(520,124);pwmLink.lineTo(520,105);pwmLink.quadraticTo(520,102,523,102);pwmLink.lineTo(524,102);
             g.setColour(ink);g.strokePath(pwmLink,juce::PathStrokeType(.9f));
             juce::Path vcfLink;vcfLink.startNewSubPath(999,116);vcfLink.lineTo(999,106);vcfLink.quadraticTo(999,103,1002,103);vcfLink.lineTo(1027,103);vcfLink.quadraticTo(1030,103,1030,106);vcfLink.lineTo(1030,115);
             g.strokePath(vcfLink,juce::PathStrokeType(.85f));

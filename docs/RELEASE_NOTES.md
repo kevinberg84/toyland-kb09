@@ -10,6 +10,8 @@ Persistent artwork and control caches use CPU memory, including the aged rail te
 
 Keyboard component-cache clearing restores opaque drawing before blitting keys, with fractional display-scale coverage verified. Slider groups use shorter shared rules and rounded, shaded openings. Plastic edge damage has irregular textured outlines; collar index marks match the top marks' thickness and stop short of the rim.
 
+Fader-cap index strips are silver, retaining photographic reflections when fresh and dulling with AGE without yellowing or rust. Waveform symbols and NOISE are smaller, and the pulse-width slider and bracket have more clearance. The first Linux download is tagged UNVERIFIED pending playback confirmation on a real Arch desktop.
+
 The restored filter remains the shipping signal path. Slow VCO/filter pitch interactions are being measured separately; no hardware-accuracy or alias-elimination claim is made.
 
 # 1.3.0 — Toyland KB-09
