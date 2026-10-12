@@ -2,6 +2,10 @@
 
 After every completed build, update the installed plug-in and the platform folders in Kevin's OneDrive Desktop Host Folder
 and the current Windows, Mac and Linux shared Google Drive ZIPs, then notify him. Verify matching hashes.
+The Desktop Host folder must contain exactly three platform folders: Windows,
+Mac, and Linux standalone (UNVERIFIED until hardware verification). Keep ZIP
+archives and previous-release backups outside that Host folder. Preserve the
+three existing platform folder paths and update their contents in place.
 If a DAW locks the installed binary, ask Kevin to save and close it; never kill
 an application with an unsaved set. Preserve the preceding installed/package
 copies outside plug-in scan folders.
