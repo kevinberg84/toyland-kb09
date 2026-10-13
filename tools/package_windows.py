@@ -49,7 +49,7 @@ shutil.copy2(inputs["standalone"], package / "Standalone/Toyland KB-09.exe")
 shutil.copytree(build / "AAX/Toyland KB-09.aaxplugin",
                 package / "Development/AAX unsigned Windows/Toyland KB-09.aaxplugin")
 guide = package / "User Guide"
-for relative in ("index.html", "styles.css", "assets/marks.png", f"assets/panel-{version}.png"):
+for relative in ("index.html", "styles.css", "assets/marks.png", f"assets/panel-{version}.png", "assets/vcf-sweep-comparison.png", "assets/vcf-waveform-detail.png"):
     destination = guide / relative
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(root / "docs/manual" / relative, destination)

@@ -34,3 +34,10 @@
  #bug-report-form input:not([type=checkbox]),#bug-report-form select,#bug-report-form textarea,#report-copy{color:#e6e6df;background:#171b1c;border-color:#66716d}
  .report-actions button{background:#83d7ce;color:#112222;border-color:#83d7ce}.report-actions button+button{background:transparent;color:#e6e6df;border-color:#66716d}
 }
+
+/* OS and host instructions stay closed until selected. */
+.platform > summary,.host > summary,.quick-start > summary{font-size:1.08rem;font-weight:700;padding:.3rem 0;cursor:pointer}
+.disclosure-body{padding:.35rem .5rem .4rem}
+.platform .disclosure-body p,.host .disclosure-body p,.quick-start .disclosure-body p{font-size:1rem}
+.platform h3,.host h3{margin-top:1rem}
+@media print{details.platform,details.host,details.quick-start{break-inside:auto}.disclosure-body{padding:0}.platform>summary,.host>summary,.quick-start>summary{font-size:12pt}}

@@ -14,8 +14,9 @@ struct GestureInterleave final : juce::AudioProcessorParameter::Listener {
 void pump() {
     const auto end = juce::Time::getMillisecondCounterHiRes() + 100;
     while (juce::Time::getMillisecondCounterHiRes() < end) {
-        juce::Thread::sleep(5);
-        juce::Timer::callPendingTimersSynchronously();
+        // Exercise the real platform event loop, as a DAW does. On macOS,
+        // sleeping does not deliver the run-loop work that schedules timers.
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(5);
     }
 }
 }
@@ -42,6 +43,10 @@ int main() {
     interleave.onBegin = [&] { send(100); };
     parameter->addListener(&interleave);
     pump();
+    // Establish the interleave before the later wheel event. A loaded CI
+    // runner may need longer than one 100 ms slice to dispatch its first timer.
+    for (int retry = 0; interleave.onBegin && retry < 20; ++retry) pump();
+    expect(!interleave.onBegin, "delayed publication interleave was exercised");
     send(110); pump();
     expect(std::abs(parameter->getValue() - 110.f / 127) < 1e-6f,
            "new wheel events during delayed GUI publication do not lose control");

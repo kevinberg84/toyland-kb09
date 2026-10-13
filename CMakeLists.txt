@@ -112,6 +112,7 @@ target_link_libraries(SH09ProcessorTests PRIVATE SH09 juce::juce_audio_utils juc
 add_test(NAME SH09Processor COMMAND SH09ProcessorTests)
 juce_add_console_app(KB09MidiMappingTests PRODUCT_NAME "KB09 MIDI Mapping Tests")
 target_sources(KB09MidiMappingTests PRIVATE Tests/MidiMappingTests.cpp)
+target_compile_definitions(KB09MidiMappingTests PRIVATE JUCE_MODAL_LOOPS_PERMITTED=1)
 target_link_libraries(KB09MidiMappingTests PRIVATE SH09 juce::juce_audio_utils juce::juce_recommended_config_flags)
 add_test(NAME KB09MidiMappings COMMAND KB09MidiMappingTests)
 juce_add_console_app(SH09PresetFilesTests PRODUCT_NAME "KB09 Preset File Tests")
