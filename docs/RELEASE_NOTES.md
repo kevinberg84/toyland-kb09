@@ -4,7 +4,7 @@ Includes all approved GUI revisions through Revision 17. The bender and pointer 
 
 Exposed fader posts have a narrow silver edge ahead of a darker blade face. Recessed felt dust covers acquire additional fixed grains and fibres at each of the five AGE stages. Existing deposits retain their contrast; AGE does not reduce control functionality.
 
-The POWER button retains its rounded top and upper-left reflection, with small rounded skirt edges, a softer left shadow and a darker right shadow. The four POWER/bender screw heads have sharper Phillips recesses, distinct orientations and wear, and metal highlights that dull with age.
+The POWER button retains its rounded top and upper-left reflection, with small rounded skirt edges, a softer left shadow and a darker right shadow. Its plastic finish ages more slowly: Fire Hazard retains the sheen formerly shown at Vintage, Baby! The four POWER/bender screw heads have sharper Phillips recesses, distinct orientations and wear, and metal highlights that dull with age.
 
 The audio engine, 35 parameter identities, stored states, automation and 24-sound factory bank are unchanged. Windows, universal Mac and Linux standalone are rebuilt. Linux remains UNVERIFIED pending physical Arch playback/MIDI confirmation. Platform-specific validation is recorded separately.
 

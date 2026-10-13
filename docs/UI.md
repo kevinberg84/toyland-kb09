@@ -1,6 +1,6 @@
 # Current 1.5.2 GUI
 
-Approved revisions 13–17 refine bender visibility, VCF lettering, the left performance-bay seam, fader posts and recessed dust covers. Slot dust accumulates in fixed increments across five appearances. POWER retains its rounded top, narrow skirt-edge radius and upper-left reflection; both wall edges are shaded, more strongly on the right. Four separately seeded, higher-resolution screw materials have distinct Phillips orientations and wear. The audio engine and parameter identities are unchanged.
+Approved revisions 13–17 refine bender visibility, VCF lettering, the left performance-bay seam, fader posts and recessed dust covers. Slot dust accumulates in fixed increments across five appearances. POWER retains its rounded top, narrow skirt-edge radius and upper-left reflection; both wall edges are shaded, more strongly on the right. Its finish uses half the global visual AGE, so Fire Hazard retains the former Vintage sheen. Four separately seeded, higher-resolution screw materials have distinct Phillips orientations and wear. The audio engine and parameter identities are unchanged.
 
 # Historical 1.5.1 GUI
 

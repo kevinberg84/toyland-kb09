@@ -1528,6 +1528,9 @@ public:
     void paintButton(juce::Graphics& g,bool over,bool down) override {
         const auto* appearance=dynamic_cast<const HardwareLook*>(&getLookAndFeel());
         const float age=appearance&&appearance->renderingPreview?appearance->age:appearanceAge(processor.state.getRawParameterValue("age")->load());
+        // Fire Hazard retains the former Vintage finish. Only the button's
+        // plastic ages more slowly; surrounding hardware uses full AGE.
+        const float finishAge=age*.5f;
         const bool pressed=processor.isPowerEnabled()||down;
         const auto recess=getLocalBounds().toFloat().withTrimmedTop(10).reduced(.7f);
         // The grey pushbutton stands tall when OFF. Project its estimated
@@ -1540,7 +1543,7 @@ public:
         const auto top=footprint.translated(0,-wallHeight);
         g.setColour(juce::Colours::black.withAlpha(pressed?.35f:.47f));
         g.fillRoundedRectangle(footprint.translated(.45f,.25f+wallHeight*.34f),1.1f);
-        const auto grey=juce::Colour(0xff959b98).interpolatedWith(juce::Colour(0xff85877e),age*.65f);
+        const auto grey=juce::Colour(0xff959b98).interpolatedWith(juce::Colour(0xff85877e),finishAge*.65f);
         const auto wall=juce::Rectangle<float>(top.getX(),top.getBottom()-2,top.getWidth(),wallHeight+2);
         g.setGradientFill(juce::ColourGradient(grey.darker(.13f),0,wall.getY(),grey.darker(.23f),0,wall.getBottom(),false));
         // Retain straight skirt faces, with only a small molded edge radius.
@@ -1566,7 +1569,7 @@ public:
             g.fillRect(wall.withTop(wall.getBottom()-.8f));
         }
         g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
-        g.drawImage(capSurface(top.getWidth(),top.getHeight(),age,over),top,juce::RectanglePlacement::stretchToFit);
+        g.drawImage(capSurface(top.getWidth(),top.getHeight(),finishAge,over),top,juce::RectanglePlacement::stretchToFit);
     }
 private:
     const juce::Image& capSurface(float width,float height,float age,bool over) {
