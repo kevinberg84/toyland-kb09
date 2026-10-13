@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-US">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,7 +15,7 @@
     <a class="brand" href="#top" aria-label="Toyland KB-09 home">
       <svg viewBox="85 308 722 158" role="img" aria-labelledby="toyland-title"><title id="toyland-title">Toyland</title><image href="assets/marks.png" width="2172" height="724" /></svg>
     </a>
-    <span class="edition">User Manual · Version 1.5.3 · 13 October 2026</span>
+    <span class="edition">User Manual · Version 1.5.3 · October 13, 2026</span>
     <button class="print-button" type="button" onclick="window.print()">Print / Save PDF</button>
   </div>
 </header>
@@ -23,15 +23,14 @@
 <nav class="contents" aria-label="Guide contents">
   <p class="nav-title">YOUR KB-09</p>
   <a href="#features">01 · Discover KB-09</a>
+  <a href="#filter-craft">02 · Inside the filter</a>
   <a href="#install">03 · Install &amp; open</a>
   <a href="#start">04 · Start playing</a>
   <a href="#age">05 · Meet AGE</a>
   <a href="#panel">06 · Learn the panel</a>
-  <a href="#filter-craft">02 · Inside the filter</a>
   <a href="#presets">07 · Save your sounds</a>
   <a href="#display">08 · A sharp, comfortable view</a>
   <a href="#daws">09 · Find your DAW</a>
-
   <a href="#external">10 · Filter external audio</a>
   <a href="#test-drive">11 · Take a test drive</a>
   <a href="#troubleshooting">12 · Solve a problem</a>
@@ -60,12 +59,14 @@
 <section id="filter-craft">
   <p class="section-number">02 / INSIDE THE SOUND</p><h2>The hardest sound to get right</h2>
   <p>The resonant filter was KB-09's biggest sound-design challenge. At high RESONANCE, the SH-09's filter becomes an oscillator in its own right. Add a steady VCO and sweep the filter slowly, and two sources of energy interact inside the circuit. Recreating that balance meant capturing a singing, stable resonance while retaining the movement and character of the hardware.</p>
+  <details class="filter-story"><summary>How we matched the SH-09 — recordings and waveform comparisons</summary><div class="disclosure-body">
   <p>Kevin supplied recordings of his SH-09: slow filter sweeps, different VCO mixer levels and isolated oscillator sounds, captured at 96 kHz in 32-bit floating point. Comparing the recordings by ear, waveform and frequency analysis helped separate natural beating from excessive changes in level. Matching the filter's free-running pitch and the VCO's relative level gave a more useful comparison than copying slider positions alone.</p>
   <figure><a href="assets/vcf-sweep-comparison.png"><img src="assets/vcf-sweep-comparison.png" alt="Two waveforms of an eighteen-second resonant sweep: Kevin's SH-09 above and the KB-09 model below, shown at the same time and amplitude scales."></a><figcaption>A slow self-oscillating filter sweep with steady VCO input. Both displays use the same scales. KB-09 uses fixed level calibration; no automatic leveling or peak normalization is applied. Click for the full-size image.</figcaption></figure>
   <p>The model gives each filter stage an appropriate amount of internal signal headroom and controls the resonance with a separate nonlinear feedback limiter. The stages and limiter are solved together at each internal processing step. This helps the filter sustain its own tone as the incoming VCO changes, while preserving their interaction. Self-oscillation comes from the filter's feedback loop, with no separate sine generator or automatic volume correction.</p>
   <p>Listening checks were paired with tests of tuning, ordinary patch levels, stability and processing cost across sample rates. The aim was a faithful, playable instrument: steady where the hardware is steady, expressive where its signals interact, and responsive under the fingers.</p>
   <figure><a href="assets/vcf-waveform-detail.png"><img src="assets/vcf-waveform-detail.png" alt="A twelve-millisecond waveform detail comparing the SH-09 and KB-09, with matching time and amplitude scales."></a><figcaption>A closer look at the same recordings. Each excerpt starts at an upward zero crossing for easier viewing; the recordings are not phase locked. Fine differences in waveform shape remain.</figcaption></figure>
   <p>These comparisons show one resonant setting, not every possible patch. Individual SH-09s vary with calibration and condition, and Kevin's instrument has decades of wear. His recordings provide a real musical reference; they are not assumed to define factory specifications. Natural beating and harmonic interaction remain part of the sound.</p>
+</div></details>
 </section>
 
 <section id="install">
@@ -176,7 +177,7 @@
 
 <section id="daws">
   <p class="section-number">09 / YOUR WORKSPACE</p><h2>Find your DAW</h2>
-  <p>Choose your DAW for Windows display help. These instructions help KB-09 render at its own resolution while you use S/M/L to choose its size. Menu wording and available options vary by DAW version; vendor documentation is linked with each recipe.</p>
+  <p>Choose your DAW to expand its display and setup instructions. These instructions help KB-09 render at its own resolution while you use S/M/L to choose its size. Menu wording and available options vary by DAW version; vendor documentation is linked with each recipe.</p>
 
   <details id="live" class="host"><summary>Ableton Live</summary><div class="disclosure-body">
     <p>For a blurry KB-09 window on Windows, find the plug-in in Live's Browser, right-click it and <strong>disable Auto-Scale Plug-in Window</strong>, if offered. Kevin confirmed on 7 October 2026 that this fixed the display in his Live setup.</p>
@@ -212,9 +213,9 @@
   <details id="garageband" class="host"><summary>GarageBand on Mac</summary><div class="disclosure-body">
 <p>Use the <strong>Mac download</strong>; the Windows files and VST3 do not load in GarageBand. Quit GarageBand, extract the Mac ZIP and double-click <strong>INSTALL KB-09.command</strong>. Press Return, enter your Mac login password when asked (typing is hidden), then reopen GarageBand.</p>
 <ol><li>Choose <strong>GarageBand &gt; Settings &gt; Audio/MIDI</strong> (Preferences in older versions) and enable <strong>Audio Units</strong>.</li><li>Create or select a <strong>Software Instrument</strong> track. Press <strong>B</strong> to open Smart Controls and expand the <strong>Plug-ins</strong> area.</li><li>Click the instrument slot, usually occupied by the current instrument. Choose <strong>AU Instruments &gt; Toyland &gt; Toyland KB-09</strong>. Load KB-09 in this instrument slot, not an effect slot.</li><li>Open the plug-in, select Calibrated Init, turn POWER on and play a connected MIDI keyboard or click the onscreen keys. Record MIDI on this Software Instrument track.</li></ol>
-<p>If KB-09 is missing, confirm Enable Audio Units is checked, quit and reopen GarageBand after installation, and check that the installer completed. If macOS blocks this ad-hoc-signed build, follow the <a href="#install">Mac security steps above</a>; send Kevin the exact <a href="#feedback">message</a> if it still fails. GarageBand has not yet been used to verify this release. Its Software Instrument interface does not provide a documented sidechain route for KB-09's external audio input; use a host with instrument sidechain routing for the external filter and envelope follower.</p>
+<p>If KB-09 is missing, confirm Enable Audio Units is checked, quit and reopen GarageBand after installation, and check that the installer completed. If macOS blocks this ad-hoc-signed build, follow the <a href="#mac-warning">Mac security instructions</a>; send Kevin the exact <a href="#feedback">message</a> if it still fails. GarageBand has not yet been used to verify this release. Its Software Instrument interface does not provide a documented sidechain route for KB-09's external audio input; use a host with instrument sidechain routing for the external filter and envelope follower.</p>
 <p class="source-note"><a href="https://support.apple.com/guide/garageband/use-audio-units-plug-ins-gbnde06a4e4d/mac">Apple: using Audio Units in GarageBand</a>. These steps follow Apple's host guidance; they are not a claim of a completed KB-09 GarageBand test.</p></div></details>
-<details id="future-hosts" class="host"><summary>Logic Pro / GarageBand <span class="badge">Mac AU</span></summary><div class="disclosure-body"><p>Logic Pro and GarageBand use Apple's <strong>Audio Unit (AU)</strong> format on Mac. Use the separate Mac download for AU installation. </p></div></details>
+<details id="future-hosts" class="host"><summary>Logic Pro <span class="badge">Mac AU</span></summary><div class="disclosure-body"><p>Logic Pro and GarageBand use Apple's <strong>Audio Unit (AU)</strong> format on Mac. Use the separate Mac download for AU installation. </p></div></details>
 </section>
 
 <section id="external">

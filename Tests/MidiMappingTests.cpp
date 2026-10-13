@@ -2,13 +2,21 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <utility>
 
 namespace {
 struct GestureInterleave final : juce::AudioProcessorParameter::Listener {
     std::function<void()> onBegin;
+    int invocations = 0;
     void parameterValueChanged(int, float) override {}
     void parameterGestureChanged(int, bool starting) override {
-        if (starting && onBegin) { auto callback = std::move(onBegin); callback(); }
+        if (starting && onBegin) {
+            // A moved-from std::function need not be empty (libc++ can retain
+            // a small callable). Clear it explicitly so this interleave is once.
+            auto callback = std::exchange(onBegin, {});
+            ++invocations;
+            callback();
+        }
     }
 };
 void pump() {
@@ -46,7 +54,8 @@ int main() {
     // Establish the interleave before the later wheel event. A loaded CI
     // runner may need longer than one 100 ms slice to dispatch its first timer.
     for (int retry = 0; interleave.onBegin && retry < 20; ++retry) pump();
-    expect(!interleave.onBegin, "delayed publication interleave was exercised");
+    expect(!interleave.onBegin && interleave.invocations == 1,
+           "delayed publication interleave was exercised exactly once");
     send(110); pump();
     expect(std::abs(parameter->getValue() - 110.f / 127) < 1e-6f,
            "new wheel events during delayed GUI publication do not lose control");
