@@ -1,3 +1,13 @@
+# 1.5.2 — Toyland KB-09
+
+Includes all approved GUI revisions through Revision 17. The bender and pointer have slightly brighter dark surfaces while retaining their polished reflection and rounded geometry. CUTOFF FREQ and RESONANCE printing more closely follows the supplied SH-09 reference. The performance bay now meets the left cheek without the former narrow gap.
+
+Exposed fader posts have a narrow silver edge ahead of a darker blade face. Recessed felt dust covers acquire additional fixed grains and fibres at each of the five AGE stages. Existing deposits retain their contrast; AGE does not reduce control functionality.
+
+The POWER button retains its rounded top and upper-left reflection, with small rounded skirt edges, a softer left shadow and a darker right shadow. The four POWER/bender screw heads have sharper Phillips recesses, distinct orientations and wear, and metal highlights that dull with age.
+
+The audio engine, 35 parameter identities, stored states, automation and 24-sound factory bank are unchanged. Windows, universal Mac and Linux standalone are rebuilt. Linux remains UNVERIFIED pending physical Arch playback/MIDI confirmation. Platform-specific validation is recorded separately.
+
 # 1.5.1 — Toyland KB-09
 
 Approved panel corrections: narrower waveform symbols and refined MODULATOR/PULSE WIDTH printing, balanced ENV track margins, centered performance bay, matching divider heights, and keyboard/cheek seams. The bender has a smoothly rounded pointer, a thicker rounded disc and visible underside rib. Its existing reflection has sharper boundaries; the pointer uses the same polished highlight. Fine tapered handling scuffs follow the rotating plastic and accumulate with age.

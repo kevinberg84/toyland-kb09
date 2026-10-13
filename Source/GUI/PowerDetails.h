@@ -43,31 +43,39 @@ inline float smoothRange(float low, float high, float value) {
     return t * t * (3.0f - 2.0f * t);
 }
 
-inline float socketDistance(float x, float y, bool lower) {
-    const float theta = std::atan2(y, x) - (lower ? .36f : -.23f);
-    // Rounded, tapered arms meet a broad centre. This is a worn Phillips
-    // cavity, rather than a constant-width cross printed on the head.
-    const float lobes = std::pow(std::abs(std::cos(2.0f * theta)), 2.15f);
-    const float erosion = .009f * std::sin(theta * 13.0f + (lower ? .7f : 2.4f))
-                        + .006f * std::sin(theta * 23.0f + 1.1f);
-    return std::sqrt(x * x + y * y) - (.252f + .293f * lobes + erosion);
+inline float socketDistance(float x, float y, int variant) {
+    constexpr std::array<float,4> angles{{-.23f,.36f,-.59f,.81f}};
+    const float angle=angles[size_t(variant)],ca=std::cos(angle),sa=std::sin(angle);
+    const float rx=x*ca+y*sa,ry=y*ca-x*sa;
+    // Four narrow driver wings with rounded ends and a recessed central cup.
+    // Actual cavity walls replace the previous soft clover-shaped dark stamp.
+    const auto wing=[](float a,float b) {
+        constexpr float radius=.045f;
+        const float width=.115f+.038f*(1-smoothRange(.18f,.53f,std::abs(a)));
+        const float qx=std::abs(a)-(.56f-radius),qy=std::abs(b)-(width-radius);
+        return std::hypot(juce::jmax(0.f,qx),juce::jmax(0.f,qy))
+            +juce::jmin(juce::jmax(qx,qy),0.f)-radius;
+    };
+    const float theta=std::atan2(ry,rx),phase=float(variant)*1.37f;
+    const float erosion=.004f*std::sin(theta*13+phase)+.003f*std::sin(theta*23+1.1f+phase);
+    return juce::jmin(wing(rx,ry),wing(ry,rx))-erosion;
 }
 
 struct ScrewSample {
     float radius = 0, dome = 0, patch = 0, grain = 0, pore = 0;
-    float socket = 0, innerLight = 0, alpha = 0;
+    float socket = 0, innerLight = 0, alpha = 0, specular = 0, rim = 0;
 };
 
 struct ScrewMaterial {
-    static constexpr int pixels = 144;
-    std::array<std::vector<ScrewSample>, 2> samples;
-    std::array<juce::Image, 2> images;
-    std::array<float, 2> lastAge {{-1.0f, -1.0f}};
+    static constexpr int pixels = 320;
+    std::array<std::vector<ScrewSample>, 4> samples;
+    std::array<juce::Image, 4> images;
+    std::array<float, 4> lastAge {{-1.0f, -1.0f,-1.0f,-1.0f}};
 
     ScrewMaterial() {
-        for (int index = 0; index < 2; ++index) {
-            const bool lower = index == 1;
-            const std::uint32_t seed = lower ? 0x7c2f301bu : 0x49326e51u;
+        for (int index = 0; index < 4; ++index) {
+            const bool lower = index%2 == 1;
+            const std::uint32_t seed = (lower ? 0x7c2f301bu : 0x49326e51u)+uint32_t(index)*0x345ab17u;
             auto& field = samples[size_t(index)];
             field.resize(size_t(pixels * pixels));
             for (int iy = 0; iy < pixels; ++iy) for (int ix = 0; ix < pixels; ++ix) {
@@ -87,16 +95,19 @@ struct ScrewMaterial {
                     -.214f * nx - .279f * ny + .936f * nz), 20.0f);
                 s.dome = .25f + .71f * diffuse + .055f * broadReflection;
                 s.dome *= 1.0f - .21f * smoothRange(.88f, 1.0f, s.radius);
+                s.specular=std::pow(juce::jmax(0.f,-.214f*nx-.279f*ny+.936f*nz),96.f);
+                s.rim=std::exp(-std::pow((s.radius-.91f)/.018f,2.f))
+                    *juce::jmax(0.f,-.45f*x-.60f*y+.22f);
                 s.patch = .53f * smoothNoise(x * 4.3f, y * 4.3f, seed)
                         + .29f * smoothNoise(x * 9.7f, y * 9.7f, seed + 17u)
                         + .18f * smoothNoise(x * 21.0f, y * 21.0f, seed + 61u);
                 s.grain = smoothNoise(x * 59.0f, y * 59.0f, seed + 103u) - .5f;
                 s.pore = smoothNoise(x * 87.0f, y * 87.0f, seed + 179u);
-                s.socket = socketDistance(x, y, lower);
-                const float dx = socketDistance(x + .003f, y, lower)
-                               - socketDistance(x - .003f, y, lower);
-                const float dy = socketDistance(x, y + .003f, lower)
-                               - socketDistance(x, y - .003f, lower);
+                s.socket = socketDistance(x, y, index);
+                const float dx = socketDistance(x + .003f, y, index)
+                               - socketDistance(x - .003f, y, index);
+                const float dy = socketDistance(x, y + .003f, index)
+                               - socketDistance(x, y - .003f, index);
                 const float edgeLength = std::sqrt(dx * dx + dy * dy) + .00001f;
                 s.innerLight = juce::jlimit(0.0f, 1.0f,
                     .43f + .43f * (.40f * dx + .52f * dy) / edgeLength);
@@ -106,8 +117,8 @@ struct ScrewMaterial {
         }
     }
 
-    const juce::Image& render(float age, bool lower) {
-        const size_t index = lower ? 1 : 0;
+    const juce::Image& render(float age, bool lower,int pair=0) {
+        const size_t index = size_t(pair*2+(lower ? 1 : 0));
         if (lastAge[index] == age) return images[index];
         lastAge[index] = age;
         const float wear = std::pow(age, 1.12f);
@@ -132,19 +143,20 @@ struct ScrewMaterial {
             // retain grey metal shading instead of bleaching the entire dome.
             const float dome = lower ? s.dome + .18f * wear * (.84f - s.dome) : s.dome;
             light *= dome;
+            light+=(.30f*s.specular+.10f*s.rim)*(1-age)*(1-age);
             float red = light, green = light + .013f, blue = light - .017f;
             const float rust=lower?0.f:wear*wear*smoothRange(.58f,.80f,s.patch)*.10f;
             red+=rust;green-=rust*.25f;blue-=rust*.55f;
 
             const float edge = s.socket + s.grain * (.007f + .015f * wear) - (lower?.018f:0.f)*wear;
-            if (edge < .035f) {
-                const float opening = 1.0f - smoothRange(-.075f, .025f, edge);
+            if (edge < .012f) {
+                const float opening = 1.0f - smoothRange(-.014f, .010f, edge);
                 // The opposing inner wall catches light while the cavity
                 // floor remains dark, giving the slot actual visual depth.
-                const float wall = .115f + .39f * s.innerLight
+                const float wall = .105f + .56f * s.innerLight
                     + .025f * s.grain - .05f * wear * dark;
-                const float floor = .045f + .035f * s.innerLight + .015f * s.grain;
-                const float depth = 1.0f - smoothRange(-.115f, -.045f, edge);
+                const float floor = .027f + .025f * s.innerLight + .012f * s.grain;
+                const float depth = 1.0f - smoothRange(-.085f, -.020f, edge);
                 const float recess = wall + depth * (floor - wall);
                 red += opening * (recess - red);
                 green += opening * (recess + .009f - green);
@@ -263,10 +275,10 @@ inline void drawPowerLegend(juce::Graphics& g, juce::Colour ink, float age = 0) 
 }
 
 inline void drawPowerScrew(juce::Graphics& g, juce::Point<float> centre,
-                          float age, bool lower) {
+                          float age, bool lower,int pair=0) {
     juce::Graphics::ScopedSaveState save(g);
     age = juce::jlimit(0.0f, 1.0f, age);
-    constexpr float radius = 4.7f, viewCos = .987688f;
+    constexpr float radius = 4.7f, viewCos = .981627f;
     const auto head = juce::Rectangle<float>(centre.x - radius,
         centre.y - radius * viewCos, 2 * radius, 2 * radius * viewCos);
     // Layered soft contact shadows anchor the curved head without a graphic
@@ -277,7 +289,7 @@ inline void drawPowerScrew(juce::Graphics& g, juce::Point<float> centre,
     g.fillEllipse(head.expanded(.20f, .10f).translated(.11f, .25f));
     g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
     g.setOpacity(1);
-    g.drawImage(power_detail::screwMaterial().render(age, lower), head,
+    g.drawImage(power_detail::screwMaterial().render(age, lower,pair), head,
                 juce::RectanglePlacement::stretchToFit);
 }
 

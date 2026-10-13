@@ -4,6 +4,7 @@
 #include "../Source/GUI/KeyboardFeedback.h"
 #include "../Source/GUI/CheekMaterial.h"
 #include "../Source/GUI/RustMaterial.h"
+#include "../Source/GUI/PowerDetails.h"
 #include <BinaryData.h>
 #include <algorithm>
 #include <array>
@@ -1571,6 +1572,21 @@ int main(int argc, char** argv) {
     }
     juce::ScopedJuceInitialiser_GUI initialiseGUI;
     Checks checks;
+    if(juce::String(argv[1]).startsWith("--screw-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));
+        if(directory.createDirectory().failed())return 1;
+        // Optional enlarged material exports use the production screw painter;
+        // they do not rescale a low-resolution editor screenshot.
+        for(int stage=0;stage<5;++stage)for(int variant=0;variant<4;++variant) {
+            juce::Image detail(juce::Image::ARGB,144,144,true,juce::SoftwareImageType());
+            juce::Graphics g(detail);g.fillAll(juce::Colour(0xff30302e));
+            g.addTransform(juce::AffineTransform::scale(12.f));
+            kb09_gui::drawPowerScrew(g,{6,6},float(stage)*.25f,variant%2==1,variant/2);
+            if(!writePNG(detail,directory.getChildFile("screw_"+juce::String(stage)+"_"+juce::String(variant)+".png")))return 1;
+        }
+        std::cout<<"Exported 20 native screw-material close-ups\n";
+        return 0;
+    }
     if(juce::String(argv[1]).startsWith("--appearance-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));
         directory.createDirectory();

@@ -1,4 +1,8 @@
-# Current 1.5.1 GUI
+# Current 1.5.2 GUI
+
+Approved revisions 13–17 refine bender visibility, VCF lettering, the left performance-bay seam, fader posts and recessed dust covers. Slot dust accumulates in fixed increments across five appearances. POWER retains its rounded top, narrow skirt-edge radius and upper-left reflection; both wall edges are shaded, more strongly on the right. Four separately seeded, higher-resolution screw materials have distinct Phillips orientations and wear. The audio engine and parameter identities are unchanged.
+
+# Historical 1.5.1 GUI
 
 Approved revisions 4–12 refine panel spacing, the performance bay, keyboard seams, photographic cheeks, spatial rust growth and bender geometry/material. The final pointer uses the disc's polished highlight; tapered roughness scuffs replace uniform light dashes on its rotating plastic. Key/cap scuff counts and twist/lean progress at 0/25/50/75/100%. Every cap has a unique fixed seeded angle, with FREQ/RES restrained. PULSE WIDTH replaces VCF MOD in the final cap-loss event. The audio engine and parameter identities are unchanged.
 

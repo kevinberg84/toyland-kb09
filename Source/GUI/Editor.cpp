@@ -4,6 +4,7 @@
 #include "PowerDetails.h"
 #include "CheekMaterial.h"
 #include "BenderMaterial.h"
+#include "FaderDetails.h"
 #include "RustMaterial.h"
 #include "AgeAppearance.h"
 #include "UpdateChecker.h"
@@ -393,7 +394,7 @@ void keySurfaceWear(juce::Graphics& g,juce::Rectangle<float> r,int serial,bool b
     }
 }
 
-void sliderPost(juce::Graphics& g,juce::Rectangle<float> capBounds,float age,bool releasePost,float lean=0) {
+void sliderPost(juce::Graphics& g,juce::Rectangle<float> capBounds,float age,bool releasePost,float lean=0,uint32_t wearSeed=0) {
     // The blade's broad plane follows the slot. Seen almost from above and
     // without camera yaw, its narrow longitudinal edge is the visible surface.
     // The owner's photos establish this orientation, not physical dimensions.
@@ -403,7 +404,18 @@ void sliderPost(juce::Graphics& g,juce::Rectangle<float> capBounds,float age,boo
     const float lift=7.0f*panelViewSin;
     const float top=capBounds.getCentreY()-edgeLength*.5f-lift;
     const float bottom=capBounds.getCentreY()+edgeLength*.5f;
-    const float half=1.02f,shoulder=1.52f,step=bottom-2.7f;
+    const float half=.85f,shoulder=1.15f,step=bottom-2.7f;
+    // The reference shows the broad blade face in shadow, behind its narrow
+    // bright cut edge. Keep both planes longitudinal, with a small end bevel.
+    juce::Path side;side.startNewSubPath(cx-.15f+lean,top+.15f);
+    side.lineTo(cx+2.25f+lean,top-1.0f);side.lineTo(cx+2.25f,bottom-1.2f);
+    side.lineTo(cx-.15f,bottom);side.closeSubPath();
+    g.setColour(juce::Colours::black.withAlpha(.55f));
+    g.fillPath(side,juce::AffineTransform::translation(.65f,.8f));
+    g.setGradientFill(juce::ColourGradient(juce::Colour(0xff65665d),cx-.2f,top,
+        juce::Colour(0xff202521),cx+2.25f,bottom,false));g.fillPath(side);
+    g.setColour(juce::Colour(0xffaaa997));
+    g.drawLine(cx-.15f+lean,top+.15f,cx+2.25f+lean,top-1.f,.35f);
     juce::Path edge;edge.startNewSubPath(cx-half+lean,top);
     edge.lineTo(cx+half+lean,top+.20f);edge.lineTo(cx+half,step);
     edge.lineTo(cx+shoulder,step+.25f);edge.lineTo(cx+shoulder,bottom);
@@ -412,27 +424,27 @@ void sliderPost(juce::Graphics& g,juce::Rectangle<float> capBounds,float age,boo
     // A short contact shadow gives height without exposing the broad blade face.
     g.setColour(juce::Colours::black.withAlpha(.43f));
     g.fillPath(edge,juce::AffineTransform::translation(.55f,lift*.62f));
-    juce::ColourGradient metal(juce::Colour(0xff393d3b),cx-half,top,
-                               juce::Colour(0xffa9aaa1),cx+half,bottom,false);
-    metal.addColour(releasePost?.36:.60,juce::Colour(0xff686e68));
+    juce::ColourGradient metal(juce::Colour(0xffb8bbb2),cx-half,top,
+                               juce::Colour(0xff767c73),cx+half,bottom,false);
+    metal.addColour(releasePost?.36:.60,juce::Colour(0xffd0d1c5));
     g.setGradientFill(metal);g.fillPath(edge);
-    g.setColour(juce::Colour(0xff202523));
+    g.setColour(juce::Colour(0xff777b70));
     g.drawLine(cx-half+lean,top+.35f,cx-half,step-.35f,.42f);
     // The cut edge is a thin lengthwise glint, not a wide horizontal paddle.
     g.setColour(juce::Colour(0xffd4d6cb));
-    g.drawLine(cx+.13f+lean,top+.30f,cx+.13f,step-.45f,.45f);
+    g.drawLine(cx-half+.30f+lean,top+.30f,cx-half+.30f,step-.45f,.40f);
     g.drawLine(cx-half+.12f+lean,top+.18f,cx+half-.12f+lean,top+.33f,.45f);
     g.setColour(juce::Colour(0xff92988f));
     g.drawLine(cx+half+.10f,step+.35f,cx+shoulder-.08f,step+.35f,.38f);
     g.setColour(juce::Colour(0xffb1b4a8).withAlpha(age*.20f));
     g.fillRect(cx-shoulder+.16f,step+.8f,shoulder*2-.32f,bottom-step-.9f);
     { juce::Graphics::ScopedSaveState rust(g);g.reduceClipRegion(edge);
-      const uint32_t seed=releasePost?19331u:7717u;
-      for(uint32_t i=0;i<43;++i) {
+      const uint32_t seed=wearSeed^(releasePost?19331u:7717u);
+      for(uint32_t i=0;i<uint32_t(32*age);++i) {
           const float yy=top+(bottom-top)*surfaceNoise(seed+i*37);
           const float xx=cx-half+half*2*surfaceNoise(seed+i*61);
-          g.setColour(juce::Colour(i%3?0xff74472b:0xff352d23).withAlpha(age*.85f));
-          g.fillEllipse(xx,yy,.35f+.46f*surfaceNoise(seed+i*19),.55f);
+          g.setColour(juce::Colour(i%3?0xff74694d:0xff352d23).withAlpha(.32f));
+          g.fillEllipse(xx,yy,.15f+.23f*surfaceNoise(seed+i*19),.35f);
       }
     }
     // Small, distinct interruptions keep the two blades from sharing a stamp.
@@ -724,6 +736,7 @@ public:
             g.setGradientFill(juce::ColourGradient(juce::Colour(0xff010202),opening.getX(),opening.getY(),
                 juce::Colour(0xff080a09),opening.getRight(),opening.getY(),false));
             g.fillRoundedRectangle(opening,opening.getWidth()*.5f);
+            kb09_gui::paintFaderDustCover(g,opening,uint32_t(slider.getComponentID().hashCode()),kb09_gui::appearanceStage(age));
             g.setColour(juce::Colour(0xff96998f).withAlpha(.08f*(1-age*.6f)));
             g.drawLine(cx-4.5f,float(y)+4,cx-4.5f,float(y+h)-4,.45f);
             const auto capBounds=juce::Rectangle<float>(cx-(compact?12.5f:15),pos-10,compact?25.0f:30.0f,23);
@@ -736,7 +749,7 @@ public:
             const auto seed=uint32_t(id.hashCode());
             const float progress=age; // 0/25/50/75/100% of each cap's individual lean and twist.
             const float lean=(surfaceNoise(seed^0x773ab21u)*2.f-1.f)*1.7f*progress;
-            if(missing)sliderPost(g,capBounds,age,releasePost,lean);
+            if(missing)sliderPost(g,capBounds,age,releasePost,lean,seed);
             else {
                 juce::Graphics::ScopedSaveState aligned(g);
                 g.addTransform(juce::AffineTransform::translation(lean,0));
@@ -841,7 +854,7 @@ public:
                     // its boundary instead of adding another reflected light.
                     const float specular=kb09_gui::polishedBenderHighlight(half,age);
                     const float lightShape=.70f+.30f*std::exp(-((axial-1.2f)*(axial-1.2f))/1.8f);
-                    return .040f+.040f*diffuse+.075f*fill+.95f*specular*lightShape*(1-age*.42f)+age*.008f;
+                    return .068f+.064f*diffuse+.090f*fill+.95f*specular*lightShape*(1-age*.42f)+age*.008f;
                 };
                 const int samples=conditionDragging?1:juce::jlimit(1,4,int(std::ceil(g.getInternalContext().getPhysicalPixelScaleFactor())));
                 const juce::Rectangle<float> rimBounds(centre-radius-1,12,2*radius+2,
@@ -1518,7 +1531,7 @@ public:
         const bool pressed=processor.isPowerEnabled()||down;
         const auto recess=getLocalBounds().toFloat().withTrimmedTop(10).reduced(.7f);
         // The grey pushbutton stands tall when OFF. Project its estimated
-        // physical height through the same 9-degree view as the other hardware;
+        // physical height through the same 11-degree view as the other hardware;
         // ON lowers the same cap without shrinking its top or changing camera.
         g.setColour(juce::Colour(0xff050605));g.fillRoundedRectangle(recess,1.3f);
         g.setColour(juce::Colour(0xff43433b).withAlpha(.36f));g.drawRoundedRectangle(recess,1.3f,.45f);
@@ -1530,7 +1543,28 @@ public:
         const auto grey=juce::Colour(0xff959b98).interpolatedWith(juce::Colour(0xff85877e),age*.65f);
         const auto wall=juce::Rectangle<float>(top.getX(),top.getBottom()-2,top.getWidth(),wallHeight+2);
         g.setGradientFill(juce::ColourGradient(grey.darker(.13f),0,wall.getY(),grey.darker(.23f),0,wall.getBottom(),false));
-        g.fillRoundedRectangle(wall,2.0f);
+        // Retain straight skirt faces, with only a small molded edge radius.
+        // A narrow light roll describes the rounded vertical edge rather than
+        // rounding the entire bottom into a second pill-shaped cap.
+        juce::Path skirt;skirt.addRoundedRectangle(wall,.85f);
+        g.fillPath(skirt);
+        {
+            juce::Graphics::ScopedSaveState edge(g);g.reduceClipRegion(skirt);
+            // Edge normals turn away from the upper-left light. Keep the
+            // broad front wall readable, with a stronger falloff on the right.
+            juce::ColourGradient roll(juce::Colours::black.withAlpha(.43f),wall.getX(),0,
+                juce::Colours::black.withAlpha(.60f),wall.getRight(),0,false);
+            roll.addColour(.032,juce::Colours::black.withAlpha(.23f));
+            roll.addColour(.08,juce::Colours::black.withAlpha(.08f));
+            roll.addColour(.14,juce::Colours::transparentBlack);
+            roll.addColour(.80,juce::Colours::black.withAlpha(.025f));
+            roll.addColour(.92,juce::Colours::black.withAlpha(.12f));
+            roll.addColour(.968,juce::Colours::black.withAlpha(.32f));
+            g.setGradientFill(roll);g.fillRect(wall);
+            g.setGradientFill(juce::ColourGradient(juce::Colours::transparentBlack,0,wall.getBottom()-.8f,
+                juce::Colours::black.withAlpha(.16f),0,wall.getBottom(),false));
+            g.fillRect(wall.withTop(wall.getBottom()-.8f));
+        }
         g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
         g.drawImage(capSurface(top.getWidth(),top.getHeight(),age,over),top,juce::RectanglePlacement::stretchToFit);
     }
@@ -1541,7 +1575,7 @@ private:
         // diffuse highlight. Dimensions are photo-informed visual estimates.
         const auto* look=dynamic_cast<const HardwareLook*>(&getLookAndFeel());
         const float scale=look!=nullptr&&look->conditionDragging?2.0f:6.0f;
-        constexpr float bevel=1.1f,radius=2.1f;
+        constexpr float bevel=1.5f,radius=3.0f;
         const int w=juce::roundToInt(width*scale),h=juce::roundToInt(height*scale);
         if(cap.isValid()&&cap.getWidth()==w&&cap.getHeight()==h&&capAge==age&&capOver==over)return cap;
         cap=juce::Image(juce::Image::ARGB,w,h,true,juce::SoftwareImageType());capAge=age;capOver=over;
@@ -1560,11 +1594,14 @@ private:
             const float t=juce::jlimit(0.0f,1.0f,-distance/bevel);
             const float angle=(1-t)*juce::MathConstants<float>::halfPi;
             const float nx=gx*std::sin(angle),ny=gy*std::sin(angle),nz=std::cos(angle);
-            const float diffuse=juce::jmax(0.0f,nx*.35f+ny*.42f+nz*.84f);
-            const float specular=std::pow(juce::jmax(0.0f,nx*.19f+ny*.23f+nz*.953f),16)*(.075f-age*.035f);
+            const float diffuse=juce::jmax(0.0f,-nx*.35f-ny*.42f+nz*.84f);
+            const float specular=std::pow(juce::jmax(0.0f,-nx*.19f-ny*.23f+nz*.953f),16)*(.075f-age*.035f);
             const float grain=(kb09_gui::power_detail::smoothNoise((px+width)*7,(py+height)*7,9457u)-.5f)*(.045f+age*.015f);
-            const float edgeReflection=.22f*(1-age)*std::exp(-std::pow((px-width*.5f+1.55f)/.50f,2.f))
-                *std::exp(-std::pow(py/(height*.40f),4.f));
+            const float edgeReflection=(1-age)*(
+                .22f*std::exp(-std::pow((px+width*.5f-1.55f)/.65f,2.f))
+                    *std::exp(-std::pow((py+height*.20f)/(height*.35f),4.f))
+                +.12f*std::exp(-std::pow((py+height*.5f-1.25f)/.55f,2.f))
+                    *std::exp(-std::pow((px+width*.20f)/(width*.42f),4.f)));
             const float cloud=.014f*std::sin(px*.17f+std::sin(py*.23f))-.009f*age*(1-t)
                 +.035f*std::exp(-std::pow((px+width*.20f)/(width*.55f),2.f)-std::pow((py+height*.22f)/(height*.4f),2.f));
             const float shade=.73f+.28f*diffuse+specular+grain+cloud+edgeReflection+(over?.009f:0);
@@ -1733,8 +1770,10 @@ public:
         addFader("vcoLevel","VCO",732,96,37,129);addFader("subLevel","SUB\nOSC",770,96,37,129);addFader("extLevel","EXT",808,96,37,129);
         addFader("cutoff","CUTOFF\nFREQ",884,96,33,129);
         controls.back()->label->setBounds(866,headerH+89,36,20);
+        controls.back()->label->setFont(font(8.8f,true));
         addFader("resonance","RESONANCE",919,96,33,129);
-        controls.back()->label->setBounds(903,headerH+98,65,20);
+        controls.back()->label->setBounds(903,headerH+95,52,20);
+        controls.back()->label->setFont(font(9.2f,true));
         addSwitch("vcfEnvMode",950,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"VCF envelope follower, positive envelope, or inverted envelope.",true);
         addFader("vcfEnv","ENV",1035,96,35,129);controls.back()->label->setVisible(false);addFader("vcfMod","MOD",1071,96,35,129);
         addSwitch("vcaMode",1110,104,56,121,{0,1,2},{"HOLD","ENV","GATE"},"HOLD passes audio without MIDI; ENV uses ADSR; GATE follows held keys.");
@@ -1903,7 +1942,7 @@ public:
         {
             juce::Graphics::ScopedSaveState bay(g);
             g.addTransform(juce::AffineTransform::translation(0,float(headerH)));
-            const juce::Rectangle<float> outer(60,364,268,344),face(60,364,268,344);
+            const juce::Rectangle<float> outer(55,364,273,344),face(55,364,273,344);
             g.setColour(juce::Colour(0xff030505));g.fillRect(outer.expanded(1,0));
             // Painted bay extends behind the outline-to-key margin; no grey rim.
             g.setColour(juce::Colour(0xff101413));g.fillRoundedRectangle(outer,3);
@@ -2012,8 +2051,8 @@ public:
             caption(g,"-",{114,676,12,12},10,juce::Justification::centred,true,ink);
             caption(g,"0",{178,676,13,12},8,juce::Justification::centred,true,ink);
             caption(g,"+",{243,676,12,12},10,juce::Justification::centred,true,ink);
-            kb09_gui::drawPowerScrew(g,{98,642},age,false);
-            kb09_gui::drawPowerScrew(g,{272,642},age,true);
+            kb09_gui::drawPowerScrew(g,{98,642},age,false,1);
+            kb09_gui::drawPowerScrew(g,{272,642},age,true,1);
             }
             uint32_t screwSeed=5011;
             for(const auto p:{juce::Point<float>(88,37),{1686,37},

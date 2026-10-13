@@ -129,7 +129,7 @@ inline void paintRoundedBenderTab(juce::Graphics& g,float centre,float baseline,
         const float diffuse=juce::jmax(0.f,-.27f*worldX+.09f*ny+.959f*worldZ);
         const float reflection=polishedBenderHighlight(-.137f*worldX+.125f*ny+.982f*worldZ,age);
         const float edgeLight=std::pow(juce::jmax(0.f,-.46f*worldX-.24f*ny+.855f*worldZ),24.f);
-        float value=juce::jlimit(0.f,1.f,.038f+.065f*diffuse+(.95f*reflection+.12f*edgeLight)*(1-.45f*age));
+        float value=juce::jlimit(0.f,1.f,.066f+.089f*diffuse+(.95f*reflection+.12f*edgeLight)*(1-.45f*age));
         if(age>0) {
             const float scratch=sampleBenderScuff(scuffPixels,(lx+halfWidth)/(2*halfWidth),a/depth)*juce::jlimit(0.f,1.f,nz*2.f);
             value=value*(1-.75f*scratch)+(.18f+.25f*diffuse)*scratch;
