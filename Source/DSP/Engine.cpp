@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "ResonanceModel.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -56,7 +57,7 @@ void Engine::reset() noexcept {
  keys.fill(0);velocities.fill(0);selected=-1;lastNote=60;pitch=60;pitchInitialized=false;selectedVelocity=1;
  phase=lfoPhase=lfoDelayElapsed=randomLfo=lastLfo=env=gateGain=0;cycle=0;stage=Stage::idle;modeGain=1;pendingMode=false;
  noiseLP=noiseDC=externalDC=outputDC=0;muted=false;follower.fill(0);filterState.fill(0);filterY.fill(0);
- randomState=0x91e10da5u;failures=0;inputHistory.fill(0);outputHistory.fill(0);frames.fill({});
+ diodeNode=0;randomState=0x91e10da5u;failures=0;inputHistory.fill(0);outputHistory.fill(0);frames.fill({});
  inputPos=outputPos=framePos=0;controlBend=bendTarget=pressure=pressureTarget=0;
  if(initialized)smooth=target;
 }
@@ -118,6 +119,8 @@ double Engine::stepEnvelope() noexcept {
 }
 
 double Engine::filter(double input,double cutoff,double resonance) noexcept {
+ if(filterModel==FilterModel::revised)
+  return detail::revisedResonantFilter(input,cutoff,resonance,internalFs,filterState,filterY,diodeNode,failures);
  const double g=std::tan(pi*clamp(cutoff,5,std::min(22000.0,internalFs*.2))/internalFs);
  const double k=4.65*resonance;
  constexpr double scale=1.1,feedbackScale=2.8;

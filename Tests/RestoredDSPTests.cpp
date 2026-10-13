@@ -3,14 +3,15 @@
 #include <cmath>
 #include <iostream>
 
-// Audio regression: the restored core must reproduce the preserved 1.1.3
-// signal path exactly. Reference code is frozen and compiled independently.
+// Audio regression: the retained legacy filter must reproduce the preserved
+// 1.1.3 signal path exactly. The default revised filter has separate behavioral
+// tests; reference code is frozen and compiled independently.
 int main() {
  int failures=0,checks=0;
  for(double sr:{44100.,48000.,96000.,192000.})
  for(float wave:{0.f,1.f,2.f,3.f}) for(float age:{0.f,.5f,1.f})
  for(float resonance:{0.f,.85f,1.f}) {
-  sh09::Engine restored;sh09_reference::Engine reference;
+  sh09::Engine restored(sh09::FilterModel::legacy);sh09_reference::Engine reference;
   restored.prepare(sr);reference.prepare(sr);
   sh09::Controls c;sh09_reference::Controls r;
   c.wave=r.wave=wave;c.age=r.age=age;c.resonance=r.resonance=resonance;
@@ -33,7 +34,7 @@ int main() {
  }
  // Isolated feedback, including low and high cutoff and a continuous AGE sweep.
  for(double sr:{44100.,48000.,96000.}) for(float cutoff:{.25f,.6f,.95f}) {
-  sh09::Engine a;sh09_reference::Engine b;a.prepare(sr);b.prepare(sr);
+  sh09::Engine a(sh09::FilterModel::legacy);sh09_reference::Engine b;a.prepare(sr);b.prepare(sr);
   sh09::Controls c;sh09_reference::Controls r;
   c.vcoLevel=r.vcoLevel=c.subLevel=r.subLevel=c.extLevel=r.extLevel=0;
   c.vcaMode=r.vcaMode=0;c.vcfEnv=r.vcfEnv=0;

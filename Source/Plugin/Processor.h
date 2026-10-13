@@ -6,10 +6,11 @@
 #include <array>
 #include <atomic>
 #include <limits>
-class SH09Processor final : public juce::AudioProcessor, private juce::VST3ClientExtensions, private juce::Timer {
+class SH09Processor final : public juce::AudioProcessor, private juce::VST3ClientExtensions, private juce::Timer,
+                            private juce::AudioProcessorValueTreeState::Listener {
 public:
  SH09Processor();
- ~SH09Processor() override {stopTimer();}
+ ~SH09Processor() override {stopTimer();state.removeParameterListener("vcoMod",this);}
  const juce::String getName() const override {return sh09::branding::productName;}
  bool acceptsMidi() const override {return true;}
  bool producesMidi() const override {return false;}
@@ -63,6 +64,7 @@ private:
  void handleMidi(const juce::uint8*,int) noexcept;
  void applyPitchBend(float) noexcept;
  void timerCallback() override;
+ void parameterChanged(const juce::String&,float) override;
  void resetModWheel() noexcept;
  void applyModWheel(int) noexcept;
  void clearKeyDisplay() noexcept;
@@ -95,10 +97,12 @@ private:
  float bendReturnFrom=0,soundingBendTarget=0;
  sh09::Controls renderControls;
  bool modWheelPickedUp=false,modWheelOverride=false;
- float previousModWheel=-1,modWheelTarget=0,lastModParameter=0;
- unsigned modProgramRevision=0,deliveredModSerial=0;
- std::atomic<unsigned> modSerial{0},modFeedbackRevision{0};
- std::atomic<float> modFeedbackValue{0},modFeedbackSource{0};
+ float previousModWheel=-1,modWheelTarget=0;
+ unsigned modProgramRevision=0,modParameterRevision=0,deliveredModSerial=0;
+ std::atomic<unsigned> modParameterEdits{0};
+ // Single audio-thread writer; odd serials denote an incomplete mailbox update.
+ std::atomic<unsigned> modSerial{0},modFeedbackRevision{0},modFeedbackParameterRevision{0};
+ std::atomic<float> modFeedbackValue{0};
  std::atomic<bool> modFeedbackValid{false};
  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SH09Processor)
 };

@@ -4,6 +4,8 @@
 #include <cstdint>
 
 namespace sh09 {
+// Legacy is retained for independent regression and direct listening comparisons.
+enum class FilterModel {legacy,revised};
 // Keep the stored/automated TUNE range at -65..65 for existing sessions.
 // Modern expands its physical effect to one octave in either direction.
 inline double oscillatorTuneCents(double storedTune, bool modern) noexcept {
@@ -21,6 +23,8 @@ struct Controls {
 
 class Engine {
 public:
+ Engine() noexcept=default;
+ explicit Engine(FilterModel model) noexcept : filterModel(model) {}
  void prepare(double sampleRate) noexcept;
  void reset() noexcept;
  void setControls(Controls controls) noexcept;
@@ -45,6 +49,8 @@ public:
  std::uint64_t solverFailures() const noexcept {return failures;}
  static constexpr int oversamplingFactor=4;
 private:
+ FilterModel filterModel=FilterModel::revised;
+ double diodeNode=0;
  static constexpr int firLength=513, alignment=256;
  struct Frame {double source=0,amplitude=0,cutoff=1000,resonance=0,gain=0,externalLevel=0,followerAmount=0;};
  enum class Stage {idle,attack,decay,sustain,release};

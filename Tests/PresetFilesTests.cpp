@@ -188,6 +188,26 @@ int main(int argc, char** argv)
         }
     }
 
+    // Validate the optional local listening presets through the same loader as LOAD.
+    if (argc > 2)
+    {
+        const juce::File folder(juce::String::fromUTF8(argv[2]));
+        const auto files = folder.findChildFiles(juce::File::findFiles, false, "*.kb09");
+        expect(files.size() == 7, "local DSP listening bank contains seven presets");
+        for (const auto& file : files)
+        {
+            const auto result = sh09::PresetFiles::loadFromFile(processor, file);
+            expect(result.wasOk(), "load local listening preset: " + file.getFileName());
+            if (result.failed()) std::cout << result.getErrorMessage() << '\n';
+            const auto expected = values(processor);
+            const bool savedOK = sh09::PresetFiles::saveToFile(processor, saved.getFile()).wasOk();
+            processor.setCurrentProgram(1);
+            const bool restored = sh09::PresetFiles::loadFromFile(processor, saved.getFile()).wasOk();
+            expect(savedOK && restored && values(processor) == expected,
+                   "local listening preset save/reload: " + file.getFileName());
+        }
+    }
+
     const auto beforeFailure = values(processor);
     juce::MemoryBlock savedBeforeFailure;
     const bool readBefore = saved.getFile().loadFileAsData(savedBeforeFailure);

@@ -12,9 +12,9 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'artifacts/AnalogInvestigation/StageIsolation'
 OUT.mkdir(parents=True, exist_ok=True)
-source = (ROOT/'Source/DSP/Engine.cpp').read_text()
-header = (ROOT/'Source/DSP/Engine.h').read_text()
-lfo = (ROOT/'Source/DSP/LfoRate.h').read_text()
+source = (ROOT/'Tests/ReferenceDSP152/Engine.cpp').read_text()
+header = (ROOT/'Tests/ReferenceDSP152/Engine.h').read_text()
+lfo = (ROOT/'Tests/ReferenceDSP152/LfoRate.h').read_text()
 includes, calls = [], []
 for factor in (4, 32):
     for stage, tap in [('source','delayedFrame.source'),

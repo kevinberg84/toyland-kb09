@@ -9,7 +9,13 @@ inline constexpr const char* versionEndpoint = "https://raw.githubusercontent.co
 class Updates final : private juce::Thread {
 public:
     static Updates& instance() { static Updates service; return service; }
-    bool configured() const { return juce::String(versionEndpoint).startsWith("https://"); }
+    bool configured() const {
+#if KB09_LOCAL_DSP_TEST
+        return false;
+#else
+        return juce::String(versionEndpoint).startsWith("https://");
+#endif
+    }
     bool decided() { return settings->containsKey("asked"); }
     bool enabled() { return settings->getBoolValue("annual",false); }
     void consent(bool yes) { settings->setValue("asked",true);settings->setValue("annual",yes);settings->saveIfNeeded(); }
@@ -22,8 +28,12 @@ public:
     }
     void showMenu(juce::Component* target) {
         auto theme=std::make_shared<kb09_gui::UpdateMenuTheme>(kb09_gui::DialogTheme::conditionOf(target));
-        juce::PopupMenu m;m.setLookAndFeel(theme.get());m.addSectionHeader("Toyland KB-09 " JucePlugin_VersionString);
+        juce::PopupMenu m;m.setLookAndFeel(theme.get());m.addSectionHeader(juce::String(JucePlugin_Name)+" "+JucePlugin_VersionString);
+#if KB09_LOCAL_DSP_TEST
+        m.addItem(3,"Local DSP test - public update checks disabled",false);
+#else
         m.addItem(1,"Check for updates now");m.addItem(2,"Automatic checks (every 90 days)",true,enabled());
+#endif
         m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(target).withMinimumWidth(380).withStandardItemHeight(34),[theme,owner=juce::Component::SafePointer<juce::Component>(target)](int item){auto& s=instance();if(item==1){if(s.configured())s.check(true);else juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates","Update announcements are not configured in this build yet.","OK",owner.getComponent());}if(item==2)s.consent(!s.enabled());});
     }
     void opened(juce::Component* owner = nullptr) {
@@ -54,6 +64,9 @@ public:
 private:
     Updates():Thread("KB-09 update check") {
         juce::PropertiesFile::Options o;o.applicationName="Toyland KB-09 Updates";o.filenameSuffix="settings";o.folderName="Toyland";o.osxLibrarySubFolder="Application Support";
+#if KB09_LOCAL_DSP_TEST
+          o.applicationName=juce::String(JucePlugin_Name)+" Updates";
+#endif
         settings=std::make_unique<juce::PropertiesFile>(o);
     }
     ~Updates() override {signalThreadShouldExit();stopThread(12000);}

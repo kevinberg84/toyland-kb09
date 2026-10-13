@@ -1,5 +1,10 @@
 # SH-09 comparison recordings
 
+For the next session, use [the shorter session checklist](SH09_SESSION_CHECKLIST.md).
+It prioritizes the reported VCF staircase, includes isolated level/pitch
+references, and separates essential takes from optional calibration work.
+The broader reference protocol below remains useful for later investigations.
+
 Start with the first set below. No special analyzer or internal circuit probing
 is needed. These recordings will help separate waveform shape, mixer drive and
 filter behavior instead of guessing what produces the instrument's body/grit.
@@ -69,6 +74,30 @@ of the exact sound KB-09 fails to reproduce would also help.
 Raw WAVs and panel photos are more valuable than processed demonstrations.
 One SH-09 measures one instrument, not every unit ever manufactured. We will
 keep its identifiable characteristics separate from optional AGE effects.
+
+## Current priority: the slow VCF MOD stepping — 13 October 2026
+
+For this investigation, start here rather than recording every test above.
+
+Use the waveform and settings where the problem is obvious. On the SH-09,
+set sine LFO, RATE minimum, VCO MOD zero, SUB/EXT zero, VCF ENV zero,
+maximum RES, VCA HOLD, and keep one key/note selected with the bender centered.
+Choose low FREQ and enough VCF MOD for a slow audible sweep through the steady
+VCO's pitch. Keep FREQ, MOD, RES, TUNE, VOLUME and interface gain fixed.
+
+Record about 20 seconds each with the VCO mixer at **0, 2, 5, then 10**.
+Keep the original mono WAVs, preferably 24-bit/96 kHz (48 kHz is useful),
+with no effects or normalization. Include a panel photo and identify the key,
+range, waveform and interface. Repeat the same four takes on KB-09 in
+Authentic/Minty; save its preset as well. A square-wave repeat can follow
+after the first set, rather than making this first session unnecessarily large.
+
+Exact pitch matching is unnecessary at capture time. We will measure the
+hardware's VCO frequency and filter sweep, then fit the software note/range/
+TUNE and modulation to that common band. The overall pitch-range mismatch does
+not prevent this test. Do not digitally pitch-shift the recordings, and do not
+adjust internal hardware trimmers. Keep output gain consistent so the
+relationship between injected VCO and filter self-oscillation remains measurable.
 
 ## Slow VCO / filter beating
 

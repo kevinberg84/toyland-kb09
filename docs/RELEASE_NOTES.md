@@ -1,3 +1,13 @@
+# 1.5.3 — Toyland KB-09
+
+Refines the self-oscillating filter's interaction with VCO input. Stage-dependent headroom and a separate nonlinear feedback limiter improve resonant amplitude consistency during slow sweeps. The coupled stages and limiter are solved together; no automatic leveling or separate sine oscillator is added. Resonance-dependent tuning correction preserves free-running pitch. Natural beating and harmonic interaction remain; individual SH-09 instruments and patches can differ.
+
+Fixes MIDI CC1 losing control when delayed slider feedback was mistaken for a manual edit. VST3 mod-wheel input takes control on the next movement, including after parameter edits or preset changes; the standalone retains soft pickup. Actual VST3 tests exercise every exposed sound parameter, host Bypass/Program, ordinary CCs and recorded-style wheel sweeps. Parameter IDs, preset/state formats, 24 factory sounds, 4x processing and 128-sample reported latency are retained. The revised filter uses somewhat more CPU; the smallest stable buffer depends on the computer and audio setup.
+
+The first white-key crack begins at Vintage, Baby!, at 40% of its Sold As-Is length. The illustrated manual explains the filter-modeling work with hardware/model waveform comparisons, clearer system recommendations, consistent platform troubleshooting boxes, envelope-filter terminology and display gestures. Manual and OPEN ME FIRST use a comfortable dark screen theme, retaining light printing. The manual's footer now reads October 2026.
+
+Windows standalone/VST3, universal Mac standalone/AU/VST3 and Linux x86-64 standalone are prepared from the same source. Linux retains UNVERIFIED pending physical Arch launch, audio and MIDI confirmation. Platform validation and distribution status are recorded separately.
+
 # 1.5.2 — Toyland KB-09
 
 Includes all approved GUI revisions through Revision 17. The bender and pointer have slightly brighter dark surfaces while retaining their polished reflection and rounded geometry. CUTOFF FREQ and RESONANCE printing more closely follows the supplied SH-09 reference. The performance bay now meets the left cheek without the former narrow gap.

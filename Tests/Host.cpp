@@ -71,6 +71,62 @@ void matrix(Host& h){
         h.checks.expect(finite&&energy>1e-10&&latencyOK,"render "+juce::String(rate)+"/"+juce::String(block)+" energy="+juce::String(energy,7)+" latency="+juce::String(h.p.getLatencySamples()));
     }
 }
+void midiMappings(Host& h){
+    if(!h.find("vcoMod"))return;
+    h.restore();h.prepare(48000,128);
+    auto audio=h.buffer(128);juce::MidiBuffer midi;
+    int mapped=0;bool mappingOK=true,finite=true;
+    for(auto* parameter:h.p.getParameters())if(parameter->isAutomatable()&&!parameter->isMetaParameter()){
+        for(float requested:{0.0f,.25f,.5f,.75f,1.0f}){
+            const auto steps=parameter->getNumSteps();
+            if(steps>1&&steps<100000)requested=std::round(requested*(steps-1))/float(steps-1);
+            parameter->setValueNotifyingHost(requested);
+            audio.clear();midi.clear();
+            midi.addEvent(juce::MidiMessage::controllerEvent(16,74,107),0);
+            h.process(audio,midi,finite);
+            mappingOK= mappingOK&&std::abs(parameter->getValue()-requested)<.0002f;
+        }
+        ++mapped;
+    }
+    h.checks.expect(mappingOK&&finite&&mapped>=34,
+                    "all "+juce::String(mapped)+" automatable VST3 parameters follow host mappings at five legal positions with unrelated MIDI present");
+    h.restore();h.prepare(48000,128);
+    bool wheelOK=true;
+    auto settle=[&]{
+        // The DLL has its own JUCE Timer singleton. Dispatch real platform
+        // messages, as a DAW does; pumping only the host's timers misses it.
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(35);
+        audio.clear();midi.clear();h.process(audio,midi,finite);
+    };
+    // Deliberately begin above zero, as a physical wheel can skip its endpoint.
+    for(int value:{4,18,42,64,83,108,127,111,87,62,38,13,0}){
+        audio.clear();midi.clear();
+        midi.addEvent(juce::MidiMessage::controllerEvent(1,1,value),17);
+        midi.addEvent(juce::MidiMessage::noteOn(1,60,juce::uint8(100)),0);
+        h.process(audio,midi,finite);settle();
+        const auto actual=h.find("vcoMod")->getValue();
+        wheelOK=wheelOK&&std::abs(actual-value/127.f)<.0002f;
+    }
+    h.checks.expect(wheelOK&&finite,"actual VST3 CC1 follows an up/down sweep, including first movement above zero");
+    h.set("vcoMod",.6f);settle();
+    h.set("vcoMod",.3f);audio.clear();midi.clear();
+    midi.addEvent(juce::MidiMessage::controllerEvent(16,1,117),0);
+    h.process(audio,midi,finite);settle();
+    h.checks.expect(std::abs(h.find("vcoMod")->getValue()-117.f/127)<.0002f,
+                    "actual VST3 CC1 resumes immediately after host automation on channel 16");
+    h.restore();h.prepare();
+    std::vector<std::pair<juce::AudioProcessorParameter*,float>> before;
+    for(auto* parameter:h.p.getParameters())if(parameter->isAutomatable()&&!parameter->isMetaParameter())
+        before.emplace_back(parameter,parameter->getValue());
+    audio=h.buffer(256);audio.clear();midi.clear();
+    for(int channel=1;channel<=16;++channel)for(int cc=0;cc<120;++cc)if(cc!=1)
+        midi.addEvent(juce::MidiMessage::controllerEvent(channel,cc,(cc*7)%128),0);
+    h.process(audio,midi,finite);
+    bool unchanged=true;for(const auto& [parameter,value]:before)unchanged=unchanged&&std::abs(parameter->getValue()-value)<.0002f;
+    // JUCE's hidden MIDI-transport parameters legitimately follow the CCs.
+    h.checks.expect(unchanged&&finite,"all ordinary CCs on all MIDI channels leave host-assigned parameter mappings intact");
+    h.restore();
+}
 void timingAndBlocks(Host& h){
     // VST3 setupProcessing.maxSamplesPerBlock is a host contract. The wrapper
     // allocates its channel mapping to that maximum, unlike a direct JUCE DSP call.
@@ -215,7 +271,7 @@ int main(int argc,char** argv){
     format.findAllTypesForFile(descriptions,juce::String::fromUTF8(argv[1]));Checks checks;checks.expect(!descriptions.isEmpty(),"VST3 scan discovers component");
     for(auto* d:descriptions){juce::String error;auto plugin=format.createInstanceFromDescription(*d,48000,256,error);checks.expect(plugin!=nullptr,"instantiate actual VST3: "+error);if(!plugin)continue;
         std::cout<<"Loaded "<<d->name<<" using "<<juce::SystemStats::getJUCEVersion()<<'\n';Host h(*plugin,checks);
-        matrix(h);timingAndBlocks(h);stateAndPrograms(h);if(h.find("extLevel"))externalTests(h);else std::cout<<"SKIP SH-09-specific external checks for lab component\n";
+        matrix(h);midiMappings(h);timingAndBlocks(h);stateAndPrograms(h);if(h.find("extLevel"))externalTests(h);else std::cout<<"SKIP SH-09-specific external checks for lab component\n";
         stress(h,seconds);editors(h);
         if(argc>4&&juce::String(argv[3])=="--export-presets")exportPresets(h,juce::File(juce::String::fromUTF8(argv[4])));
         h.stop();bool repeatedOK=true;

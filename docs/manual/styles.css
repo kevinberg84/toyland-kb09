@@ -16,3 +16,21 @@
 .report-actions{display:flex;flex-wrap:wrap;gap:12px}.report-actions button{font:inherit;font-weight:650;padding:11px 18px;border-radius:5px;border:1px solid #252620;background:#252620;color:#fff;cursor:pointer}.report-actions button+button{background:transparent;color:#252620}.report-actions button:disabled{opacity:.5;cursor:not-allowed}#report-status,.report-privacy{font-size:.94rem}#report-status{border-left:3px solid #ac8540;padding-left:12px}
 @media(max-width:650px){.report-grid{grid-template-columns:1fr}#bug-report-form{padding:18px}}
 @media print{.report-actions,.report-trap,#report-status{display:none!important}#bug-report-form{break-inside:auto;background:white}#bug-report-form textarea{min-height:80px}#report-copy-details{display:none}}
+
+/* Linux guidance shares the platform notice frame, with optional long-form fixes. */
+#linux-launch-help details{border:0;background:transparent;padding:0;margin:12px 0 0}
+#linux-launch-help>p{margin:8px 0}
+@media print{#linux-launch-help{break-inside:auto}}
+/* Match the comfortable dark reading surface of OPEN ME FIRST on screen.
+   Printed copies keep the existing light, ink-friendly layout. */
+@media screen{
+ :root{color-scheme:dark;--ink:#e6e6df;--muted:#acb5b1;--paper:#171b1c;--gold:#cbb572;--edge:#454d4e;--black:#101415;--focus:#83d7ce}
+ a{color:#83d7ce}a:hover{color:#b5f0e9}.contents a{color:#c9cfcc}.contents a:hover{color:#83d7ce}
+ .notice,.callout{background:#262c2d}.notice.draft{background:transparent}.skip{background:#262c2d}
+ code,pre,th{background:#283032}.lead,.age-scale b{color:#d4ba79}.daw-grid a:hover{background:#283032}
+ details{background:#202729}.badge{color:#bdc9c5;border-color:#6c7a74}.badge.confirmed{color:#9bc793}.badge.planned{color:#d4ba79}
+ .writing-lines{background:repeating-linear-gradient(to bottom,transparent 0,transparent 29px,#454d4e 29px,#454d4e 30px)}
+ #bug-report-form{background:#202729;border-color:#454d4e}#bug-report-form label span{color:#acb5b1}
+ #bug-report-form input:not([type=checkbox]),#bug-report-form select,#bug-report-form textarea,#report-copy{color:#e6e6df;background:#171b1c;border-color:#66716d}
+ .report-actions button{background:#83d7ce;color:#112222;border-color:#83d7ce}.report-actions button+button{background:transparent;color:#e6e6df;border-color:#66716d}
+}

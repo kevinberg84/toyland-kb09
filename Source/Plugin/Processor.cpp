@@ -3,6 +3,12 @@
 #include "../Presets/Factory.h"
 #include <cmath>
 #include <string_view>
+namespace {
+// Identify our own synchronous parameter callbacks without treating a later
+// wheel value as the acknowledgement of an earlier GUI publication.
+thread_local const SH09Processor* modFeedbackWriter=nullptr;
+thread_local float modFeedbackWriteValue=0;
+}
 static_assert(std::atomic<bool>::is_always_lock_free && std::atomic<unsigned>::is_always_lock_free && std::atomic<float>::is_always_lock_free,
               "Power and keyboard controls require lock-free atomics");
 SH09Processor::SH09Processor():AudioProcessor(BusesProperties()
@@ -10,32 +16,49 @@ SH09Processor::SH09Processor():AudioProcessor(BusesProperties()
  .withOutput("Output",juce::AudioChannelSet::stereo(),true)),state(*this,nullptr,"SH09State",sh09::makeParameters()) {
  for(size_t i=0;i<raw.size();++i)raw[i]=state.getRawParameterValue(sh09::specs[i].id);
  rawVcoMod=state.getRawParameterValue("vcoMod");
+ state.addParameterListener("vcoMod",this);
  setLatencySamples(engine.latencySamples());
  clearKeyDisplay();
  startTimerHz(60);
 }
 void SH09Processor::timerCallback() {
  const auto serial=modSerial.load(std::memory_order_acquire);
- if(serial==deliveredModSerial)return;
+ if((serial&1u)||serial==deliveredModSerial)return;
+ const auto revision=modFeedbackRevision.load(std::memory_order_relaxed);
+ const auto edits=modFeedbackParameterRevision.load(std::memory_order_relaxed);
+ const float value=modFeedbackValue.load(std::memory_order_relaxed);
+ if(serial!=modSerial.load(std::memory_order_acquire))return;
  deliveredModSerial=serial;
- if(!modFeedbackValid.load(std::memory_order_acquire)||modFeedbackRevision.load()!=getProgramRevision())return;
+ if(!modFeedbackValid.load(std::memory_order_acquire)||revision!=getProgramRevision()
+    ||edits!=modParameterEdits.load(std::memory_order_acquire))return;
  auto* parameter=state.getParameter("vcoMod");
- const float source=modFeedbackSource.load(),value=modFeedbackValue.load();
- const float current=state.getRawParameterValue("vcoMod")->load();
  // Host notifications and APVTS listeners belong on the message thread, never
  // in the sample loop. A newer preset or automation edit defeats stale feedback.
- if(std::abs(current-source)<1e-6f||std::abs(current-value)<1e-6f)
-   {parameter->beginChangeGesture();parameter->setValueNotifyingHost(parameter->convertTo0to1(value));parameter->endChangeGesture();}
+ parameter->beginChangeGesture();
+ if(revision==getProgramRevision()&&edits==modParameterEdits.load(std::memory_order_acquire)) {
+   const juce::ScopedValueSetter<const SH09Processor*> writer(modFeedbackWriter,this);
+   const juce::ScopedValueSetter<float> writtenValue(modFeedbackWriteValue,value);
+   parameter->setValueNotifyingHost(parameter->convertTo0to1(value));
+ }
+ parameter->endChangeGesture();
+}
+void SH09Processor::parameterChanged(const juce::String&,float value) {
+ if(modFeedbackWriter!=this||std::abs(value-modFeedbackWriteValue)>1e-6f)
+   modParameterEdits.fetch_add(1,std::memory_order_release);
 }
 void SH09Processor::resetModWheel() noexcept {
  modWheelPickedUp=modWheelOverride=false;previousModWheel=-1;
- lastModParameter=rawVcoMod->load(std::memory_order_relaxed);
+ modParameterRevision=modParameterEdits.load(std::memory_order_acquire);
  modProgramRevision=programRevision.load(std::memory_order_acquire);
  modFeedbackValid.store(false,std::memory_order_release);
 }
 void SH09Processor::applyModWheel(int controllerValue) noexcept {
  const float wheel=float(controllerValue)/127;
  const float current=renderControls.vcoMod;
+ // In a VST3 host, CC1 is already a timed performance stream. Host echoes and
+ // automation must not impose a second pickup gate on the next wheel event.
+ // Keep the standalone's established soft takeover for manually edited patches.
+ if(wrapperType==wrapperType_VST3)modWheelPickedUp=true;
  if(!modWheelPickedUp) {
    const bool near=std::abs(wheel-current)<=1.0f/127;
    const bool crossed=previousModWheel>=0&&(previousModWheel-current)*(wheel-current)<=0;
@@ -44,9 +67,10 @@ void SH09Processor::applyModWheel(int controllerValue) noexcept {
  previousModWheel=wheel;
  if(!modWheelPickedUp)return;
  modWheelOverride=true;modWheelTarget=wheel;renderControls.vcoMod=wheel;engine.setControls(renderControls);
- modFeedbackSource.store(lastModParameter,std::memory_order_relaxed);
+ modSerial.fetch_add(1,std::memory_order_acq_rel);
  modFeedbackValue.store(wheel,std::memory_order_relaxed);
  modFeedbackRevision.store(modProgramRevision,std::memory_order_relaxed);
+ modFeedbackParameterRevision.store(modParameterRevision,std::memory_order_relaxed);
  modFeedbackValid.store(true,std::memory_order_release);modSerial.fetch_add(1,std::memory_order_release);
 }
 int SH09Processor::getNumPrograms(){return int(sh09::factoryPresets().size());}
@@ -135,7 +159,7 @@ void SH09Processor::handleMidi(const juce::uint8* bytes,int n) noexcept {
    if(bytes[1]==1)applyModWheel(bytes[2]&127);
    else if(bytes[1]==120){engine.allSoundOff();applyPitchBend(0);clearKeyDisplay();resetModWheel();}
    else if(bytes[1]==123){engine.allNotesOff();clearKeyDisplay();}
-   else if(bytes[1]==121){applyPitchBend(0);engine.setAftertouch(0);resetModWheel();renderControls.vcoMod=lastModParameter;engine.setControls(renderControls);}
+   else if(bytes[1]==121){applyPitchBend(0);engine.setAftertouch(0);resetModWheel();renderControls.vcoMod=rawVcoMod->load(std::memory_order_relaxed);engine.setControls(renderControls);}
  }
 }
 void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuffer& midi){
@@ -160,10 +184,10 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  }
  const auto controls=readControls();
  const auto revision=programRevision.load(std::memory_order_acquire);
- if(revision!=modProgramRevision||std::abs(controls.vcoMod-lastModParameter)>1e-6f) {
-   const bool ownFeedback=revision==modProgramRevision&&modWheelOverride&&std::abs(controls.vcoMod-modWheelTarget)<1e-6f;
-   if(!ownFeedback){modWheelPickedUp=modWheelOverride=false;modFeedbackValid.store(false,std::memory_order_release);}
-   lastModParameter=controls.vcoMod;modProgramRevision=revision;
+ const auto edits=modParameterEdits.load(std::memory_order_acquire);
+ if(revision!=modProgramRevision||edits!=modParameterRevision) {
+   modWheelPickedUp=modWheelOverride=false;modFeedbackValid.store(false,std::memory_order_release);
+   modParameterRevision=edits;modProgramRevision=revision;
  }
  renderControls=controls;if(modWheelOverride)renderControls.vcoMod=modWheelTarget;
  engine.setControls(renderControls);
@@ -226,10 +250,13 @@ void SH09Processor::getStateInformation(juce::MemoryBlock& destination){
  auto tree=state.copyState();tree.setProperty("schema",1,nullptr);tree.setProperty("program",currentProgram.load(),nullptr);
  // A save immediately following MIDI must retain the new fader value even
  // before the message-thread parameter notification has been delivered.
- if(modFeedbackValid.load(std::memory_order_acquire)&&modFeedbackRevision.load()==getProgramRevision()) {
-   const float current=state.getRawParameterValue("vcoMod")->load();
-   const float value=modFeedbackValue.load();
-   if(std::abs(current-modFeedbackSource.load())<1e-6f||std::abs(current-value)<1e-6f)
+ const auto serial=modSerial.load(std::memory_order_acquire);
+ const auto revision=modFeedbackRevision.load(std::memory_order_relaxed);
+ const auto edits=modFeedbackParameterRevision.load(std::memory_order_relaxed);
+ const float value=modFeedbackValue.load(std::memory_order_relaxed);
+ if(!(serial&1u)&&serial==modSerial.load(std::memory_order_acquire)
+    &&modFeedbackValid.load(std::memory_order_acquire)&&revision==getProgramRevision()
+    &&edits==modParameterEdits.load(std::memory_order_acquire)) {
      for(auto child:tree)if(child.getProperty("id")==juce::var("vcoMod"))child.setProperty("value",value,nullptr);
  }
  if(auto xml=tree.createXml())copyXmlToBinary(*xml,destination);

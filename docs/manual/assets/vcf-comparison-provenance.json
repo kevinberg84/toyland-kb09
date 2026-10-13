@@ -1,0 +1,22 @@
+{
+  "hardware_sha256": "8fe188934d3cc8cf2e99d34a74609dfa200f7033592c03bfc41f62a12fe0163a",
+  "model_sha256": "8a788061e44a6833673325c75f1dd9806d9f32cc47ddcb75120789aee84938c8",
+  "model_source_sha256": {
+    "Source/DSP/Engine.cpp": "9cbe389d6a3c9e93cb0135530702f3bfb0e2038511ef72562fbe3fb25afc78ea",
+    "Source/DSP/Engine.h": "e3e193e4b0ebb9436a156d34f5864792948180132366acfff8a8e492de24665e",
+    "Source/DSP/ResonanceModel.h": "faaee5ae85efb4b4d1fbb3e491ae733d26c62c5cb2366766286d010008267dea"
+  },
+  "rate": 96000,
+  "overview_seconds": 18,
+  "detail_seconds": 0.012,
+  "detail_start_times": [
+    1.50046875,
+    1.50034375
+  ],
+  "calibration": "Existing fixed free-filter and relative VCO carrier calibration. Hardware VCO 10. No additional gain changes, AGC or peak normalization.",
+  "limitations": "Aged SH-09 specimen; approximate sweep alignment, separate waveform phases. Two excerpts do not establish exact factory or component fidelity.",
+  "figure_files": [
+    "vcf-sweep-comparison.png",
+    "vcf-waveform-detail.png"
+  ]
+}

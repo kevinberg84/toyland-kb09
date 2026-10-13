@@ -32,7 +32,7 @@ public:
 
 class InstrumentApp final : public juce::JUCEApplication {
 public:
-    const juce::String getApplicationName() override { return "Toyland KB-09 Standalone"; }
+    const juce::String getApplicationName() override { return juce::String(JucePlugin_Name)+" Standalone"; }
     const juce::String getApplicationVersion() override { return JucePlugin_VersionString; }
     bool moreThanOneInstanceAllowed() override { return false; }
     void anotherInstanceStarted(const juce::String&) override { foreground(); }

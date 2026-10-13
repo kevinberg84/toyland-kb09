@@ -37,7 +37,7 @@
   document.getElementById('report-remove-screenshot').addEventListener('click',()=>{++readGeneration;shotInput.value='';resetShot();status.textContent='Screenshot removed. Your other answers remain unchanged.';});
   send.disabled = !configured;
   status.textContent = configured ? 'Internet is needed only when you submit. Confirmation opens in a new tab; your answers stay here.' :
-    'Online reporting is not connected yet. You can complete and save a report locally, then share it with Kevin.';
+    'Online reporting is not connected yet. You can complete this bug-report form and save a copy locally.';
   form.addEventListener('submit', event => {
     if (!configured) { event.preventDefault(); return; }
     if (readingScreenshot || screenshotError) {event.preventDefault();status.textContent='Finish preparing, replace, or remove the screenshot before submitting.';return;}

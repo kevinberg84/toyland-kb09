@@ -1389,13 +1389,19 @@ public:
             const float polishY=r.getBottom()-(pass==0?65.0f:48.0f)+float((serial*13)%(pass==0?41:30));
             g.setColour(juce::Colours::white.withAlpha((pass==0?.24f:.055f)*gloss));g.fillEllipse(polishX,polishY,.85f,1.5f);
             keySurfaceWear(g,r,serial,pass!=0,age);
-            const float crackOnset=n==60?.56f:n==65?.68f:n==74?.79f:2.0f;
+            const float crackOnset=n==60?.50f:n==65?.68f:n==74?.79f:2.0f;
             if(age>=crackOnset) {
                 const float progress=juce::jlimit(0.0f,1.0f,(age-crackOnset)/(.90f-crackOnset));
                 const float width=r.getWidth()*.20f,height=r.getHeight()*(n==65?.18f:.36f);
                 const auto trace=juce::Rectangle<float>(r.getX()+r.getWidth()*.32f,r.getBottom()-height-17,width,height);
                 juce::Graphics::ScopedSaveState save(g);
-                const float revealed=trace.getHeight()*(n==60?(.12f+.88f*progress):(.04f+.96f*progress));
+                // Vintage begins at 40% of the Sold As-Is crack length.
+                // Preserve the reviewed Sold As-Is and fully aged endpoints.
+                constexpr float soldCrack=.64f,vintageCrack=soldCrack*.40f;
+                const float firstCrack=age<=.75f
+                    ?vintageCrack+(soldCrack-vintageCrack)*juce::jlimit(0.f,1.f,(age-.5f)/.25f)
+                    :soldCrack+(1-soldCrack)*juce::jlimit(0.f,1.f,(age-.75f)/.15f);
+                const float revealed=trace.getHeight()*(n==60?firstCrack:(.04f+.96f*progress));
                 g.reduceClipRegion(trace.withTrimmedTop(trace.getHeight()-revealed).toNearestInt());
                 // Trace the owner's gently wandering hairline as a native
                 // path: subpixel width at M, sharp at 4K, no bitmap dirt halo.
@@ -2276,7 +2282,9 @@ private:
         if(juce::String(id)=="extLevel")slider.setTooltip("Mix incoming external audio into the filter; watch the IN indicator.");
         if(juce::String(id)=="lfoRate")slider.setTooltip("Set modulation speed: Authentic 0.2–25 Hz; Modern FREE 0.05–25 Hz. Modern SYNC chooses a musical division of the host tempo.");
         if(juce::String(id)=="lfoDelay")slider.setTooltip("Delay the onset of modulation after a note starts.");
-        if(juce::String(id)=="vcoMod")slider.setTooltip("Set the amount of LFO pitch modulation. MIDI mod wheel (CC1) controls this fader after reaching or crossing its current position. Manual edits re-arm pickup.");
+        if(juce::String(id)=="vcoMod")slider.setTooltip(processor.wrapperType==juce::AudioProcessor::wrapperType_VST3
+            ?"Set the amount of LFO pitch modulation. MIDI mod wheel (CC1) controls this fader immediately on its next movement. DAW mappings and automation remain available."
+            :"Set the amount of LFO pitch modulation. MIDI mod wheel (CC1) controls this fader after reaching or crossing its current position. Manual edits re-arm pickup.");
         if(juce::String(id)=="cutoff")slider.setTooltip("Set filter cutoff frequency; lower it to remove upper harmonics.");
         if(juce::String(id)=="resonance")slider.setTooltip("Emphasise the cutoff frequency; high settings make the filter self-oscillate.");
         if(juce::String(id)=="vcfMod")slider.setTooltip("Set the amount of LFO modulation applied to filter cutoff.");

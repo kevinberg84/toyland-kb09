@@ -1,5 +1,15 @@
 # Toyland KB-09 — Windows, Mac and Linux synthesizer
 
+**Current release preparation: 1.5.3.** The approved resonant filter uses stage-dependent headroom and a separate nonlinear feedback limiter, solved together at each internal processing step. Comparisons use Kevin's 96 kHz SH-09 recordings. The revised model improves slow resonant-sweep amplitude consistency while retaining natural harmonic interaction; there is no automatic leveling or additional sine oscillator. Hardware calibration and individual patches can differ.
+
+Deferred MIDI feedback now distinguishes its own publications from external edits. VST3 CC1 follows the next wheel movement after presets and host edits; standalone soft pickup remains intact. All 35 parameter identities, saved-state format, 24 factory sounds, fixed 4x processing and 128-sample reported latency are retained. CPU cost is higher, so the smallest reliable playing buffer needs user testing.
+
+Windows provides standalone/VST3, universal Mac provides standalone/AU/VST3, and Linux x86-64 provides standalone only. Linux remains UNVERIFIED pending physical Arch playback and MIDI. The [current HTML manual](docs/manual/index.html) includes the filter-modeling account, comparisons, dark reading theme, setup recommendations and October 2026 footer. The first key crack appears at Vintage, Baby!, at 40% of its Sold As-Is length. [Release validation](docs/VALIDATION_1.5.3.md) records final-build evidence and distribution status as it is completed.
+
+## Historical engineering record
+
+The implementation notes below describe preceding revisions. Use the current manual, release notes and release validation for current behavior and supported formats.
+
 **Toyland KB-09 1.5.2** is a playable monophonic instrument based on Roland SH-09 manuals and service schematics, with a photographic-style panel informed by Kevin's own instrument. Its engine is a **circuit-informed approximation** with explicit unmeasured parameters. This GUI-only patch refines bender visibility, VCF lettering, exposed slider posts and accumulating slot dust, the left performance-bay seam, POWER button shading and four individual metal screw heads. It preserves the restored 1.1.3 sound engine, controller bender feedback, CC1 pickup for VCO MOD, and Modern FREE modulation down to 0.05 Hz. Windows includes VST3 and standalone; Mac includes AU, VST3 and standalone; Linux x86-64 is standalone only. Modern TUNE now spans ±12 semitones, while Authentic keeps ±65 cents. Static panel and keyboard material caching reduce live rendering work. Release-specific checks belong in the validation artifacts. See the [user manual](docs/manual/index.html), [known limitations](docs/KNOWN_LIMITATIONS.md), [fidelity evidence](docs/FIDELITY.md) and [acceptance](docs/ACCEPTANCE.md).
 
 ## Load and play
