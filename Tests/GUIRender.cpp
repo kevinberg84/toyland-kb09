@@ -1049,6 +1049,61 @@ void checkMidiBender(SH09Processor& processor,juce::Component& editor,const juce
     processor.setStateInformation(saved.getData(),int(saved.getSize()));processor.reset();settleEditor();
 }
 
+void checkEnvelopeMeter(SH09Processor& processor,juce::Component& editor,Checks& checks) {
+    const auto litSegments=[](juce::Component& lamp) {
+        const auto image=lamp.createComponentSnapshot(lamp.getLocalBounds(),true,1.0f);
+        int count=0;
+        for(int i=0;i<8;++i)if(image.getPixelAt(30+i*6,9)==juce::Colour(0xffdbb572))++count;
+        return count;
+    };
+    // The last tiny tail and zero must render differently even when the raw
+    // level change is smaller than the former repaint tolerance.
+    for(const auto* id:{"indicatorENV","indicatorEXT","indicatorIN"}) {
+        auto* lamp=findComponent(editor,id);
+        checks.expect(lamp!=nullptr,juce::String(id)+" exists for meter regression");
+        if(!lamp)continue;
+        auto& value=juce::String(id)=="indicatorENV"?processor.displayedEnvelope:
+                    juce::String(id)=="indicatorEXT"?processor.displayedFollower:processor.displayedInput;
+        value.store(.01f);settleEditor();value.store(.003f);settleEditor();
+        checks.expect(litSegments(*lamp)==1,juce::String(id)+" shows a real small positive tail");
+        value.store(0);settleEditor();
+        checks.expect(litSegments(*lamp)==0,juce::String(id)+" clears the final segment at exact zero");
+        value.store(.126f);settleEditor();
+        checks.expect(litSegments(*lamp)==2,juce::String(id)+" lights above a segment boundary");
+        value.store(.124f);settleEditor();
+        checks.expect(litSegments(*lamp)==1,juce::String(id)+" clears across a sub-tolerance segment boundary");
+        value.store(0);settleEditor();
+    }
+    auto* env=findComponent(editor,"indicatorENV");if(!env)return;
+    juce::MemoryBlock saved;processor.getStateInformation(saved);
+    processor.setCurrentProgram(0);
+    setParameter(processor,"envMode",0);setParameter(processor,"vcaMode",1);
+    setParameter(processor,"attack",0);setParameter(processor,"sustain",1);setParameter(processor,"release",0);
+    for(const double rate:{48000.,96000.})for(const int frames:{64,256})for(int kind=0;kind<3;++kind) {
+        processor.prepareToPlay(rate,frames);processor.reset();
+        juce::AudioBuffer<float> audio(2,frames);juce::MidiBuffer midi;
+        const auto process=[&]{audio.clear();processor.processBlock(audio,midi);};
+        if(kind==2)processor.queueKeyboard(60,true);
+        else midi.addEvent(juce::MidiMessage::noteOn(kind==0?1:16,60,juce::uint8(100)),frames-1);
+        for(int i=0;i<int(rate*.03/frames)+1;++i)process();
+        settleEditor();
+        const auto context=juce::String(kind==2?"mouse":"MIDI")+" "+juce::String(rate)+" Hz / "+juce::String(frames)+" samples / off type "+juce::String(kind);
+        checks.expect(processor.displayedEnvelope.load()>.9f&&litSegments(*env)==8,context+" held note lights ENV");
+        if(kind==2)processor.queueKeyboard(60,false);
+        else midi.addEvent(kind==0?juce::MidiMessage::noteOff(1,60):juce::MidiMessage::noteOn(16,60,juce::uint8(0)),frames-1);
+        // Observe audio-block tails on the real GUI timer, then process beyond
+        // minimum release. Covers both note-off encodings and the mouse queue.
+        for(int i=0;i<3;++i){process();settleEditor();}
+        for(int i=0;i<int(rate*.04/frames)+1;++i)process();
+        settleEditor();
+        checks.expect(processor.displayedNote.load()==-1&&processor.displayedEnvelope.load()==0,
+                      context+" releases the actual voice and reaches exact envelope zero");
+        checks.expect(litSegments(*env)==0,context+" released ENV has no lit segments");
+    }
+    processor.setStateInformation(saved.getData(),int(saved.getSize()));
+    processor.prepareToPlay(sampleRate,blockSize);processor.reset();settleEditor();
+}
+
 void checkModWheel(SH09Processor& processor,juce::Component& editor,Checks& checks) {
     auto* fader=dynamic_cast<juce::Slider*>(findComponent(editor,"vcoMod"));
     checks.expect(fader!=nullptr,"VCO MOD fader is present for CC1 feedback");if(!fader)return;
@@ -1081,7 +1136,18 @@ void checkOptionalDescriptions(SH09Processor& processor,juce::Component& editor,
     auto* bender=dynamic_cast<juce::Slider*>(findComponent(editor,"bender"));
     if(age==nullptr||bender==nullptr)return;
     checks.expect(age->getHeight()>=30,"AGE has an enlarged grab area");
-    checks.expect(age->getTooltip().contains("release"),"AGE help explains live sound and deferred material update");
+    checks.expect(age->getTooltip().contains("Minty")&&age->getTooltip().contains("Fire Hazard"),"AGE help explains its condition range");
+    if(auto* rate=dynamic_cast<juce::Slider*>(findComponent(editor,"lfoRate"))) {
+        // Capture the compiled tooltip through the production painter: source
+        // text alone cannot reveal Windows compiler character-set corruption.
+        const auto text=rate->getTooltip();auto& look=rate->getLookAndFeel();
+        const auto bounds=look.getTooltipBounds(text,{500,100},{0,0,1000,600});
+        juce::Image image(juce::Image::ARGB,bounds.getWidth()*2,bounds.getHeight()*2,true,juce::SoftwareImageType());
+        juce::Graphics g(image);g.addTransform(juce::AffineTransform::scale(2.f));
+        look.drawTooltip(g,text,bounds.getWidth(),bounds.getHeight());
+        checks.expect(writePNG(image,directory.getChildFile("rate_description.png")),"compiled RATE description actual-render export");
+        directory.getChildFile("rate_description.txt").replaceWithText(text);
+    }
     auto* cutoff=dynamic_cast<juce::Slider*>(findComponent(editor,"cutoff"));
     checks.expect(cutoff!=nullptr&&cutoff->getTooltip().contains("harmonics"),"Parameter hover help explains its function");
     if(cutoff==nullptr)return;
@@ -1431,6 +1497,7 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
         checkBenderAudioCallbacks(processor,*editor,checks);
         checkMidiBender(processor,*editor,directory,checks);
         checkModWheel(processor,*editor,checks);
+        checkEnvelopeMeter(processor,*editor,checks);
         checkAgeEvents(processor, *editor, checks);
     }
 
@@ -1572,6 +1639,13 @@ int main(int argc, char** argv) {
     }
     juce::ScopedJuceInitialiser_GUI initialiseGUI;
     Checks checks;
+    if(juce::String(argv[1])=="--meter-regression") {
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());
+        settleEditor();checkEnvelopeMeter(processor,*editor,checks);
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';
+        return checks.failures?1:0;
+    }
     if(juce::String(argv[1]).startsWith("--screw-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));
         if(directory.createDirectory().failed())return 1;

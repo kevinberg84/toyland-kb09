@@ -47,8 +47,8 @@ def document(source, platform):
         text = text[:start]+install+text[end:]
     text = text.replace('User Manual · Version', f'{PLATFORMS[platform]} User Manual · Version')
     text = text.replace("<title>Toyland KB-09 — A recreation of Kevin's Roland SH-09</title>", f'<title>Toyland KB-09 — {PLATFORMS[platform]} User Manual</title>')
-    text = re.sub(r'<aside class="notice"><strong>KB-09 1\.6\.1\.</strong>.*?</aside>',
-        '<aside class="notice"><strong>KB-09 1.6.1 for '+PLATFORMS[platform]+'.</strong> '+
+    text = re.sub(r'<aside class="notice"><strong>KB-09 1\.6\.2\.</strong>.*?</aside>',
+        '<aside class="notice"><strong>KB-09 1.6.2 for '+PLATFORMS[platform]+'.</strong> '+
         ('This download includes the standalone app and '+('VST3.' if platform=='windows' else 'AU and VST3.') if platform!='linux' else 'This download is standalone only. Real Arch desktop audio and MIDI playback remain unverified.')+'</aside>',text,count=1,flags=re.S)
     # Cross-platform hosts stay collapsible, with only applicable recipes.
     if platform == 'windows':

@@ -1489,10 +1489,17 @@ class Meter final : public juce::Component, private juce::Timer {
     class Indicator final : public juce::Component, public juce::SettableTooltipClient {
     public:
         juce::String label;float level=0;bool midi=false;
+        int litSegments() const noexcept {
+            if(midi)return level>0?1:0;
+            int count=0;
+            for(int i=0;i<8;++i)if(level>float(i)/8)++count;
+            return count;
+        }
         void paint(juce::Graphics& g) override {
             caption(g,label,{0,0,midi?31.0f:25.0f,20},9,juce::Justification::centredLeft);
-            if(midi){g.setColour(level>0?amber:juce::Colour(0xff373b39));g.fillEllipse(34,6,8,8);}
-            else for(int i=0;i<8;++i){g.setColour(level>float(i)/8?amber:juce::Colour(0xff373b39));g.fillRect(28.0f+float(i*6),6.0f,4.0f,8.0f);}
+            const int lit=litSegments();
+            if(midi){g.setColour(lit?amber:juce::Colour(0xff373b39));g.fillEllipse(34,6,8,8);}
+            else for(int i=0;i<8;++i){g.setColour(i<lit?amber:juce::Colour(0xff373b39));g.fillRect(28.0f+float(i*6),6.0f,4.0f,8.0f);}
         }
     };
 public:
@@ -1507,7 +1514,12 @@ public:
         const auto now=juce::Time::getMillisecondCounter();
         if(serial!=lastSerial){lastSerial=serial;lastActivity=now;hasActivity=true;}
         const float levels[]={e,f,input,hasActivity&&juce::uint32(now-lastActivity)<90?1.0f:0.0f};
-        for(int i=0;i<4;++i){auto& lamp=indicators[size_t(i)];if(std::abs(lamp.level-levels[i])>.005f){lamp.level=levels[i];lamp.repaint();}}
+        for(int i=0;i<4;++i){
+            auto& lamp=indicators[size_t(i)];const int previous=lamp.litSegments();
+            // Never retain a tiny positive release tail when the real level is
+            // zero. Repaint on visible segment transitions, not a level delta.
+            lamp.level=levels[i];if(lamp.litSegments()!=previous)lamp.repaint();
+        }
     }
 private:
     SH09Processor& processor;
@@ -1715,7 +1727,7 @@ public:
         :processor(p),sizing(s),presetFiles(p,*this),keyboard(p),header(s),maximise(s),power(p),meter(p) {
         setLookAndFeel(&look);setSize(designW,designH);
         addAndMakeVisible(header);header.setBounds(0,0,designW,headerH);
-        addAndMakeVisible(updates);updates.setBounds(25,5,132,24);updates.setButtonText("TOYLAND / KB-09");updates.setComponentID("updates");updates.onClick=[this]{kb09::Updates::instance().showMenu(&updates);};
+        addAndMakeVisible(updates);updates.setBounds(25,5,132,24);updates.setButtonText("TOYLAND / KB-09");updates.setComponentID("updates");updates.setTooltip("Check for updates.");updates.onClick=[this]{kb09::Updates::instance().showMenu(&updates);};
         addAndMakeVisible(keyboard);keyboard.setComponentID("keyboard");keyboard.setBounds(326,headerH+370,1102,337);
         for(int i=0;i<processor.getNumPrograms();++i)presets.addItem(processor.getProgramName(i),i+1);
         addAndMakeVisible(presets);presets.setBounds(441,5,336,24);presets.setComponentID("factoryPreset");
@@ -1742,7 +1754,7 @@ public:
         addAndMakeVisible(medium);medium.setButtonText("M");medium.setBounds(1340,5,35,24);medium.setComponentID("sizeM");
         medium.setTooltip("Medium: fit within 90% of this screen's work-area width and height.");medium.onClick=[this]{sizing.chooseMedium();};
         addAndMakeVisible(large);large.setButtonText("L");large.setBounds(1381,5,35,24);large.setComponentID("sizeL");
-        large.setTooltip("Large: fill this screen's available work area. For sharpness in Live, disable Auto-Scale Plug-in Window if available, then create a fresh instance.");large.onClick=[this]{sizing.chooseLarge();};
+        large.setTooltip("Large: fill this screen's available work area.");large.onClick=[this]{sizing.chooseLarge();};
         if(processor.wrapperType==juce::AudioProcessor::wrapperType_Standalone) {
             addAndMakeVisible(midiMapButton);midiMapButton.setComponentID("midiMap");
             midiMapButton.setButtonText("MIDI MAP");midiMapButton.setBounds(1255,5,80,24);
@@ -1796,7 +1808,7 @@ public:
         addFader("resonance","RESONANCE",919,96,33,129);
         controls.back()->label->setBounds(903,headerH+95,52,20);
         controls.back()->label->setFont(font(9.2f,true));
-        addSwitch("vcfEnvMode",950,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"VCF envelope follower, positive envelope, or inverted envelope.",true);
+        addSwitch("vcfEnvMode",950,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"ENV + and ENV - use the synth's envelope. ENV FOL'R uses external input level for an auto-wah effect.",true);
         addFader("vcfEnv","ENV",1035,96,35,129);controls.back()->label->setVisible(false);addFader("vcfMod","MOD",1071,96,35,129);
         addSwitch("vcaMode",1110,104,56,121,{0,1,2},{"HOLD","ENV","GATE"},"HOLD passes audio without MIDI; ENV uses ADSR; GATE follows held keys.");
         // Balance hardware margins: left edge of switch track to divider,
@@ -2381,7 +2393,7 @@ private:
         if(juce::String(id)=="vcoLevel")slider.setTooltip("Mix the main oscillator into the filter.");
         if(juce::String(id)=="subLevel")slider.setTooltip("Mix the sub-oscillator into the filter.");
         if(juce::String(id)=="extLevel")slider.setTooltip("Mix incoming external audio into the filter; watch the IN indicator.");
-        if(juce::String(id)=="lfoRate")slider.setTooltip("Set modulation speed: Authentic 0.2–25 Hz; Modern FREE 0.05–25 Hz. Modern SYNC chooses a musical division of the host tempo.");
+        if(juce::String(id)=="lfoRate")slider.setTooltip("Set modulation speed: Authentic 0.2 to 25 Hz; Modern FREE 0.05 to 25 Hz. Modern SYNC chooses a musical division of the host tempo.");
         if(juce::String(id)=="lfoDelay")slider.setTooltip("Delay the onset of modulation after a note starts.");
         if(juce::String(id)=="vcoMod")slider.setTooltip(processor.wrapperType==juce::AudioProcessor::wrapperType_VST3
             ?"Set the amount of LFO pitch modulation. MIDI mod wheel (CC1) controls this fader immediately on its next movement. DAW mappings and automation remain available."
@@ -2398,7 +2410,7 @@ private:
         if(juce::String(id)=="bendVco")slider.setTooltip("Set how much the spring-return bender changes oscillator pitch.");
         if(juce::String(id)=="bendVcf")slider.setTooltip("Set how much the bender changes filter cutoff.");
         if(juce::String(id)=="volume")slider.setTooltip("Set instrument output volume, from silence to full level.");
-        if(juce::String(id)=="age")slider.setTooltip("Choose one of five named condition stages. Click a tick or drag to select; existing preset and host-automation AGE values remain compatible. Selection updates while dragging; release restores full rendering detail.");
+        if(juce::String(id)=="age")slider.setTooltip("Click a tick or drag to choose a condition, from Minty to Fire Hazard.");
         if(juce::String(id)=="velocity")slider.setTooltip("In Modern mode, set how strongly playing velocity affects the sound.");
         if(juce::String(id)=="aftertouch")slider.setTooltip("In Modern mode, channel aftertouch opens the filter. Set the pressure amount here; maximum pressure and amount raise cutoff by up to three octaves.");
         if(juce::String(id)=="extGain")slider.setTooltip("In Modern mode, adjust external input gain before the follower and mixer.");

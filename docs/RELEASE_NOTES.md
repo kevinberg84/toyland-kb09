@@ -1,3 +1,11 @@
+# 1.6.2 — Toyland KB-09
+
+Fixes the ENV meter's first segment remaining lit after a note has released. Meter redraws now follow visible segment transitions, including the final transition to zero; the same correction applies to the external follower and input meters. The audio envelope, MIDI note handling and sound engine are unchanged.
+
+Shortens the AGE and large-window descriptions, adds a Check for updates description to TOYLAND / KB-09, fixes Windows character artifacts in the RATE description, and explains the VCF envelope follower's external-input auto-wah use. Removes two unnecessary troubleshooting entries from all three platform-specific manuals.
+
+Includes a rendered-meter regression covering both MIDI note-off encodings and mouse notes at 48 and 96 kHz. Presets, parameter identities and 128-sample processing latency are retained. Linux remains UNVERIFIED pending real Arch playback and MIDI confirmation.
+
 # 1.6.1 — Toyland KB-09
 
 Centers the performance-bay controls and printing, fills the left end of the textured keybed strip, and balances footer spacing from rendered assets in standalone and plug-in editors.

@@ -15,7 +15,7 @@
     <a class="brand" href="#top" aria-label="Toyland KB-09 home">
       <svg viewBox="85 308 722 158" role="img" aria-labelledby="toyland-title"><title id="toyland-title">Toyland</title><image href="../../assets/marks.png" width="2172" height="724" /></svg>
     </a>
-    <span class="edition">Linux — UNVERIFIED User Manual · Version 1.6.1 · October 14, 2026</span>
+    <span class="edition">Linux — UNVERIFIED User Manual · Version 1.6.2 · October 14, 2026</span>
     <button class="print-button" type="button" onclick="window.print()">Print / Save PDF</button>
   </div>
 </header>
@@ -47,7 +47,7 @@
   <div class="quick-links"><a href="#start">Play your first sound <span aria-hidden="true">↗</span></a><a href="#age">Explore AGE <span aria-hidden="true">↗</span></a><a href="#daws">Audio setup <span aria-hidden="true">↗</span></a></div>
   <p class="project-mark">UNOFFICIAL PERSONAL PROJECT — NOT AFFILIATED WITH ROLAND CORPORATION — NOT FOR SALE</p>
 </section>
-<aside class="notice"><strong>KB-09 1.6.1 for Linux — UNVERIFIED.</strong> This download is standalone only. Real Arch desktop audio and MIDI playback remain unverified.</aside>
+<aside class="notice"><strong>KB-09 1.6.2 for Linux — UNVERIFIED.</strong> This download is standalone only. Real Arch desktop audio and MIDI playback remain unverified.</aside>
 
 <section id="features">
   <p class="section-number">01 / DISCOVER KB-09</p><h2>A personal synth, ready to explore</h2>
@@ -201,7 +201,6 @@
 <section id="troubleshooting">
   <p class="section-number">12 / QUICK FIXES</p><h2>Solve a problem</h2>
   <p>In the standalone app, <strong>Ctrl+W</strong> closes the window through the same Save / Don’t Save / Cancel prompt as the close button.</p>
-  <details><summary>What do the version numbers mean?</summary><p>The version shown under TOYLAND / KB-09 identifies your build for update checks and bug reports.</p></details>
   
   <details><summary>I hear nothing</summary><p>Load Calibrated Init, switch POWER on and play a fresh note. Check the selected audio output, MIDI input and VOLUME. Choose OK to close the EXT AUDIO dialog before playing. External presets need an audio source. In standalone, check audio/MIDI settings.</p></details>
   <details><summary>A sound keeps playing</summary><p>VCA HOLD deliberately passes audio without a key. Try ENV or GATE, or load Calibrated Init. POWER mutes and clears note history; play a new note after turning it back on.</p></details>
@@ -211,7 +210,6 @@
   <details><summary>External audio is quiet or disappears</summary><p>Confirm the intended audio input is selected in AUDIO / MIDI, raise EXT and use VCA Hold. Stereo sources with opposite-polarity channels cancel when folded to mono. In Modern, check INPUT TRIM. IN shows the incoming audio peak before mono folding and mixer level; EXT shows the external envelope follower. These meters do not promise that your output path is audible.</p></details>
   <details><summary>A MIDI control does not respond</summary><p>Enable the controller in AUDIO / MIDI, then check its assignment in MIDI MAP. Continuous controls may need to cross the current position before taking over. Try KEYBOARD to distinguish MIDI setup from audio output trouble.</p></details>
   
-  <details><summary>A missing cap, cracked key or broken bender looks alarming</summary><p>These are visual AGE effects. The controls continue to work. Lower AGE to restore a fresher appearance; the same setting also returns the sound toward its healthy profile.</p></details>
 </section>
 
 <section id="feedback">
@@ -223,7 +221,7 @@
     <input type="hidden" name="shotName" value=""><input type="hidden" name="shotType" value=""><input type="hidden" name="shotData" value="">
     <div class="report-trap" aria-hidden="true"><label>Leave this empty<input name="website" maxlength="80" tabindex="-1" autocomplete="off"></label></div>
     <div class="report-grid">
-      <label>KB-09 version <span>(required)</span><input name="version" value="1.6.1" maxlength="40" required autocomplete="off"></label>
+      <label>KB-09 version <span>(required)</span><input name="version" value="1.6.2" maxlength="40" required autocomplete="off"></label>
       <label>Operating system and version <span>(required)</span><input name="os" placeholder="e.g. Arch Linux / Wayland" maxlength="120" required autocomplete="off"></label>
       <label>DAW / host and version <span>(required)</span><input name="host" placeholder="Standalone" maxlength="160" required autocomplete="off"></label>
       <label>Issue category <span>(required)</span><select name="category" required><option value="">Choose a category</option><option>Sound / MIDI</option><option>Interface / display</option><option>Installation / updates</option><option>Crash / performance</option><option>Manual / documentation</option><option>Other</option></select></label>
