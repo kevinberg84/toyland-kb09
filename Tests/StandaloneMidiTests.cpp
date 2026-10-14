@@ -90,9 +90,17 @@ int main(int argc,char** argv) {
     map.clearAll();set("vcoMod",0);set("cutoff",.5f);map.assign(index("cutoff"),1,1);
     send(1,1,0);send(1,1,127);map.pump();
     expect(close(get("cutoff"),1)&&close(get("vcoMod"),0),"custom CC1 assignment replaces built-in mod-wheel action without double triggering");
-    map.clearAll();send(1,1,0);send(1,1,127);map.pump();juce::Timer::callPendingTimersSynchronously();
-    juce::MessageManager::getInstance()->runDispatchLoopUntil(40);
-    expect(close(get("vcoMod"),1),"clear all restores the built-in mod wheel");
+    map.clearAll();send(1,1,0);send(1,1,127);map.pump();
+    juce::MemoryBlock pendingWheel;processor.getStateInformation(pendingWheel);
+    auto pendingWheelXml=juce::AudioProcessor::getXmlFromBinary(pendingWheel.getData(),int(pendingWheel.getSize()));
+    bool wheelAudioReady=false;
+    if(pendingWheelXml)for(auto* child:pendingWheelXml->getChildIterator())if(child->getStringAttribute("id")=="vcoMod")
+        wheelAudioReady=close(float(child->getDoubleAttribute("value")),1);
+    const auto wheelDeadline=juce::Time::getMillisecondCounterHiRes()+2000;
+    while(!close(get("vcoMod"),1)&&juce::Time::getMillisecondCounterHiRes()<wheelDeadline)
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(10);
+    if(!wheelAudioReady||!close(get("vcoMod"),1))std::cout<<"clear-all wheel diagnostics: immediate="<<wheelAudioReady<<" published="<<get("vcoMod")<<'\n';
+    expect(wheelAudioReady&&close(get("vcoMod"),1),"clear all restores the built-in wheel immediately and publishes through the platform timer");
     const float unchanged=get("cutoff");map.clearAll();
     expect(close(get("cutoff"),unchanged),"clear all preserves the current sound");
     set("cutoff",0);map.assign(index("cutoff"),1,74);send(1,74,0);send(1,74,100);

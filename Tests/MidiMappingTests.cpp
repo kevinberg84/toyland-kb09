@@ -77,9 +77,21 @@ int main() {
     expect(std::abs(parameter->getValue() - .3f) < 1e-6f,
            "real host automation supersedes queued MIDI feedback");
     audio.clear(); processor.processBlock(audio, midi);
-    send(117); pump();
-    expect(std::abs(parameter->getValue() - 117.f / 127) < 1e-6f,
-           "VST3 wheel works on its next move after host automation");
+    send(117);
+    juce::MemoryBlock pendingState;processor.getStateInformation(pendingState);
+    auto pending=juce::AudioProcessor::getXmlFromBinary(pendingState.getData(),int(pendingState.getSize()));
+    bool audioValueReady=false;
+    if(pending)for(auto* child:pending->getChildIterator())if(child->getStringAttribute("id")=="vcoMod")
+        audioValueReady=std::abs(float(child->getDoubleAttribute("value"))-117.f/127)<1e-6f;
+    // Audio takeover is immediate; GUI publication follows a platform timer.
+    // Wait for that observable condition instead of assuming a loaded Mac CI
+    // runner dispatches every timer inside one fixed 100 ms slice.
+    const auto deadline=juce::Time::getMillisecondCounterHiRes()+2000;
+    while(std::abs(parameter->getValue()-117.f/127)>=1e-6f&&juce::Time::getMillisecondCounterHiRes()<deadline)pump();
+    if(!audioValueReady||std::abs(parameter->getValue()-117.f/127)>=1e-6f)
+        std::cout<<"takeover diagnostics: immediate="<<audioValueReady<<" published="<<parameter->getValue()<<" expected="<<117.f/127<<'\n';
+    expect(audioValueReady&&std::abs(parameter->getValue() - 117.f / 127) < 1e-6f,
+           "VST3 wheel works immediately after host automation and publishes through the platform timer");
     std::cout << "RESULT failures=" << failures << '\n';
     return failures ? 1 : 0;
 }
