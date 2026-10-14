@@ -14,7 +14,8 @@ private:
     juce::SharedResourcePointer<DialogFonts> fonts;
 public:
     float age = 0;
-    float textScale = 1;
+    // The Save / Don't Save prompt is the shared typography reference.
+    static constexpr float titleFontHeight=22, messageFontHeight=17, buttonFontHeight=16;
     std::function<float()> conditionProvider;
     juce::Colour paper() const;
     static juce::Font lettering(float height, bool bold = false);
@@ -55,6 +56,5 @@ public:
 class UpdateMenuTheme final : public DialogTheme {
 public:
     using DialogTheme::DialogTheme;
-    juce::Font getPopupMenuFont() override { return lettering(21).withExtraKerningFactor(0); }
 };
 }

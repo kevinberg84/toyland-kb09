@@ -2,6 +2,7 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "../DSP/Engine.h"
 #include "../Parameters/Parameters.h"
+#include "StandaloneMidiMap.h"
 #include "../../Assets/Branding.h"
 #include <array>
 #include <atomic>
@@ -40,6 +41,8 @@ public:
  void queuePitchBend(float value) noexcept { guiBendReturn.store(false,std::memory_order_relaxed);guiBend.store(juce::jlimit(-1.0f,1.0f,value),std::memory_order_relaxed);guiBendDirty.store(true,std::memory_order_release); }
  void queuePitchBendReturn() noexcept {guiBend.store(0,std::memory_order_relaxed);guiBendReturn.store(true,std::memory_order_relaxed);guiBendDirty.store(true,std::memory_order_release);}
  juce::AudioProcessorValueTreeState state;
+ // Present only in the standalone; custom mappings never enter sound presets.
+ std::unique_ptr<sh09::StandaloneMidiMap> midiMap;
  std::atomic<unsigned> midiActivitySerial{0};
  // Audio-thread bend target, shared with the editor without MIDI echo or host automation writes.
  std::atomic<float> displayedPitchBend{0};

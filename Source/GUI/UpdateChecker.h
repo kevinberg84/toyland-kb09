@@ -10,7 +10,7 @@ class Updates final : private juce::Thread {
 public:
     static Updates& instance() { static Updates service; return service; }
     bool configured() const {
-#if KB09_LOCAL_DSP_TEST
+#if KB09_LOCAL_DSP_TEST || KB09_LOCAL_MIDI_TEST
         return false;
 #else
         return juce::String(versionEndpoint).startsWith("https://");
@@ -29,8 +29,8 @@ public:
     void showMenu(juce::Component* target) {
         auto theme=std::make_shared<kb09_gui::UpdateMenuTheme>(kb09_gui::DialogTheme::conditionOf(target));
         juce::PopupMenu m;m.setLookAndFeel(theme.get());m.addSectionHeader(juce::String(JucePlugin_Name)+" "+JucePlugin_VersionString);
-#if KB09_LOCAL_DSP_TEST
-        m.addItem(3,"Local DSP test - public update checks disabled",false);
+#if KB09_LOCAL_DSP_TEST || KB09_LOCAL_MIDI_TEST
+        m.addItem(3,"Local test - public update checks disabled",false);
 #else
         m.addItem(1,"Check for updates now");m.addItem(2,"Automatic checks (every 90 days)",true,enabled());
 #endif
@@ -64,7 +64,7 @@ public:
 private:
     Updates():Thread("KB-09 update check") {
         juce::PropertiesFile::Options o;o.applicationName="Toyland KB-09 Updates";o.filenameSuffix="settings";o.folderName="Toyland";o.osxLibrarySubFolder="Application Support";
-#if KB09_LOCAL_DSP_TEST
+#if KB09_LOCAL_DSP_TEST || KB09_LOCAL_MIDI_TEST
           o.applicationName=juce::String(JucePlugin_Name)+" Updates";
 #endif
         settings=std::make_unique<juce::PropertiesFile>(o);

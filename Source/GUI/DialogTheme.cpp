@@ -60,13 +60,13 @@ void DialogTheme::wear(juce::Graphics& g,juce::Rectangle<int> bounds,int seed) c
 void DialogTheme::brand(juce::Graphics& g,juce::Rectangle<float> area) const {
     static auto mask=logoMask();g.setColour(paper());g.drawImage(mask,area,juce::RectanglePlacement::centred,true);wear(g,area.toNearestInt(),83);
 }
-juce::Font DialogTheme::getAlertWindowTitleFont(){return lettering(22*textScale,true);}
-juce::Font DialogTheme::getAlertWindowMessageFont(){return lettering(17*textScale);}
-juce::Font DialogTheme::getAlertWindowFont(){return lettering(17*textScale);}
-juce::Font DialogTheme::getTextButtonFont(juce::TextButton&,int){return lettering(16*textScale);}
-juce::Font DialogTheme::getComboBoxFont(juce::ComboBox&){return lettering(16*textScale);}
-juce::Font DialogTheme::getLabelFont(juce::Label&){return lettering(16*textScale);}
-juce::Font DialogTheme::getPopupMenuFont(){return lettering(17*textScale);}
+juce::Font DialogTheme::getAlertWindowTitleFont(){return lettering(titleFontHeight,true);}
+juce::Font DialogTheme::getAlertWindowMessageFont(){return lettering(messageFontHeight);}
+juce::Font DialogTheme::getAlertWindowFont(){return lettering(messageFontHeight);}
+juce::Font DialogTheme::getTextButtonFont(juce::TextButton&,int){return lettering(buttonFontHeight);}
+juce::Font DialogTheme::getComboBoxFont(juce::ComboBox&){return lettering(buttonFontHeight);}
+juce::Font DialogTheme::getLabelFont(juce::Label&){return lettering(messageFontHeight);}
+juce::Font DialogTheme::getPopupMenuFont(){return lettering(messageFontHeight);}
 void DialogTheme::drawAlertBox(juce::Graphics& g,juce::AlertWindow& alert,const juce::Rectangle<int>&,juce::TextLayout& layout){
     g.fillAll(black);g.setColour(paper().withAlpha(.65f));g.drawRoundedRectangle(alert.getLocalBounds().toFloat().reduced(1),6,1);
     int inset=0;
@@ -88,7 +88,7 @@ void DialogTheme::drawButtonText(juce::Graphics& g,juce::TextButton& b,bool,bool
 void DialogTheme::drawToggleButton(juce::Graphics& g,juce::ToggleButton& b,bool,bool){
     g.setColour(paper());g.drawRoundedRectangle(3,float(b.getHeight())*.5f-7,14,14,2,1);
     if(b.getToggleState()){juce::Path check;const float y=float(b.getHeight())*.5f;check.startNewSubPath(5,y);check.lineTo(9,y+4);check.lineTo(15,y-5);g.strokePath(check,juce::PathStrokeType(1.5f));}
-    g.setFont(lettering(16*textScale));g.drawFittedText(b.getButtonText(),b.getLocalBounds().withTrimmedLeft(24),juce::Justification::centredLeft,2);wear(g,b.getLocalBounds());
+    g.setFont(lettering(buttonFontHeight));g.drawFittedText(b.getButtonText(),b.getLocalBounds().withTrimmedLeft(24),juce::Justification::centredLeft,2);wear(g,b.getLocalBounds());
 }
 void DialogTheme::drawLabel(juce::Graphics& g,juce::Label& label){juce::LookAndFeel_V4::drawLabel(g,label);wear(g,label.getLocalBounds());}
 void DialogTheme::drawComboBox(juce::Graphics& g,int w,int h,bool down,int x,int y,int bw,int bh,juce::ComboBox& box){
@@ -120,8 +120,10 @@ void DialogTheme::drawPopupMenuItem(juce::Graphics& g,const juce::Rectangle<int>
     wear(g,a);
 }
 ThemedAlert::ThemedAlert(const juce::String& title,const juce::String& message,juce::MessageBoxIconType icon,juce::Component* owner,float condition)
-    : AlertWindow(title,message,icon,owner),theme(condition<0?DialogTheme::conditionOf(owner):condition){
-    if(title=="External audio + envelope follower" || title=="Audio / MIDI settings")theme.textScale=1.2f;
+    // AlertWindow derives its desktop scale from the associated component.
+    // A control in the scaled instrument canvas must use the same top-level
+    // window as Save / Don't Save, rather than inheriting the canvas zoom.
+    : AlertWindow(title,message,icon,owner?owner->getTopLevelComponent():nullptr),theme(condition<0?DialogTheme::conditionOf(owner):condition){
     setLookAndFeel(&theme);
 }
 juce::AlertWindow* DialogTheme::createAlertWindow(const juce::String& title,const juce::String& msg,const juce::String& b1,const juce::String& b2,const juce::String& b3,juce::MessageBoxIconType icon,int n,juce::Component* owner){

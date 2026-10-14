@@ -10,6 +10,7 @@
 #include "UpdateChecker.h"
 #include "AudioSettingsDialog.h"
 #include "DialogMessages.h"
+#include "MidiMapOverlay.h"
 #include "../Plugin/Processor.h"
 #include "BinaryData.h"
 #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
@@ -1389,7 +1390,7 @@ public:
             const float polishY=r.getBottom()-(pass==0?65.0f:48.0f)+float((serial*13)%(pass==0?41:30));
             g.setColour(juce::Colours::white.withAlpha((pass==0?.24f:.055f)*gloss));g.fillEllipse(polishX,polishY,.85f,1.5f);
             keySurfaceWear(g,r,serial,pass!=0,age);
-            const float crackOnset=n==60?.50f:n==65?.68f:n==74?.79f:2.0f;
+            const float crackOnset=n==60?.50f:n==65?.68f:n==74?.70f:2.0f;
             if(age>=crackOnset) {
                 const float progress=juce::jlimit(0.0f,1.0f,(age-crackOnset)/(.90f-crackOnset));
                 const float width=r.getWidth()*.20f,height=r.getHeight()*(n==65?.18f:.36f);
@@ -1710,7 +1711,7 @@ public:
         setLookAndFeel(&look);setSize(designW,designH);
         addAndMakeVisible(header);header.setBounds(0,0,designW,headerH);
         addAndMakeVisible(updates);updates.setBounds(25,5,132,24);updates.setButtonText("TOYLAND / KB-09");updates.setComponentID("updates");updates.onClick=[this]{kb09::Updates::instance().showMenu(&updates);};
-        addAndMakeVisible(keyboard);keyboard.setBounds(326,headerH+370,1102,337);
+        addAndMakeVisible(keyboard);keyboard.setComponentID("keyboard");keyboard.setBounds(326,headerH+370,1102,337);
         for(int i=0;i<processor.getNumPrograms();++i)presets.addItem(processor.getProgramName(i),i+1);
         addAndMakeVisible(presets);presets.setBounds(441,5,336,24);presets.setComponentID("factoryPreset");
         presets.setTooltip("Factory patch. Loading replaces current sound settings.");
@@ -1738,6 +1739,13 @@ public:
         addAndMakeVisible(large);large.setButtonText("L");large.setBounds(1381,5,35,24);large.setComponentID("sizeL");
         large.setTooltip("Large: fill this screen's available work area. For sharpness in Live, disable Auto-Scale Plug-in Window if available, then create a fresh instance.");large.onClick=[this]{sizing.chooseLarge();};
         if(processor.wrapperType==juce::AudioProcessor::wrapperType_Standalone) {
+            addAndMakeVisible(midiMapButton);midiMapButton.setComponentID("midiMap");
+            midiMapButton.setButtonText("MIDI MAP");midiMapButton.setBounds(1255,5,80,24);
+            midiMapButton.setClickingTogglesState(true);midiMapButton.setWantsKeyboardFocus(false);
+            midiMapButton.setColour(juce::TextButton::buttonOnColourId,amber);
+            midiMapButton.setColour(juce::TextButton::textColourOnId,juce::Colour(0xff151a1d));
+            midiMapButton.setTooltip("Click MIDI MAP, select a highlighted control, tap a button or move a knob/fader, then click DONE. Mappings are remembered. CLEAR ALL resets them.");
+            midiMapButton.onClick=[this]{setMapping(midiMapButton.getToggleState());};
             // The native caption owns maximise; end the visible row at the
             // same insets as the footer controls.
             small.setTopLeftPosition(1358,5);
@@ -1832,9 +1840,16 @@ public:
             if(modern)bender.setValue(0,juce::dontSendNotification);
             processor.queuePitchBendReturn();
         };
-        addSwitch("modern",25,designH-headerH-44,131,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
-        // Keep a consistent 52-unit gap between bottom-row control groups.
-        addUtility("age","CONDITION / AGE",290,170);
+        addSwitch("modern",25,designH-headerH-44,80,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
+        // Space the visible groups, including utility labels, by the same gap.
+        // A switch's hit box must not reserve blank space past its legends.
+        constexpr int footerGap=52;
+        int footerX=25+80+footerGap;
+        auto footerUtility=[&](const char* id,const char* label,int width) {
+            addUtility(id,label,footerX+8+width/2,width);
+            footerX+=width+16+footerGap;
+        };
+        footerUtility("age","CONDITION / AGE",170);
         controls.back()->slider->setRange(0,1,.25);
         controls.back()->slider->onDragStart=[this]{
             look.conditionDragging=true;
@@ -1852,17 +1867,18 @@ public:
             for(auto& c:hiddenForCondition)if(c!=nullptr)c->setVisible(true);
             hiddenForCondition.clear();repaint();keyboard.repaint();
         };
-        addUtility("velocity","VELOCITY",495,136);addUtility("aftertouch","AFTERTOUCH",683,136);
-        addSwitch("lfoSync",831,designH-headerH-44,52,42,{0,1},{"FREE","SYNC"},"Modern mode: SYNC makes RATE select straight, dotted and triplet grid divisions.");
-        addUtility("extGain","INPUT TRIM",1034,150);
+        footerUtility("velocity","VELOCITY",136);footerUtility("aftertouch","AFTERTOUCH",136);
+        addSwitch("lfoSync",footerX,designH-headerH-44,52,42,{0,1},{"FREE","SYNC"},"Modern mode: SYNC makes RATE select straight, dotted and triplet grid divisions.");
+        footerX+=52+footerGap;
+        footerUtility("extGain","INPUT TRIM",150);
         addAndMakeVisible(descriptions);descriptions.setComponentID("descriptions");
         descriptions.setButtonText("DESCRIPTION");descriptions.setClickingTogglesState(true);
-        descriptions.setBounds(1161,designH-35,139,24);
+        descriptions.setBounds(footerX,designH-35,139,24);footerX+=139+footerGap;
         descriptions.setColour(juce::TextButton::buttonOnColourId,amber);
         descriptions.setColour(juce::TextButton::textColourOnId,juce::Colour(0xff151a1d));
         descriptions.onClick=[this]{descriptions.setButtonText(descriptions.getToggleState()?"DESCRIPTION ON":"DESCRIPTION");};
         tooltip=std::make_unique<DescriptionTips>(this,descriptions);
-        addAndMakeVisible(help);help.setButtonText("EXT AUDIO");help.setBounds(1355,designH-35,120,24);help.setComponentID("externalAudioHelp");
+        addAndMakeVisible(help);help.setButtonText("EXT AUDIO");help.setBounds(footerX,designH-35,120,24);help.setComponentID("externalAudioHelp");
         help.onClick=[this] {
             externalHelp.close();
             externalHelp=juce::AlertWindow::showScopedAsync(
@@ -1882,7 +1898,7 @@ public:
         power.setTopLeftPosition(power.getX()+8,power.getY());
         bender.setTopLeftPosition(bender.getX()+8,bender.getY());
         for(auto* child:{static_cast<juce::Component*>(&small),static_cast<juce::Component*>(&medium),
-                static_cast<juce::Component*>(&large),static_cast<juce::Component*>(&maximise),static_cast<juce::Component*>(&help)})
+                static_cast<juce::Component*>(&large),static_cast<juce::Component*>(&maximise)})
             child->setTopLeftPosition(child->getX()-17,child->getY());
         updateModern();
         // Have one complete fallback before the editor can be displayed or
@@ -1897,6 +1913,7 @@ public:
         startTimerHz(60);
     }
     ~Panel() override {
+        if(processor.midiMap)processor.midiMap->cancelLearn();
         externalHelp.close();stopTimer();releaseComputerNotes();removeKeyListener(this);sizing.onChange=nullptr;if(bendActive||benderDragging)processor.queuePitchBend(0);setLookAndFeel(nullptr);
     }
     void paint(juce::Graphics& g) override {
@@ -2030,10 +2047,9 @@ public:
             g.setGradientFill(raisedLip);g.fillRect(60.0f,317.0f,1364.0f,47.0f);
             {juce::Graphics::ScopedSaveState bayPrint(g);g.addTransform(juce::AffineTransform::translation(8,0));
             g.setColour(ink.withAlpha(.82f));
-            juce::Path bayRule;bayRule.startNewSubPath(69,370);bayRule.lineTo(69,702);
-            bayRule.quadraticTo(69,705,72,705);bayRule.lineTo(299,705);
-            bayRule.quadraticTo(302,705,302,702);bayRule.lineTo(302,370);
-            g.strokePath(bayRule,juce::PathStrokeType(1));
+            // SH-09 outer side rules are open at the bottom; the inner bender
+            // outline below supplies the single horizontal printed boundary.
+            g.drawLine(69,370,69,702,1);g.drawLine(302,370,302,702,1);
             g.drawLine(210,370,210,484,.85f);
             caption(g,"VOLUME",{96,376,88,13},10,juce::Justification::centred,true,ink);
             for(int i=0;i<=10;++i) {
@@ -2105,7 +2121,40 @@ private:
     };
     SH09Processor& processor;sh09::WindowSizing& sizing;sh09::PresetFiles presetFiles;HardwareLook look;
     Keyboard keyboard;Header header;MaximiseButton maximise;PowerButton power;
-    juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions,audioMidi,computerKeyboard,updates;bool updateOpened=false;
+    juce::ComboBox presets;juce::TextButton previous,next,small,medium,large,help,savePreset,loadPreset,descriptions,audioMidi,computerKeyboard,updates,midiMapButton;bool updateOpened=false;
+    std::unique_ptr<kb09_gui::MidiMapOverlay> mappingOverlay;unsigned lastMappingRevision=0;bool lastMappingLearn=false;std::uint64_t lastLearnProgress=0;
+public:
+    void layoutMapping() {
+        if(!mappingOverlay)return;
+        auto* editor=findParentComponentOfClass<SH09Editor>();if(!editor)return;
+        // Dialog UI lives in the unscaled editor, alongside the scaled canvas.
+        // Its text therefore follows the same desktop DPI as native alerts.
+        if(mappingOverlay->getParentComponent()!=editor)editor->addChildComponent(*mappingOverlay);
+        mappingOverlay->setBounds(editor->getLocalBounds());
+        std::vector<kb09_gui::MidiMapOverlay::Target> targets;
+        for(auto& c:controls) {
+            auto* component=c->slider?static_cast<juce::Component*>(c->slider.get()):static_cast<juce::Component*>(c->selector.get());
+            targets.push_back({mappingOverlay->getLocalArea(component,component->getLocalBounds()),sh09::StandaloneMidiMap::indexFor(component->getComponentID())});
+        }
+        mappingOverlay->setTargets(std::move(targets));
+        mappingOverlay->setPassThrough(mappingOverlay->getLocalArea(&header,header.getLocalBounds()),
+            mappingOverlay->getLocalArea(&descriptions,descriptions.getLocalBounds()));
+        mappingOverlay->setMessageArea(mappingOverlay->getLocalArea(&keyboard,keyboard.getLocalBounds()));
+        mappingOverlay->setCondition(look.age);
+    }
+private:
+    void setMapping(bool enabled) {
+        if(!processor.midiMap)return;
+        if(enabled)processor.midiMap->cancelLearn();else processor.midiMap->finishLearn();
+        midiMapButton.setToggleState(enabled,juce::dontSendNotification);
+        if(!enabled){if(mappingOverlay)mappingOverlay->setVisible(false);return;}
+        if(!mappingOverlay) {
+            mappingOverlay=std::make_unique<kb09_gui::MidiMapOverlay>(*processor.midiMap);
+            mappingOverlay->onDone=[this]{setMapping(false);};
+        }
+        layoutMapping();
+        mappingOverlay->setVisible(true);mappingOverlay->refresh();mappingOverlay->toFront(true);
+    }
     std::unique_ptr<juce::TooltipWindow> tooltip;juce::Image conditionBackdrop,previousCondition,resizeBackdrop;std::array<juce::Image,5> agePreviews,pendingAgePreviews;std::vector<juce::Component::SafePointer<juce::Component>> hiddenForCondition;uint64_t previewParameters=0;double previewIdleAfter=0;float previewAge=-1;bool renderingCondition=false;double resizeCacheUntil=0;
     juce::Image staticPanel;float staticPanelAge=-1,staticPanelScale=0;bool staticPanelPower=false;
     double performanceIdleAfter=0;unsigned lastPerformanceMidiSerial=0;
@@ -2145,6 +2194,11 @@ private:
         return juce::String(computerKeys).containsChar(c);
     }
     void timerCallback() override {
+        if(mappingOverlay&&mappingOverlay->isVisible()) {
+            mappingOverlay->setCondition(look.age);
+            const auto revision=processor.midiMap->getRevision();const auto learning=processor.midiMap->isLearning();const auto progress=processor.midiMap->learnProgress();
+            if(revision!=lastMappingRevision||learning!=lastMappingLearn||progress!=lastLearnProgress){lastMappingRevision=revision;lastMappingLearn=learning;lastLearnProgress=progress;mappingOverlay->refresh();}
+        }
         const auto bendSerial=processor.displayedPitchBendSerial.load(std::memory_order_acquire);
         if(!benderDragging&&bendSerial!=lastBendSerial) {
             lastBendSerial=bendSerial;bendActive=false;
@@ -2209,7 +2263,7 @@ private:
         if(activity!=lastPerformanceMidiSerial||keysChanged||benderDragging||displayedNote>=0||std::any_of(lastKeys.begin(),lastKeys.end(),[](int n){return n>0;}))
             performanceIdleAfter=now+750;
         lastPerformanceMidiSerial=activity;
-        if(!look.conditionDragging && ((isShowing()&&getPeer()!=nullptr&&now>=performanceIdleAfter)||bool(getProperties().getWithDefault("renderConditionPreviews",false)))) {
+        if(!look.conditionDragging && !(mappingOverlay&&mappingOverlay->isVisible()) && ((isShowing()&&getPeer()!=nullptr&&now>=performanceIdleAfter)||bool(getProperties().getWithDefault("renderConditionPreviews",false)))) {
             uint64_t stateHash=1469598103934665603ull;
             for(const auto& spec:sh09::specs)if(juce::String(spec.id)!="age") {
                 const float v=processor.state.getRawParameterValue(spec.id)->load();
@@ -2284,7 +2338,7 @@ private:
         if(juce::String(id)=="lfoDelay")slider.setTooltip("Delay the onset of modulation after a note starts.");
         if(juce::String(id)=="vcoMod")slider.setTooltip(processor.wrapperType==juce::AudioProcessor::wrapperType_VST3
             ?"Set the amount of LFO pitch modulation. MIDI mod wheel (CC1) controls this fader immediately on its next movement. DAW mappings and automation remain available."
-            :"Set the amount of LFO pitch modulation. MIDI mod wheel (CC1) controls this fader after reaching or crossing its current position. Manual edits re-arm pickup.");
+            :"Set the amount of LFO pitch modulation. Unless reassigned with MIDI MAP, MIDI mod wheel (CC1) controls this fader after reaching or crossing its current position. Manual edits re-arm pickup.");
         if(juce::String(id)=="cutoff")slider.setTooltip("Set filter cutoff frequency; lower it to remove upper harmonics.");
         if(juce::String(id)=="resonance")slider.setTooltip("Emphasise the cutoff frequency; high settings make the filter self-oscillate.");
         if(juce::String(id)=="vcfMod")slider.setTooltip("Set the amount of LFO modulation applied to filter cutoff.");
@@ -2372,5 +2426,6 @@ void SH09Editor::resized() {
         const float scale=bounds.getWidth()/float(designW);
         panel->setTransform(juce::AffineTransform::scale(scale).translated(bounds.getX(),bounds.getY()));
         panel->setTopLeftPosition(0,0);
+        panel->layoutMapping();
     }
 }

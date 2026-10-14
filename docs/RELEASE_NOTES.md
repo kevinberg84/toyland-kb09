@@ -1,3 +1,13 @@
+# 1.6.0 — Toyland KB-09
+
+Adds standalone MIDI mapping for knobs, faders and buttons. Assignments remember their channel and behavior between launches, separately from sound presets. Continuous controls use pickup; buttons cycle multi-position controls, and knobs/faders select positions directly. CLEAR SELECTED, confirmed CLEAR ALL and optional behavior correction are included. Plug-ins retain host mapping and normal mod-wheel behavior.
+
+Unifies message windows around the Save / Don't Save typography and black/white Toyland styling across standalone and plug-ins. The compact mapping window centers over the keyboard and packs visible buttons with equal gaps. Footer control spacing is balanced in both formats.
+
+Removes the extra outer bottom performance-bay line and lets the rightmost key crack begin at Sold As-Is before reaching its full Fire Hazard length. Updates the manual with standalone mapping instructions. The sound engine, parameter identities, saved patch compatibility, 24 factory presets and 128-sample reported processing latency are retained.
+
+Windows standalone/VST3, universal Mac standalone/AU/VST3 and Linux x86-64 standalone are built from the same source. Linux remains UNVERIFIED pending real Arch launch, playback and MIDI confirmation.
+
 # 1.5.3 — Toyland KB-09
 
 Refines the self-oscillating filter's interaction with VCO input. Stage-dependent headroom and a separate nonlinear feedback limiter improve resonant amplitude consistency during slow sweeps. The coupled stages and limiter are solved together; no automatic leveling or separate sine oscillator is added. Resonance-dependent tuning correction preserves free-running pitch. Natural beating and harmonic interaction remain; individual SH-09 instruments and patches can differ.

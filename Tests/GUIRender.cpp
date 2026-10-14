@@ -1639,12 +1639,12 @@ int main(int argc, char** argv) {
             auto* right=findComponent(*editor,"sizeL");
             checks.expect(left&&right&&left->getParentComponent()==right->getParentComponent()
                 &&left->getX()==25&&right->getParentComponent()->getWidth()-right->getRight()==25,
-                "standalone top row matches the footer's left and right insets");
+                "standalone top row keeps symmetric left and right insets");
             auto* footerLeft=findComponent(*editor,"modern");
             auto* footerRight=findComponent(*editor,"externalAudioHelp");
             checks.expect(footerLeft&&footerRight&&footerLeft->getX()==25
-                &&footerRight->getParentComponent()->getWidth()-footerRight->getRight()==25,
-                "footer has the same symmetric 25-unit insets as the header");
+                &&footerRight->getParentComponent()->getWidth()-footerRight->getRight()>=25,
+                "approved evenly spaced footer groups fit with at least 25-unit outer insets");
             const auto image=editor->createComponentSnapshot(editor->getLocalBounds(),true,2.0f);
             checks.expect(writePNG(image,directory.getChildFile("standalone_header.png")),"actual standalone header export");
         }

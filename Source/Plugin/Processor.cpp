@@ -17,11 +17,13 @@ SH09Processor::SH09Processor():AudioProcessor(BusesProperties()
  for(size_t i=0;i<raw.size();++i)raw[i]=state.getRawParameterValue(sh09::specs[i].id);
  rawVcoMod=state.getRawParameterValue("vcoMod");
  state.addParameterListener("vcoMod",this);
+ if(wrapperType==wrapperType_Standalone)midiMap=std::make_unique<sh09::StandaloneMidiMap>(state);
  setLatencySamples(engine.latencySamples());
  clearKeyDisplay();
  startTimerHz(60);
 }
 void SH09Processor::timerCallback() {
+ if(midiMap)midiMap->pump();
  const auto serial=modSerial.load(std::memory_order_acquire);
  if((serial&1u)||serial==deliveredModSerial)return;
  const auto revision=modFeedbackRevision.load(std::memory_order_relaxed);
@@ -86,12 +88,13 @@ void SH09Processor::setCurrentProgram(int index){
    parameter->setValueNotifyingHost(parameter->convertTo0to1(value));
  }
  currentProgram.store(index);
+ if(midiMap)midiMap->resetPickup();
  programRevision.fetch_add(1,std::memory_order_release);
 }
 sh09::Controls SH09Processor::readControls() const noexcept {
  sh09::Controls c;
  size_t i=0;
- #define LOAD(field) c.field=raw[i++]->load(std::memory_order_relaxed)
+ #define LOAD(field) {const float value=raw[i]->load(std::memory_order_relaxed);c.field=midiMap?midiMap->value(i,value):value;++i;}
  LOAD(tune);LOAD(range);LOAD(wave);LOAD(pulseWidth);LOAD(pwmMode);LOAD(vcoLevel);LOAD(subLevel);LOAD(extLevel);LOAD(subMode);
  LOAD(lfoRate);LOAD(lfoDelay);LOAD(lfoWave);LOAD(vcoMod);LOAD(cutoff);LOAD(resonance);LOAD(vcfMod);LOAD(vcfEnv);LOAD(vcfEnvMode);
  LOAD(vcaMode);LOAD(attack);LOAD(decay);LOAD(sustain);LOAD(release);LOAD(envMode);LOAD(portamento);LOAD(bendVco);LOAD(bendVcf);
@@ -106,6 +109,7 @@ void SH09Processor::clearKeyDisplay() noexcept {
  displayedKeyboardNote.store(-1,std::memory_order_relaxed);
 }
 void SH09Processor::clearVoiceDisplay() noexcept {
+ if(midiMap)midiMap->resetPickup();
  resetModWheel();
  bendReturnRemaining=0;soundingBendTarget=0;displayedPitchBendReturning.store(false,std::memory_order_relaxed);
  displayedPitchBend.store(0,std::memory_order_relaxed);displayedPitchBendSerial.fetch_add(1,std::memory_order_release);
@@ -156,10 +160,15 @@ void SH09Processor::handleMidi(const juce::uint8* bytes,int n) noexcept {
  }else if(status==0xe0&&n>=3){applyPitchBend(float(((bytes[2]&127)<<7)|(bytes[1]&127))/8192.0f-1.0f);}
  else if(status==0xd0&&n>=2)engine.setAftertouch(float(bytes[1]&127)/127.0f);
  else if(status==0xb0&&n>=3){
+   if(midiMap&&midiMap->controller((bytes[0]&15)+1,bytes[1]&127,bytes[2]&127)) {
+     if(midiMap->assignment(12)>=0)resetModWheel();
+     renderControls=readControls();if(modWheelOverride)renderControls.vcoMod=modWheelTarget;
+     engine.setControls(renderControls);return;
+   }
    if(bytes[1]==1)applyModWheel(bytes[2]&127);
    else if(bytes[1]==120){engine.allSoundOff();applyPitchBend(0);clearKeyDisplay();resetModWheel();}
    else if(bytes[1]==123){engine.allNotesOff();clearKeyDisplay();}
-   else if(bytes[1]==121){applyPitchBend(0);engine.setAftertouch(0);resetModWheel();renderControls.vcoMod=rawVcoMod->load(std::memory_order_relaxed);engine.setControls(renderControls);}
+   else if(bytes[1]==121){applyPitchBend(0);engine.setAftertouch(0);resetModWheel();if(midiMap)midiMap->resetPickup();renderControls=readControls();engine.setControls(renderControls);}
  }
 }
 void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuffer& midi){
@@ -259,6 +268,10 @@ void SH09Processor::getStateInformation(juce::MemoryBlock& destination){
     &&edits==modParameterEdits.load(std::memory_order_acquire)) {
      for(auto child:tree)if(child.getProperty("id")==juce::var("vcoMod"))child.setProperty("value",value,nullptr);
  }
+ if(midiMap)for(auto child:tree) {
+   const int index=sh09::StandaloneMidiMap::indexFor(child.getProperty("id").toString());
+   if(index>=0)child.setProperty("value",midiMap->value(size_t(index),float(child.getProperty("value"))),nullptr);
+ }
  if(auto xml=tree.createXml())copyXmlToBinary(*xml,destination);
 }
 void SH09Processor::setStateInformation(const void* data,int size){
@@ -269,6 +282,7 @@ void SH09Processor::setStateInformation(const void* data,int size){
      if(auto* p=state.getParameter(id)){double v=child.getProperty("value");if(!std::isfinite(v))return;auto range=p->getNormalisableRange();child.setProperty("value",juce::jlimit(range.start,range.end,float(v)),nullptr);}
    }
    currentProgram.store(juce::jlimit(0,getNumPrograms()-1,int(tree.getProperty("program",0))));state.replaceState(tree);
+   if(midiMap)midiMap->resetPickup();
    programRevision.fetch_add(1,std::memory_order_release);
  }
 }

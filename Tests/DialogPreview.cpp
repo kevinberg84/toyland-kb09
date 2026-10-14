@@ -21,9 +21,21 @@ int main(int argc,char** argv){
     juce::Component stage;stage.setSize(1800,1400);
     for(int level=0;level<3;++level){
         const float age=float(level)*.5f;kb09_gui::DialogTheme ownerTheme(age);stage.setLookAndFeel(&ownerTheme);
+        kb09_gui::ClosePrompt reference(&stage);
+        auto checkFonts=[&](kb09_gui::ThemedAlert& a) {
+            if(a.theme.getAlertWindowTitleFont()!=reference.theme.getAlertWindowTitleFont()
+                ||a.theme.getAlertWindowMessageFont()!=reference.theme.getAlertWindowMessageFont()
+                ||a.theme.getAlertWindowFont()!=reference.theme.getAlertWindowFont())
+                throw std::runtime_error("Dialog typography differs from Save/Don't Save reference");
+            for(int n=0;n<a.getNumButtons();++n) {
+                auto* b=dynamic_cast<juce::TextButton*>(a.getButton(n));auto* expected=dynamic_cast<juce::TextButton*>(reference.getButton(0));
+                if(!b||!expected||a.theme.getTextButtonFont(*b,b->getHeight())!=reference.theme.getTextButtonFont(*expected,expected->getHeight()))
+                    throw std::runtime_error("Dialog button font differs from Save/Don't Save reference");
+            }
+        };
         auto capture=[&](juce::Component& c,const juce::String& name){stage.addAndMakeVisible(c);png(c,out.getChildFile(name+"-"+juce::String(level)+".png"));stage.removeChildComponent(&c);};
         auto alert=[&](const char* id,const char* title,const juce::String& message,juce::MessageBoxIconType icon,juce::StringArray buttons){
-            kb09_gui::ThemedAlert a(title,message,icon,&stage,age);int i=0;for(auto& b:buttons)a.addButton(b,++i);capture(a,id);
+            kb09_gui::ThemedAlert a(title,message,icon,&stage,age);int i=0;for(auto& b:buttons)a.addButton(b,++i);checkFonts(a);capture(a,id);
         };
         using I=juce::MessageBoxIconType;
         auto menuCapture=[&](bool presets){
@@ -48,14 +60,26 @@ int main(int argc,char** argv){
         alert("preset-replace","Replace preset?","My KB-09 Patch.kb09 already exists.",I::QuestionIcon,{"Replace","Cancel"});
         alert("audio-device-error","Error when trying to open audio device!","The audio device could not be opened. It may be in use by another application.",I::WarningIcon,{"OK"});
         for(int selection=0;selection<3;++selection){kb09_gui::ClosePrompt close(&stage);for(int i=0;i<3;++i)close.getButton(i)->setToggleState(i==selection,juce::dontSendNotification);capture(close,"close-"+juce::String(selection));}
-        for(bool mac:{false,true}){kb09::UpdateInstructions instructions("https://drive.google.com/",&stage,mac,age);capture(instructions,mac?"instructions-mac":"instructions-windows");
+        for(bool mac:{false,true}){kb09::UpdateInstructions instructions("https://drive.google.com/",&stage,mac,age);checkFonts(instructions);capture(instructions,mac?"instructions-mac":"instructions-windows");
             for(auto* child:instructions.getChildren()) for(auto* b:child->getChildren())if(auto* button=dynamic_cast<juce::TextButton*>(b);button&&button->getButtonText()=="Copy instructions")button->setButtonText("Copied!");
             capture(instructions,mac?"instructions-mac-copied":"instructions-windows-copied");}
         juce::AudioDeviceManager manager;juce::Value mute(true);
-        kb09_gui::AudioSettingsDialog settings(manager,&stage,&mute,age);capture(settings,"audio-midi-settings");
+        kb09_gui::AudioSettingsDialog settings(manager,&stage,&mute,age);checkFonts(settings);capture(settings,"audio-midi-settings");
         stage.setLookAndFeel(nullptr);
     }
     audio_layout_test::Manager layoutManager;
+    {
+        kb09_gui::ClosePrompt reference(&stage);
+        juce::Component scaledCanvas;stage.addAndMakeVisible(scaledCanvas);scaledCanvas.setSize(1483,816);
+        for(float zoom:{.55f,1.f,1.6f}) {
+            scaledCanvas.setTransform(juce::AffineTransform::scale(zoom));
+            kb09_gui::ThemedAlert external("External audio + envelope follower",kb09_gui::externalAudioMessage,juce::MessageBoxIconType::InfoIcon,&scaledCanvas);
+            if(std::abs(static_cast<juce::Component&>(external).getDesktopScaleFactor()-static_cast<juce::Component&>(reference).getDesktopScaleFactor())>1e-5f)
+                throw std::runtime_error("Canvas zoom changed actual dialog desktop scale relative to Save/Don't Save");
+        }
+        stage.removeChildComponent(&scaledCanvas);
+        std::cout<<"PASS dialog desktop scale matches Save/Don't Save at canvas zoom 0.55, 1.0 and 1.6.\n";
+    }
     if(layoutManager.initialise(2,2,nullptr,false).isNotEmpty())return 3;
     juce::Value muteInput(true);
     for(const auto size:{juce::Point<int>(1800,1400),juce::Point<int>(1024,768),juce::Point<int>(800,600)}) {
@@ -79,5 +103,5 @@ int main(int argc,char** argv){
         stage.removeChildComponent(&settings);
     }
     std::cout<<"PASS audio input/output rows: MIDI content reachable and Close separate at 1800x1400, 1024x768, 800x600.\n";
-    std::cout<<"Rendered 63 actual dialog/menu states. No update requests, device changes, installs or release changes.\n";
+    std::cout<<"PASS all message and action-button fonts match Save/Don't Save. Rendered 63 actual dialog/menu states. No update requests, device changes, installs or release changes.\n";
 }

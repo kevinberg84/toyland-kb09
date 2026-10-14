@@ -58,6 +58,13 @@ public:
         holder->stopPlaying();
         auto* processor = dynamic_cast<SH09Processor*>(holder->processor.get());
         if (processor == nullptr) { quit(); return; }
+        if(processor->midiMap) {
+            processor->midiMap->restore(settings->getValue("standaloneMidiMap"));
+            processor->midiMap->onChanged=[this,processor] {
+                properties.getUserSettings()->setValue("standaloneMidiMap",processor->midiMap->save());
+                properties.saveIfNeeded();
+            };
+        }
         processor->setCurrentProgram(0);
         const auto startup = settings->getValue("explicitStartupPreset");
         if (startup.isNotEmpty()) {

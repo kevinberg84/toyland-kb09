@@ -1,5 +1,11 @@
 # Kevin's release preferences
 
+Retention preference (October 13, 2026): keep all released 1.x.x versions for
+now. Only obsolete pre-release/test builds are cleanup candidates. Preserve the
+current standalone MIDI test and its specifically requested prior-iteration
+rollback snapshot. Local-only test requests do not authorize a GitHub push,
+Drive upload, update-feed publication, or replacement of the released product.
+
 After every completed build, update the installed plug-in and the platform folders in Kevin's OneDrive Desktop Host Folder
 and the current Windows, Mac and Linux shared Google Drive ZIPs, then notify him. Verify matching hashes.
 The Desktop Host folder must contain exactly three platform folders: Windows,
