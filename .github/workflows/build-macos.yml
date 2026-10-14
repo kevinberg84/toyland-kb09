@@ -17,6 +17,11 @@ jobs:
         run: cmake --build build-mac --config Release --target SH09_AU SH09_VST3 SH09_Standalone SH09DSPTests SH09ResonanceIntegrationTests SH09FilterNonlinearTests SH09ProcessorTests KB09MidiMappingTests KB09StandaloneMidiTests SH09PresetFilesTests SH09FactoryAudition KB09UpdateTests SH09GUIRender KB09DialogPreview --parallel 3
       - name: Test audio engine and presets
         run: ctest --test-dir build-mac -C Release --output-on-failure
+      - name: Repeat real MIDI feedback interleaving checks
+        run: |
+          for attempt in 1 2 3; do
+            build-mac/KB09MidiMappingTests_artefacts/Release/KB09MidiMappingTests
+          done
       - name: Test audio settings scrolling and dialog layouts
         run: build-mac/KB09DialogPreview_artefacts/Release/KB09DialogPreview dialog-validation
       - name: Test keyboard visual feedback and panel rendering

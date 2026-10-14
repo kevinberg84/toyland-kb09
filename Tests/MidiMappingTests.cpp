@@ -42,6 +42,12 @@ int main() {
     juce::AudioBuffer<float> audio(2, 64);
     juce::MidiBuffer midi;
     auto* parameter = processor.state.getParameter("vcoMod");
+    auto waitForValue=[&](float expected) {
+        const auto deadline=juce::Time::getMillisecondCounterHiRes()+2000;
+        while(std::abs(parameter->getValue()-expected)>=1e-6f&&juce::Time::getMillisecondCounterHiRes()<deadline)pump();
+        if(std::abs(parameter->getValue()-expected)>=1e-6f)
+            std::cout<<"GUI feedback timeout: published="<<parameter->getValue()<<" expected="<<expected<<'\n';
+    };
     auto send = [&](int value) {
         midi.addEvent(juce::MidiMessage::controllerEvent(1, 1, value), 0);
         audio.clear(); processor.processBlock(audio, midi);
@@ -56,7 +62,7 @@ int main() {
     for (int retry = 0; interleave.onBegin && retry < 20; ++retry) pump();
     expect(!interleave.onBegin && interleave.invocations == 1,
            "delayed publication interleave was exercised exactly once");
-    send(110); pump();
+    send(110); waitForValue(110.f/127);
     expect(std::abs(parameter->getValue() - 110.f / 127) < 1e-6f,
            "new wheel events during delayed GUI publication do not lose control");
     parameter->removeListener(&interleave);
@@ -64,10 +70,10 @@ int main() {
     // Simulate the host sending an older notified value back at a later block.
     send(120); pump(); send(120);
     parameter->setValueNotifyingHost(64.f / 127);
-    send(125); pump();
+    send(125); waitForValue(125.f/127);
     expect(std::abs(parameter->getValue() - 125.f / 127) < 1e-6f,
            "VST3 wheel retakes control immediately after delayed host parameter feedback");
-    processor.setCurrentProgram(0); send(4); pump();
+    processor.setCurrentProgram(0); send(4); waitForValue(4.f/127);
     expect(std::abs(parameter->getValue() - 4.f / 127) < 1e-6f,
            "VST3 first wheel movement works when MIDI skips the zero value");
 
@@ -86,8 +92,7 @@ int main() {
     // Audio takeover is immediate; GUI publication follows a platform timer.
     // Wait for that observable condition instead of assuming a loaded Mac CI
     // runner dispatches every timer inside one fixed 100 ms slice.
-    const auto deadline=juce::Time::getMillisecondCounterHiRes()+2000;
-    while(std::abs(parameter->getValue()-117.f/127)>=1e-6f&&juce::Time::getMillisecondCounterHiRes()<deadline)pump();
+    waitForValue(117.f/127);
     if(!audioValueReady||std::abs(parameter->getValue()-117.f/127)>=1e-6f)
         std::cout<<"takeover diagnostics: immediate="<<audioValueReady<<" published="<<parameter->getValue()<<" expected="<<117.f/127<<'\n';
     expect(audioValueReady&&std::abs(parameter->getValue() - 117.f / 127) < 1e-6f,
