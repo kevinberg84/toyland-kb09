@@ -175,15 +175,31 @@ int main(int argc,char** argv) {
     std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditor());
     editor->setSize(1483,816);
     auto footerIsEven=[&](juce::Component& root) {
-        juce::Rectangle<int> previous;bool even=true;
         for(const auto* id:{"modern","age","velocity","aftertouch","lfoSync","extGain","descriptions","externalAudioHelp"}) {
-            auto* component=find(root,id);if(!component)return false;
-            auto bounds=component->getBounds();
-            if(dynamic_cast<juce::Slider*>(component))bounds=bounds.expanded(8,0); // include its centered legend
-            if(!previous.isEmpty())even&=bounds.getX()-previous.getRight()==52;
-            previous=bounds;
+            if(!find(root,id))return false;
         }
-        return even;
+        // Inspect final composited pixels, not the invisible interaction boxes.
+        auto* panel=find(root,"externalAudioHelp")->getParentComponent();
+        const auto image=panel->createComponentSnapshot({0,773,1483,42},true,4.f,juce::SoftwareImageType());
+        const juce::Image::BitmapData pixels(image,juce::Image::BitmapData::readOnly);
+        std::vector<juce::Range<int>> runs;
+        for(int x=0;x<image.getWidth();++x) {
+            int count=0;
+            for(int y=0;y<image.getHeight();++y) {
+                const auto a=pixels.getPixelColour(x,y),b=pixels.getPixelColour(1,y);
+                if(juce::jmax(std::abs(int(a.getRed())-int(b.getRed())),std::abs(int(a.getGreen())-int(b.getGreen())),std::abs(int(a.getBlue())-int(b.getBlue())))>4)++count;
+            }
+            if(count<3)continue;
+            if(runs.empty()||x-runs.back().getEnd()>100)runs.emplace_back(x,x+1);
+            else runs.back().setEnd(x+1);
+        }
+        if(runs.size()!=8)return false;
+        int smallest=image.getWidth(),largest=0;
+        for(size_t i=1;i<runs.size();++i) {
+            const int gap=runs[i].getStart()-runs[i-1].getEnd();
+            smallest=juce::jmin(smallest,gap);largest=juce::jmax(largest,gap);
+        }
+        return largest-smallest<=9&&std::abs(runs.front().getStart()-(image.getWidth()-runs.back().getEnd()))<=9;
     };
     expect(footerIsEven(*editor),"standalone footer has equal gaps between visible control groups");
     {

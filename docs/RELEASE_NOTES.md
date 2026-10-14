@@ -1,3 +1,11 @@
+# 1.6.1 — Toyland KB-09
+
+Centers the performance-bay controls and printing, fills the left end of the textured keybed strip, and balances footer spacing from rendered assets in standalone and plug-in editors.
+
+Provides separate Windows, Mac and Linux manuals and OPEN ME FIRST pages, with platform-specific installation, display troubleshooting and desktop shortcut instructions. Linux includes unverified launch/audio workarounds. The panel guide cycles through all five AGE appearances; the filter-modeling story explains the hardware/software recordings and oscillator/filter interaction.
+
+The sound engine, MIDI behavior, parameter identities, presets and 128-sample processing latency are unchanged. Linux remains UNVERIFIED pending real Arch playback and MIDI confirmation.
+
 # 1.6.0 — Toyland KB-09
 
 Adds standalone MIDI mapping for knobs, faders and buttons. Assignments remember their channel and behavior between launches, separately from sound presets. Continuous controls use pickup; buttons cycle multi-position controls, and knobs/faders select positions directly. CLEAR SELECTED, confirmed CLEAR ALL and optional behavior correction are included. Plug-ins retain host mapping and normal mod-wheel behavior.

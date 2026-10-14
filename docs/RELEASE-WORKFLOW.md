@@ -23,6 +23,10 @@ Friend-facing packages have OPEN ME FIRST!.html, User Manual.html and Support at
 the root, plus the platform installer or Linux launch/shortcut scripts. Hide technical material inside Support. Friends should not
 have to select or copy plug-in bundles manually. Keep the illustrated HTML manual synchronized with
 changes to the controls, installation and available formats.
+Generate the three manual editions with `tools/make_manual_html.py`. Each package
+must use its own `docs/manual/platforms/<os>/User Manual.html` and OS-specific
+OPEN ME FIRST file. Installed help uses that same self-contained edition as
+`Support/User Guide/index.html`. Do not include other operating systems' guides.
 
 Mac is a verified released platform. Do not restore the old verification label.
 Distribute and document only usable plug-in formats. The shared download folder

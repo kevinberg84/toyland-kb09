@@ -41,3 +41,6 @@
 .platform .disclosure-body p,.host .disclosure-body p,.quick-start .disclosure-body p{font-size:1rem}
 .platform h3,.host h3{margin-top:1rem}
 @media print{details.platform,details.host,details.quick-start{break-inside:auto}.disclosure-body{padding:0}.platform>summary,.host>summary,.quick-start>summary{font-size:12pt}}
+
+.panel-age-controls{display:flex;align-items:center;gap:16px;margin:24px 0 12px}.panel-age-controls button{font:inherit;font-size:.85rem;padding:7px 13px;border:1px solid var(--edge);border-radius:5px;background:var(--black);color:var(--ink);cursor:pointer}.panel-age-controls span{font-weight:700;font-size:.9rem}#panel-age-picture{margin-top:12px}#panel-age-picture img[hidden]{display:none}#filter-craft figure img{cursor:default}
+@media print{.panel-age-controls button{display:none}}

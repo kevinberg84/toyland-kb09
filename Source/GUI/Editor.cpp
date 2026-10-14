@@ -21,6 +21,8 @@
 namespace {
 using kb09_gui::appearanceAge;
 constexpr int designW=1483, bodyH=750, visibleBodyH=732, headerH=34, designH=816;
+// Center the printed rules (69..302) between the cheek (55) and keybed (326).
+constexpr int performanceBayOffsetX=5;
 constexpr float panelViewSin=.190809f,panelViewCos=.981627f;
 const juce::Colour ink(0xffe9e7dd), muted(0xffb4b7b5), amber(0xffdbb572);
 juce::Colour agedInk(float age) {
@@ -240,7 +242,7 @@ const juce::Image& panelDust() {
                     if(surfaceNoise(seed+71)>density)continue;
                     y=centreY+offset+1.1f*std::sin(x*.093f);
                 }
-                x+=8;
+                x+=performanceBayOffsetX;
             }
             if(i%4!=3)x-=13;
             // A fine powder, occasional lint, and sparse brighter grains.
@@ -1025,8 +1027,11 @@ public:
                 }
                 if(!broken)kb09_gui::paintRoundedBenderTab(g,centre,wheelBaseline,angle,age,samples);
             } else {
-                g.setColour(juce::Colour(0xff05080a));g.fillRoundedRectangle(float(x),cy-3,float(w),6,3);
-                g.setColour(juce::Colours::white.withAlpha(.18f));g.drawLine(float(x),cy+3,float(x+w),cy+3,.6f);
+                // The track spans the cap's full travel envelope. Its visible
+                // endpoints stay fixed even when a cap moves away from them.
+                const float trackLeft=0,trackWidth=float(slider.getWidth());
+                g.setColour(juce::Colour(0xff05080a));g.fillRoundedRectangle(trackLeft,cy-3,trackWidth,6,3);
+                g.setColour(juce::Colours::white.withAlpha(.18f));g.drawLine(trackLeft,cy+3,trackLeft+trackWidth,cy+3,.6f);
                 g.setColour(ink.withAlpha(.35f));g.fillRect(float(x),cy-1,juce::jmax(0.0f,pos-float(x)),1.5f);
                 cap(g,{pos-8,cy-8,16,17},true);
             }
@@ -1841,8 +1846,8 @@ public:
             processor.queuePitchBendReturn();
         };
         addSwitch("modern",25,designH-headerH-44,80,42,{0,1},{"AUTHENTIC","MODERN"},"Authentic ignores velocity, aftertouch, tempo sync and input trim.");
-        // Space the visible groups, including utility labels, by the same gap.
-        // A switch's hit box must not reserve blank space past its legends.
+        // Initial positions; layoutFooterArtwork finalizes all eight groups
+        // from their painted extents after both action buttons exist.
         constexpr int footerGap=52;
         int footerX=25+80+footerGap;
         auto footerUtility=[&](const char* id,const char* label,int width) {
@@ -1892,14 +1897,15 @@ public:
                 static_cast<juce::Component*>(c->selector.get()),static_cast<juce::Component*>(c->label.get())}) {
             if(child==nullptr)continue;
             if(child->getY()>=headerH&&child->getBottom()<headerH+360)child->setTopLeftPosition(child->getX()-13,child->getY());
-            else if(child->getY()>=headerH+360&&child->getBottom()<headerH+708)child->setTopLeftPosition(child->getX()+8,child->getY());
+            else if(child->getY()>=headerH+360&&child->getBottom()<headerH+708)child->setTopLeftPosition(child->getX()+performanceBayOffsetX,child->getY());
         }
         rateLamp.setTopLeftPosition(rateLamp.getX()-13,rateLamp.getY());
-        power.setTopLeftPosition(power.getX()+8,power.getY());
-        bender.setTopLeftPosition(bender.getX()+8,bender.getY());
+        power.setTopLeftPosition(power.getX()+performanceBayOffsetX,power.getY());
+        bender.setTopLeftPosition(bender.getX()+performanceBayOffsetX,bender.getY());
         for(auto* child:{static_cast<juce::Component*>(&small),static_cast<juce::Component*>(&medium),
                 static_cast<juce::Component*>(&large),static_cast<juce::Component*>(&maximise)})
             child->setTopLeftPosition(child->getX()-17,child->getY());
+        layoutFooterArtwork();
         updateModern();
         // Have one complete fallback before the editor can be displayed or
         // dragged. Until idle work builds all five ages, share this snapshot
@@ -1986,7 +1992,7 @@ public:
         {
             juce::Graphics::ScopedSaveState save(g);
             // End at the visible outer edge of the last ivory key.
-            const auto rail=juce::Rectangle<float>(65.0f,float(headerH+708),1370.0f,24.0f)
+            const auto rail=juce::Rectangle<float>(float(kb09_gui::CheekMaterial::width),float(headerH+708),1380.0f,24.0f)
                 .withRight(float(keyboard.getRight())-.65f);
             // Unlit case below the rail must not read as a tall front face.
             g.setColour(juce::Colour(0xff070909));
@@ -2045,7 +2051,7 @@ public:
             raisedLip.addColour(.23,juce::Colour(0xffd0d0cc).withAlpha(.09f-.02f*age));
             raisedLip.addColour(.47,juce::Colour(0xffbfc1bd).withAlpha(.065f-.01f*age));
             g.setGradientFill(raisedLip);g.fillRect(60.0f,317.0f,1364.0f,47.0f);
-            {juce::Graphics::ScopedSaveState bayPrint(g);g.addTransform(juce::AffineTransform::translation(8,0));
+            {juce::Graphics::ScopedSaveState bayPrint(g);g.addTransform(juce::AffineTransform::translation(float(performanceBayOffsetX),0));
             g.setColour(ink.withAlpha(.82f));
             // SH-09 outer side rules are open at the bottom; the inner bender
             // outline below supplies the single horizontal printed boundary.
@@ -2085,14 +2091,55 @@ public:
                 screwOxidation(g,{(p.x-2)*float(designW)/1770,(p.y-7)*float(bodyH)/873+(p.y>790?-40.0f:0.0f)},age,screwSeed);
                 screwSeed+=7717;
             }
-            kb09_gui::drawPowerScrew(g,{264,401},age,false);
-            kb09_gui::drawPowerScrew(g,{264,449},age,true);
+            kb09_gui::drawPowerScrew(g,{float(256+performanceBayOffsetX),401},age,false);
+            kb09_gui::drawPowerScrew(g,{float(256+performanceBayOffsetX),449},age,true);
         }
         for(auto& c:controls)if(c->slider&&c->slider->getSliderStyle()==juce::Slider::LinearVertical)
             look.drawFaderScale(g,*c->slider);
         paintFooter(g);
     }
 private:
+    void layoutFooterArtwork() {
+        // Measure actual paint on transparent rasters, including the cap at
+        // BOTH travel limits. Empty label and hit-area padding cannot add gaps.
+        // Run once before disabling Modern-only controls, so both modes share
+        // the same layout. No parameter or slider value is changed to measure it.
+        struct Group {std::vector<juce::Component*> members;int left=designW*4,right=0;};
+        std::array<Group,8> groups;
+        const std::array<const char*,6> ids{"modern","age","velocity","aftertouch","lfoSync","extGain"};
+        for(size_t i=0;i<ids.size();++i)for(auto& c:controls) {
+            auto* control=c->slider?static_cast<juce::Component*>(c->slider.get()):static_cast<juce::Component*>(c->selector.get());
+            if(control->getComponentID()==ids[i]) {
+                groups[i].members.push_back(control);
+                if(c->label)groups[i].members.push_back(c->label.get());
+            }
+        }
+        groups[6].members.push_back(&descriptions);groups[7].members.push_back(&help);
+        for(auto& group:groups)for(auto* member:group.members) {
+            auto image=member->createComponentSnapshot(member->getLocalBounds(),true,4.f,juce::SoftwareImageType());
+            if(auto* slider=dynamic_cast<juce::Slider*>(member)) {
+                juce::Graphics g(image);g.addTransform(juce::AffineTransform::scale(4.f));
+                const auto r=look.getSliderLayout(*slider).sliderBounds;
+                for(const float pos:{float(r.getX()),float(r.getRight())})
+                    look.drawLinearSlider(g,r.getX(),r.getY(),r.getWidth(),r.getHeight(),pos,0,0,slider->getSliderStyle(),*slider);
+            }
+            const juce::Image::BitmapData pixels(image,juce::Image::BitmapData::readOnly);
+            for(int x=0;x<image.getWidth();++x)for(int y=0;y<image.getHeight();++y)
+                if(pixels.getPixelColour(x,y).getAlpha()>=64) {
+                    group.left=juce::jmin(group.left,member->getX()*4+x);
+                    group.right=juce::jmax(group.right,member->getX()*4+x+1);break;
+                }
+        }
+        float total=0;for(const auto& group:groups)total+=float(group.right-group.left)/4;
+        constexpr float inset=25;
+        const float gap=(designW-2*inset-total)/float(groups.size()-1);
+        float x=inset;
+        for(const auto& group:groups) {
+            const int shift=juce::roundToInt(x-float(group.left)/4);
+            for(auto* member:group.members)member->setTopLeftPosition(member->getX()+shift,member->getY());
+            x+=float(group.right-group.left)/4+gap;
+        }
+    }
     void paintFooter(juce::Graphics& g) {
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xff222729),0,float(headerH+visibleBodyH),
                                             juce::Colour(0xff121618),0,float(designH),false));

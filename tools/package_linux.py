@@ -23,7 +23,7 @@ def main():
     package.mkdir(parents=True, exist_ok=True)
     shutil.copy2(binary, package / 'Toyland KB-09 Standalone')
     shutil.copy2(ROOT / 'docs/open-me-first-linux.html', package / 'OPEN ME FIRST!.html')
-    shutil.copy2(ROOT / 'docs/manual/User Manual.html', package / 'User Manual.html')
+    shutil.copy2(ROOT / 'docs/manual/platforms/linux/User Manual.html', package / 'User Manual.html')
     support = package / 'Support'
     support.mkdir(exist_ok=True)
     shutil.copytree(args.build / 'factory-auditions/Factory Presets', support / 'Factory Presets', dirs_exist_ok=True)
