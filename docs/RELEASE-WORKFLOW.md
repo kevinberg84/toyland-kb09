@@ -2,8 +2,11 @@
 
 Retention preference (October 13, 2026): keep all released 1.x.x versions for
 now. Only obsolete pre-release/test builds are cleanup candidates. Preserve the
-current standalone MIDI test and its specifically requested prior-iteration
-rollback snapshot. Local-only test requests do not authorize a GitHub push,
+production source and regression tests. Kevin approved release 1.6.0 and asked
+to remove the standalone MIDI audition, its shortcut, isolated preferences,
+temporary build and rollback packages. That test no longer needs preservation.
+Two older locked DSP test modules have one-time cleanup queued for the next
+Windows sign-in. Local-only test requests do not authorize a GitHub push,
 Drive upload, update-feed publication, or replacement of the released product.
 
 After every completed build, update the installed plug-in and the platform folders in Kevin's OneDrive Desktop Host Folder
