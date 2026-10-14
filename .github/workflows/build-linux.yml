@@ -53,7 +53,19 @@ jobs:
             build-linux/CTestTestfile.cmake
           retention-days: 7
       - name: Run DSP and processor tests
-        run: xvfb-run -a ctest --test-dir build-linux --output-on-failure
+        run: |
+          xvfb-run -a bash -euo pipefail -c '
+            openbox >/tmp/kb09-test-openbox.log 2>&1 &
+            wm_pid=$!
+            trap "kill $wm_pid 2>/dev/null || true" EXIT
+            for attempt in {1..50}; do
+              if xprop -root _NET_SUPPORTING_WM_CHECK | grep -q "window id"; then break; fi
+              sleep 0.1
+            done
+            xprop -root _NET_SUPPORTING_WM_CHECK | grep -q "window id"
+            ctest --test-dir build-linux --output-on-failure
+          '
+
       - name: Check dialogs and editor rendering
         run: |
           xvfb-run -a bash -euo pipefail -c '
