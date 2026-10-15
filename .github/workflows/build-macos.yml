@@ -1,6 +1,11 @@
 name: Build Mac release
 on:
   workflow_dispatch:
+    inputs:
+      validated_run:
+        description: 'Optional prior run whose native checks passed for identical source (package-transfer recovery only)'
+        required: false
+        default: ''
 permissions:
   contents: write
 jobs:
@@ -9,22 +14,57 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Verify reusable native validation for transfer recovery
+        if: inputs.validated_run != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VALIDATED_RUN: ${{ inputs.validated_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GH_REPO/actions/runs/$VALIDATED_RUN" > previous-run.json
+          gh api "repos/$GH_REPO/actions/runs/$VALIDATED_RUN/jobs" > previous-jobs.json
+          python3 - <<'PY'
+          import json, os
+          run=json.load(open('previous-run.json'))
+          assert run['path']=='.github/workflows/build-macos.yml'
+          required={'Build plug-ins and tests','Test audio engine and presets','Repeat real MIDI feedback interleaving checks','Test audio settings scrolling and dialog layouts','Test keyboard visual feedback and panel rendering','Check architectures and sign for development testing','Run Apple AU validation on this runner','Package Mac release'}
+          steps={s['name']:s['conclusion'] for j in json.load(open('previous-jobs.json'))['jobs'] for s in j['steps']}
+          assert all(steps.get(name)=='success' for name in required),steps
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('VALIDATED_SHA='+run['head_sha']+'\n')
+          print('All required native checks passed in the prior run.')
+          PY
+          prior_sha=$(python3 -c "import json; print(json.load(open('previous-run.json'))['head_sha'])")
+          git fetch origin "$prior_sha" --depth=1
+          git diff --exit-code "$prior_sha" HEAD -- . ':!.github' ':!docs' ':!README.md' ':!tools/install-mac.command'
+          echo 'Binary source, tests, assets, CMake and dependencies are unchanged.'
       - name: Get matching JUCE source
         run: git clone --depth 1 --branch 9.0.2 https://github.com/juce-framework/JUCE.git "$RUNNER_TEMP/JUCE"
       - name: Configure universal Mac build
         run: cmake -S . -B build-mac -G Xcode -DJUCE_DIR="$RUNNER_TEMP/JUCE" -DKB09_BUILD_AU=ON -DKB09_BUILD_AAX=OFF '-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64' -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
       - name: Build plug-ins and tests
+        if: inputs.validated_run == ''
         run: cmake --build build-mac --config Release --target SH09_AU SH09_VST3 SH09_Standalone SH09DSPTests SH09ResonanceIntegrationTests SH09FilterNonlinearTests SH09ProcessorTests KB09MidiMappingTests KB09StandaloneMidiTests SH09PresetFilesTests SH09FactoryAudition KB09UpdateTests KB09MidiInputMemoryTests SH09GUIRender KB09DialogPreview --parallel 3
+      - name: Rebuild validated production formats for package transfer
+        if: inputs.validated_run != ''
+        run: |
+          cmake --build build-mac --config Release --target SH09_AU SH09_VST3 SH09_Standalone SH09FactoryAudition --parallel 3
+          ctest --test-dir build-mac -C Release -R '^SH09FactoryBank$' --output-on-failure
       - name: Test audio engine and presets
+        if: inputs.validated_run == ''
         run: ctest --test-dir build-mac -C Release --output-on-failure
       - name: Repeat real MIDI feedback interleaving checks
+        if: inputs.validated_run == ''
         run: |
           for attempt in 1 2 3; do
             build-mac/KB09MidiMappingTests_artefacts/Release/KB09MidiMappingTests
           done
       - name: Test audio settings scrolling and dialog layouts
+        if: inputs.validated_run == ''
         run: build-mac/KB09DialogPreview_artefacts/Release/KB09DialogPreview dialog-validation
       - name: Test keyboard visual feedback and panel rendering
+        if: inputs.validated_run == ''
         run: build-mac/SH09GUIRender_artefacts/Release/SH09GUIRender gui-validation
       - name: Check architectures and sign for development testing
         shell: bash
