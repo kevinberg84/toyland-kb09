@@ -8,6 +8,7 @@ on:
         default: ''
 permissions:
   contents: write
+  actions: read
 jobs:
   build:
     runs-on: macos-15
