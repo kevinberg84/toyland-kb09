@@ -1,3 +1,13 @@
+# 1.7.1 — Toyland KB-09
+
+- AUTHENTIC bender snaps to center over 35 ms without easing, followed by a small 20 ms visual recoil. Pitch reaches neutral without overshoot. MODERN remains immediate.
+- POWER depresses while held and springs back immediately on release, with no extra hold delay. Its darker base, tighter shoulders and upper-left reflection retain a little shine through AGE.
+- Corrected inner collar ticks, knob alignment, label sizes and baselines, switch symbols, fader spacing and performance-bay outlines. Larger POWER and bender screws match the panel proportions.
+- Refined bender geometry, seam, underside rib, scuffs and progressive finish; knob grips and cheeks age more naturally. The VOLUME knob also gathers dust.
+- MIDI MAP is centered while keeping assignable controls exposed. Parameter hovers use the normal arrow cursor consistently.
+
+The sound engine, parameter identities, saved presets, 24 factory sounds and 128-sample processing latency are retained. Linux standalone remains UNVERIFIED pending real Arch audio and MIDI confirmation.
+
 # 1.7.0 — Toyland KB-09
 
 - The standalone remembers enabled MIDI inputs and reconnects them when available. Change your selection in AUDIO / MIDI at any time.

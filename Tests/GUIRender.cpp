@@ -1,10 +1,11 @@
-﻿#include "../Source/Plugin/Processor.h"
+#include "../Source/Plugin/Processor.h"
 #include "../Source/GUI/ClosePrompt.h"
 #include "../Source/GUI/UpdateInstructions.h"
 #include "../Source/GUI/KeyboardFeedback.h"
 #include "../Source/GUI/CheekMaterial.h"
 #include "../Source/GUI/RustMaterial.h"
 #include "../Source/GUI/PowerDetails.h"
+#include "../Source/GUI/PowerButtonTravel.h"
 #include "../Source/GUI/FaderDetails.h"
 #include "../Source/GUI/BenderBreakGeometry.h"
 #include "../Source/GUI/MidiMapOverlay.h"
@@ -506,11 +507,12 @@ void checkRotaryTicks(SH09Processor& processor,juce::Component& editor,Checks& c
                     const float dx=((float(x)+.5f)/controlRenderScale-centreX)/maskRadius;
                     const float dy=((float(y)+.5f)/controlRenderScale-centreY)/(maskRadius*projectedCos);
                     if(dx*dx+dy*dy<=1.0f)continue;
-                    // The newly restored collar index also rotates, inside its narrow annulus.
+                    // The collar index rotates near the inner edge; projection brings
+                    // its front portion inside the former outer-only annulus.
                     const float cx=((float(x)+.5f)/controlRenderScale-(origin+diameter*.497f))/(diameter);
                     const float cy=((float(y)+.5f)/controlRenderScale-(origin+diameter*.505f))/(diameter*projectedCos);
                     const float collarRadius=std::sqrt(cx*cx+cy*cy);
-                    if(collarRadius>.35f&&collarRadius<.49f)continue;
+                    if(collarRadius>.30f&&collarRadius<.49f)continue;
                     const float u=((float(x)+.5f)/controlRenderScale-origin)/diameter;
                     const float v=((float(y)+.5f)/controlRenderScale-origin)/diameter;
                     if(u>.14f&&u<.86f&&v>.39f&&v<.86f)continue; // moving cylindrical grip and its wear
@@ -1675,6 +1677,198 @@ int main(int argc, char** argv) {
     }
     juce::ScopedJuceInitialiser_GUI initialiseGUI;
     Checks checks;
+    if(juce::String(argv[1]).startsWith("--label36-review=")||juce::String(argv[1]).startsWith("--hardware51-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* range=findComponent(*editor,"range");if(!range)return 1;
+        auto* panel=range->getParentComponent();
+        if(juce::String(argv[1]).startsWith("--hardware51-review=")) {
+            for(float from:{1.f,2.f}) {
+                kb09_gui::PowerButtonTravel motion;motion.press(0,from);
+                checks.expect(motion.sample(24,from)==0,"POWER fully depresses from rest "+juce::String(from));
+                checks.expect(motion.sample(200,from)==0,"POWER stays depressed while held");
+                motion.release(200);
+                checks.expect(motion.sample(201,3-from)>0,"POWER starts rising immediately after release");
+                checks.expect(motion.sample(220,3-from)==3-from&&!motion.hasCycle(),"POWER springs to the opposite resting height in 20 ms");
+                kb09_gui::PowerButtonTravel tap;tap.press(0,from);tap.release(2);
+                checks.expect(tap.sample(2,3-from)==0,"quick tap reaches common depression at release");
+                checks.expect(tap.sample(3,3-from)>0,"quick tap has no delayed spring return");
+                checks.expect(tap.sample(22,3-from)==3-from,"quick tap lands at exact rest in 20 ms");
+            }
+            auto* button=dynamic_cast<juce::Button*>(findComponent(*editor,"power"));if(!button)return 1;
+            for(int stage=0;stage<5;++stage) {
+                setParameter(processor,"age",stage*.25f);settleEditor();
+                for(bool on:{false,true}) {
+                    processor.setPowerEnabled(on);settleEditor();
+                    checks.expect(writePNG(panel->createComponentSnapshot({61,395,275,345},true,3.f),directory.getChildFile("bay_"+juce::String(stage)+(on?"_on.png":"_off.png"))),"new bay type and screw clearances at every age/state");
+                }
+            }
+            setParameter(processor,"age",0);settleEditor();
+            for(bool toOn:{true,false}) {
+                const float from=toOn?2.f:1.f,rest=toOn?1.f:2.f;
+                kb09_gui::PowerButtonTravel motion;motion.press(0,from);bool released=false;
+                for(int ms=0;ms<=80;ms+=10) {
+                    if(ms>=24&&!released){motion.sample(24,from);motion.release(24);released=true;}
+                    processor.setPowerEnabled(ms<24?!toOn:toOn);
+                    button->getProperties().set("previewPowerHeightUnits",motion.sample(ms,rest));
+                    checks.expect(writePNG(panel->createComponentSnapshot({209,393,99,138},true,4.f),directory.getChildFile(juce::String(toOn?"turn-on_":"turn-off_")+juce::String(ms)+".png")),"native power travel frame");
+                }
+            }
+            button->getProperties().remove("previewPowerHeightUnits");
+            // Exercise Button::mouseUp's real 100 ms flash fallback: no paint
+            // is delivered while down, so direct onClick tests cannot catch it.
+            for(bool startOn:{false,true}) {
+                processor.setPowerEnabled(startOn);button->setState(juce::Button::buttonNormal);settleEditor();
+                panel->createComponentSnapshot({209,393,99,138},true,2.f);
+                const int cachedBefore=int(panel->getProperties().getWithDefault("chassisRasterCount",0));
+                const auto time=juce::Time::getCurrentTime();const auto point=button->getLocalBounds().toFloat().getCentre();
+                const juce::MouseEvent click(juce::Desktop::getInstance().getMainMouseSource(),point,
+                    juce::ModifierKeys(juce::ModifierKeys::leftButtonModifier),1,0,0,0,0,
+                    button,button,time,point,time,1,false);
+                static_cast<juce::Component*>(button)->mouseDown(click);button->setState(juce::Button::buttonDown);
+                juce::MessageManager::getInstance()->runDispatchLoopUntil(30);
+                static_cast<juce::Component*>(button)->mouseUp(click);
+                juce::MessageManager::getInstance()->runDispatchLoopUntil(30);
+                const auto paintStart=juce::Time::getMillisecondCounterHiRes();
+                panel->createComponentSnapshot({209,393,99,138},true,2.f);
+                const auto paintMs=juce::Time::getMillisecondCounterHiRes()-paintStart;
+                checks.expect(processor.isPowerEnabled()!=startOn,"mouse release toggles POWER exactly once");
+                checks.expect(float(button->getProperties()["powerTravelUnits"])==(startOn?2.f:1.f),"mouse release is not re-held by the 100 ms framework flash");
+                checks.expect(int(panel->getProperties().getWithDefault("chassisRasterCount",0))==cachedBefore,"POWER release reuses stationary chassis raster");
+                std::cout<<"POWER_RELEASE paint_ms="<<paintMs<<" visual_rest="<<float(button->getProperties()["powerTravelUnits"])<<" framework_down="<<button->isDown()<<'\n';
+                juce::MessageManager::getInstance()->runDispatchLoopUntil(120);
+            }
+            for(bool startOn:{false,true}) {
+                processor.setPowerEnabled(startOn);settleEditor();
+                button->setState(juce::Button::buttonDown);
+                juce::MessageManager::getInstance()->runDispatchLoopUntil(35);
+                panel->createComponentSnapshot({209,393,99,138},true,2.f);
+                checks.expect(float(button->getProperties()["powerTravelUnits"])==0,"real button press reaches bottom");
+                checks.expect(processor.isPowerEnabled()==startOn,"holding POWER never toggles the engine early");
+                button->setState(juce::Button::buttonNormal);button->onClick();
+                juce::MessageManager::getInstance()->runDispatchLoopUntil(75);
+                panel->createComponentSnapshot({209,393,99,138},true,2.f);
+                checks.expect(processor.isPowerEnabled()!=startOn,"release toggles power once");
+                checks.expect(float(button->getProperties()["powerTravelUnits"])==(startOn?2.f:1.f),"real button springs to new resting height");
+            }
+        }
+        auto* rate=dynamic_cast<juce::Slider*>(findComponent(*editor,"lfoRate"));
+        const auto rateArea=rate->getLookAndFeel().getSliderLayout(*rate).sliderBounds;
+        const float tickY=float(rate->getY()+rateArea.getY())+float(rateArea.getHeight())*.5f;
+        for(const auto* id:{"lfoWave","pwmMode","subMode","vcfEnvMode","vcaMode","envMode"}) {
+            auto* control=findComponent(*editor,id);
+            const auto center=control->localPointToGlobal(control->getLocalBounds().toFloat().getCentre());
+            const auto local=panel->getLocalPoint(nullptr,center);
+            checks.expect(std::abs(local.y-tickY)<=.51f,"switch center within half a design pixel of 5 tick: "+juce::String(id));
+        }
+        setParameter(processor,"age",0);settleEditor();
+        checks.expect(writePNG(panel->createComponentSnapshot({90,114,1300,175},true,2.f),directory.getChildFile("labels.png")),"common printed label row export");
+        for(bool on:{false,true}) {
+            processor.setPowerEnabled(on);settleEditor();
+            checks.expect(writePNG(panel->createComponentSnapshot({209,393,99,138},true,5.f),directory.getChildFile(on?"power-on.png":"power-off.png")),"POWER section with screws export");
+        }
+        setParameter(processor,"age",0);settleEditor();
+        checks.expect(writePNG(panel->createComponentSnapshot({76,515,228,225},true,3.f),directory.getChildFile("performance-lower.png")),"matching short performance faders and bender clearance");
+        juce::Image benderSheet(juce::Image::RGB,900,1840,true,juce::SoftwareImageType());
+        juce::Graphics sheetGraphics(benderSheet);sheetGraphics.fillAll(juce::Colour(0xff171b1c));
+        const std::array<const char*,5> ageNames{"Minty","Seen Some Shit","Vintage, Baby!","Sold As-Is","Fire Hazard"};
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",stage*.25f);settleEditor();
+            const auto detail=panel->createComponentSnapshot({80,655,225,85},true,4.f);
+            checks.expect(writePNG(detail,directory.getChildFile("bender_"+juce::String(stage)+".png")),"bender screw proportions age "+juce::String(stage));
+            checks.expect(writePNG(panel->createComponentSnapshot({80,655,225,85},true,1.f),directory.getChildFile("bender_small_"+juce::String(stage)+".png")),"bender at actual design size");
+            sheetGraphics.setColour(juce::Colours::white);sheetGraphics.setFont(juce::Font(juce::FontOptions(19.f)));
+            sheetGraphics.drawText(ageNames[size_t(stage)],12,stage*368,876,28,juce::Justification::centredLeft);
+            sheetGraphics.drawImageAt(detail,0,stage*368+28);
+        }
+        checks.expect(writePNG(benderSheet,directory.getChildFile("bender-all-ages.png")),"bender all-age comparison sheet");
+        juce::Image legend(juce::Image::ARGB,736,192,true,juce::SoftwareImageType());
+        {juce::Graphics lg(legend);lg.addTransform(juce::AffineTransform::translation(-159.f,-454.f).scaled(8.f));kb09_gui::power_detail::paintLegend(lg,juce::Colours::white);}
+        checks.expect(writePNG(legend,directory.getChildFile("legend-mask.png")),"rendered POWER legend alignment mask");
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--collar35-review=")||juce::String(argv[1]).startsWith("--collar35-defaults=")) {
+        const bool defaults=juce::String(argv[1]).startsWith("--collar35-defaults=");
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* range=dynamic_cast<juce::Slider*>(findComponent(*editor,"range"));auto* wave=dynamic_cast<juce::Slider*>(findComponent(*editor,"wave"));auto* volume=dynamic_cast<juce::Slider*>(findComponent(*editor,"volume"));
+        if(!range||!wave||!volume)return 1;
+        auto* panel=range->getParentComponent();
+        const auto rangeBounds=range->getBounds(),waveBounds=wave->getBounds();
+        const auto region=rangeBounds.getUnion(waveBounds).translated(0,6).expanded(17,38);
+        std::array<juce::Image,6> frames;
+        for(int pose=0;pose<3;++pose)for(bool proposed:{false,true}) {
+            if(defaults&&!proposed)continue;
+            if(!defaults) {
+                range->setBounds(rangeBounds.translated(0,proposed?0:6));wave->setBounds(waveBounds.translated(0,proposed?0:6));
+                panel->getProperties().set("previewPrintAlignment35",proposed);panel->repaint();
+                for(auto* knob:{range,wave,volume})knob->getProperties().set("previewInnerCollar35",proposed);
+            }
+            range->setValue(range->getMinimum()+(range->getMaximum()-range->getMinimum())*pose*.5,juce::sendNotificationSync);
+            wave->setValue(wave->getMinimum()+(wave->getMaximum()-wave->getMinimum())*pose*.5,juce::sendNotificationSync);
+            settleEditor();range->repaint();wave->repaint();
+            const auto image=panel->createComponentSnapshot(region,true,3.f);
+            frames[size_t(pose*2+int(proposed))]=image;
+            checks.expect(writePNG(image,directory.getChildFile("selectors_"+juce::String(pose)+(proposed?"_proposal.png":"_current.png"))),"native selector/collar comparison");
+            if(pose==1) {
+                checks.expect(writePNG(panel->createComponentSnapshot({475,124,130,168},true,4.f),directory.getChildFile(proposed?"pwm_proposal.png":"pwm_current.png")),"PWM heading ink-bound alignment export");
+                checks.expect(writePNG(panel->createComponentSnapshot({929,124,133,168},true,4.f),directory.getChildFile(proposed?"env_proposal.png":"env_current.png")),"ENV FOLR bracket slider-axis alignment export");
+            }
+            if(pose==0) {
+                volume->setValue(volume->getMinimum()+.22*(volume->getMaximum()-volume->getMinimum()),juce::sendNotificationSync);settleEditor();
+                checks.expect(writePNG(volume->createComponentSnapshot(volume->getLocalBounds(),true,5.f),directory.getChildFile(proposed?"volume_proposal.png":"volume_current.png")),"VOLUME keeps its position; collar index only comparison");
+            }
+        }
+        if(!defaults) {
+        const int w=frames[0].getWidth(),h=frames[0].getHeight();
+        juce::Image sheet(juce::Image::RGB,w*2,h*3+42,true,juce::SoftwareImageType());juce::Graphics g(sheet);g.fillAll(juce::Colour(0xff171b1c));
+        g.setColour(juce::Colours::white);g.setFont(juce::Font(juce::FontOptions(23.f)));
+        g.drawText("Current",0,0,w,40,juce::Justification::centred);g.drawText("Proposal",w,0,w,40,juce::Justification::centred);
+        for(int row=0;row<3;++row)for(int col=0;col<2;++col)g.drawImageAt(frames[size_t(row*2+col)],col*w,42+row*h);
+        checks.expect(writePNG(sheet,directory.getChildFile("comparison.png")),"native comparison sheet export");
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--recoil34-check=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* bend=dynamic_cast<juce::Slider*>(findComponent(*editor,"bender"));
+        auto* power=findComponent(*editor,"power");if(!bend||!power)return 1;
+        setParameter(processor,"modern",0);settleEditor();
+        juce::String trace="release,elapsedMs,position\n";
+        for(double from:{-1.,-.25,.25,1.}) {
+            bend->onDragStart();bend->setValue(from,juce::sendNotificationSync);bend->onDragEnd();
+            const auto start=juce::Time::getMillisecondCounterHiRes();bool sawRecoil=false;double peak=0;
+            while(juce::Time::getMillisecondCounterHiRes()-start<80) {
+                juce::MessageManager::getInstance()->runDispatchLoopUntil(1);
+                const auto elapsed=juce::Time::getMillisecondCounterHiRes()-start,value=bend->getValue();
+                sawRecoil|=value*from<0;if(value*from<0)peak=juce::jmax(peak,std::abs(value));
+                trace+=juce::String(from)+","+juce::String(elapsed,3)+","+juce::String(value,8)+"\n";
+            }
+            checks.expect(sawRecoil,"actual timer paints a single opposite-side recoil after release "+juce::String(from));
+            checks.expect(peak<=std::abs(from)*.020001&&bend->getValue()==0,"actual recoil is bounded and settles exactly at zero "+juce::String(from));
+        }
+        bend->onDragStart();bend->setValue(.6,juce::sendNotificationSync);bend->onDragEnd();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(39);
+        bend->onDragStart();bend->setValue(-.4,juce::sendNotificationSync);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(70);
+        checks.expect(std::abs(bend->getValue()+.4)<1e-8,"a new drag interrupts recoil without a stale return frame");
+        setParameter(processor,"modern",1);bend->onDragEnd();
+        checks.expect(bend->getValue()==0,"Modern still centers immediately without recoil");
+        directory.getChildFile("recoil-timing.csv").replaceWithText(trace);
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",stage*.25f);settleEditor();
+            for(bool on:{false,true}) {
+                processor.setPowerEnabled(on);power->repaint();settleEditor();
+                const auto region=editor->getLocalArea(power,power->getLocalBounds()).expanded(12,24);
+                checks.expect(writePNG(editor->createComponentSnapshot(region,true,4.f),directory.getChildFile("power_"+juce::String(stage)+(on?"_on.png":"_off.png"))),"new POWER all-age state export");
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
     if(juce::String(argv[1]).startsWith("--midi-centre31-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
         juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Standalone);

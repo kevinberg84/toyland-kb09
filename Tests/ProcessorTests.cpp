@@ -1,4 +1,5 @@
 #include "../Source/Plugin/Processor.h"
+#include "../Source/GUI/BenderReturnMotion.h"
 #include <cstdlib>
 #include <new>
 #include <iostream>
@@ -177,6 +178,19 @@ int main(){
  expect(springTiming,"Authentic spring returns at constant speed to exact center at its configured duration across sample rates and buffers");
  expect(modernReturn,"Modern returns immediately, including when entered during an Authentic return");
  expect(interruptions,"new controller wheel and GUI gestures cancel an in-progress spring without stale bend");
+ // The visual recoil has one opposite-side lobe and never modifies pitch.
+ bool recoil=true;
+ for(double from:{-1.,-.25,0.,.25,1.}) {
+   recoil=recoil&&kb09_gui::benderReturnPosition(from,0)==from
+       &&std::abs(kb09_gui::benderReturnPosition(from,17.5)-from*.5)<1e-12
+       &&kb09_gui::benderReturnPosition(from,35)==0
+       &&std::abs(kb09_gui::benderReturnPosition(from,45)+from*.02)<1e-12
+       &&kb09_gui::benderReturnPosition(from,55)==0
+       &&kb09_gui::benderReturnPosition(from,100)==0;
+   for(int t=36;t<55;++t)recoil=recoil&&kb09_gui::benderReturnPosition(from,t)*from<=0
+       &&std::abs(kb09_gui::benderReturnPosition(from,t))<=std::abs(from)*.0200001;
+ }
+ expect(recoil,"visual spring crosses center at 35 ms, recoils once by at most 2% and rests exactly at 55 ms for both directions and short bends");
  // Observe actual oscillator pitch, rather than relying only on the display target.
  auto audibleReturn=[&](bool modern) {
    SH09Processor sound;sound.prepareToPlay(48000,64);
@@ -205,7 +219,9 @@ int main(){
           <<" Modern="<<modernPitch[0]<<','<<modernPitch[1]<<','<<modernPitch[2]<<'\n';
  expect(authenticPitch[0]>authenticPitch[1]&&authenticPitch[1]>authenticPitch[2]*1.03
         &&authenticPitch[2]>420&&authenticPitch[2]<460,"Authentic audible pitch returns progressively and settles at the unbent note");
- expect(modernPitch[0]<authenticPitch[0]*.9&&std::abs(modernPitch[2]-440)<20,
+ // With a 35 ms stroke, the first short window shares the existing 8 ms pitch smoothing.
+ // The middle window must still clearly separate immediate Modern from Authentic.
+ expect(modernPitch[0]<authenticPitch[0]&&modernPitch[1]<authenticPitch[1]*.8&&std::abs(modernPitch[2]-440)<20,
         "Modern audio returns faster while retaining existing click-free smoothing");
  expect(allocations==0,"MIDI feedback and sample-timed spring perform no C++ new allocations");
  {

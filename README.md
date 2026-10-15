@@ -1,8 +1,8 @@
 # Toyland KB-09 — Windows, Mac and Linux synthesizer
 
-**Current release: 1.7.0.** The standalone remembers MIDI inputs and reconnects them automatically. MIDI MAP and other action dialogs support arrow-key selection. The approved hardware rendering includes moving knob details, individual dust and wear, refined POWER and bender geometry, and consistent materials across standalone and plug-ins. AUTHENTIC onscreen bender return is linear over 50 ms; MODERN remains immediate.
+**Current release: 1.7.1.** The standalone remembers MIDI inputs and reconnects them automatically. MIDI MAP and other action dialogs support arrow-key selection. The approved hardware rendering includes moving knob details, individual dust and wear, refined POWER and bender geometry, and consistent materials across standalone and plug-ins. AUTHENTIC onscreen bender return is linear over 35 ms, followed by a small 20 ms visual recoil; MODERN remains immediate. POWER springs back immediately on release. Updated collar ticks, panel spacing and aged hardware follow the approved SH-09 references.
 
-Windows includes standalone/VST3; universal Mac includes standalone/AU/VST3; Linux x86-64 includes standalone only and remains UNVERIFIED pending real Arch audio and MIDI. Each download includes OS-specific installation instructions, an illustrated HTML manual and release notes. The sound engine, parameter identities, saved presets and 128-sample reported latency are retained. See [release validation](docs/VALIDATION_1.7.0.md).
+Windows includes standalone/VST3; universal Mac includes standalone/AU/VST3; Linux x86-64 includes standalone only and remains UNVERIFIED pending real Arch audio and MIDI. Each download includes OS-specific installation instructions, an illustrated HTML manual and release notes. The sound engine, parameter identities, saved presets and 128-sample reported latency are retained. See [release validation](docs/VALIDATION_1.7.1.md).
 
 ## Historical engineering record
 

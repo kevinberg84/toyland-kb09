@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "../DSP/Engine.h"
 #include "../Parameters/Parameters.h"
@@ -37,9 +37,9 @@ public:
  bool isPowerEnabled() const noexcept {return powerEnabled.load(std::memory_order_acquire);}
  void setPowerEnabled(bool enabled) noexcept;
  void queueKeyboard(int,bool,bool mouse=true) noexcept;
- static constexpr double benderReturnSeconds=.05;
+ static constexpr double benderReturnSeconds=.035;
  // Approved preview timing; the editor and audio spring use the value above.
- static constexpr double proposedBenderReturnSeconds=.05;
+ static constexpr double proposedBenderReturnSeconds=.035;
  void queuePitchBend(float value) noexcept { guiBendReturn.store(false,std::memory_order_relaxed);guiBend.store(juce::jlimit(-1.0f,1.0f,value),std::memory_order_relaxed);guiBendDirty.store(true,std::memory_order_release); }
  void queuePitchBendReturn() noexcept {guiBend.store(0,std::memory_order_relaxed);guiBendReturn.store(true,std::memory_order_relaxed);guiBendDirty.store(true,std::memory_order_release);}
  juce::AudioProcessorValueTreeState state;

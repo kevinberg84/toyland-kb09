@@ -117,7 +117,7 @@ struct ScrewMaterial {
         }
     }
 
-    const juce::Image& render(float age, bool lower,int pair=0) {
+    const juce::Image& render(float age, bool lower,int pair=0,float radius=4.7f) {
         const size_t index = size_t(pair*2+(lower ? 1 : 0));
         if (lastAge[index] == age) return images[index];
         lastAge[index] = age;
@@ -182,12 +182,16 @@ namespace power_detail {
 inline void paintLegend(juce::Graphics& g, juce::Colour ink) {
     juce::Graphics::ScopedSaveState save(g);
     g.setColour(ink);
-    power_detail::legendText(g, "POWER", {175, 459, 37, 12}, 8.0f,
-                            juce::Justification::centred);
-    power_detail::legendText(g, "ON", {225, 455, 16, 9}, 6.7f,
-                            juce::Justification::centredLeft);
-    power_detail::legendText(g, "OFF", {225, 464, 17, 9}, 6.7f,
-                            juce::Justification::centredLeft);
+    const auto textOutline=[](const char* text,juce::Rectangle<float> box,float size,
+                              juce::Justification alignment) {
+        juce::GlyphArrangement glyphs;
+        glyphs.addFittedText(juce::Font(juce::FontOptions("Arial",size,juce::Font::bold)),text,
+                            box.getX(),box.getY(),box.getWidth(),box.getHeight(),alignment,1,.8f);
+        juce::Path result;glyphs.createPath(result);return result;
+    };
+    auto power=textOutline("POWER",{175,459,37,12},8.4f,juce::Justification::centred);
+    auto on=textOutline("ON",{225,455,16,9},6.7f,juce::Justification::centredLeft);
+    auto off=textOutline("OFF",{225,464,17,9},6.7f,juce::Justification::centredLeft);
 
     // The screen print is two filled side profiles: a low depressed button
     // above, and the same button standing on its taller body below.
@@ -201,7 +205,7 @@ inline void paintLegend(juce::Graphics& g, juce::Colour ink) {
     depressed.lineTo(223, 462.0f);
     depressed.lineTo(214, 462.0f);
     depressed.closeSubPath();
-    g.fillPath(depressed);
+
 
     juce::Path raised;
     raised.startNewSubPath(215.6f, 468.0f);
@@ -217,18 +221,43 @@ inline void paintLegend(juce::Graphics& g, juce::Colour ink) {
     raised.lineTo(216.3f, 469.3f);
     raised.lineTo(215.6f, 469.3f);
     raised.closeSubPath();
-    g.fillPath(raised);
+    // Work in visible outline coordinates, not padded label boxes. The two
+    // switch symbols and the ON/OFF labels form two shared-width columns.
+    // The SH-09 prints the depressed and raised profiles as one tight stack.
+    // Keep the stack's center fixed while closing the empty space between rows.
+    depressed.applyTransform(juce::AffineTransform::translation(0,2.25f));
+    raised.applyTransform(juce::AffineTransform::translation(0,-2.25f));
+    const float left=160.5f+.425f,right=251.f-.5f;
+    const float powerWidth=power.getBounds().getWidth();
+    const float symbolWidth=juce::jmax(depressed.getBounds().getWidth(),raised.getBounds().getWidth());
+    const float stateWidth=juce::jmax(on.getBounds().getWidth(),off.getBounds().getWidth());
+    constexpr float symbolTextGap=3.f;
+    const float stateGroupWidth=symbolWidth+symbolTextGap+stateWidth;
+    const float gap=(right-left-powerWidth-stateGroupWidth)/3.f;
+    const float powerLeft=left+gap,symbolLeft=powerLeft+powerWidth+gap;
+    const float stateLeft=symbolLeft+symbolWidth+symbolTextGap;
+    power.applyTransform(juce::AffineTransform::translation(powerLeft-power.getBounds().getX(),0));
+    for(auto* symbol:{&depressed,&raised})
+        symbol->applyTransform(juce::AffineTransform::translation(symbolLeft-symbol->getBounds().getX(),0));
+    on.applyTransform(juce::AffineTransform::translation(stateLeft-on.getBounds().getX(),depressed.getBounds().getBottom()-on.getBounds().getBottom()));
+    off.applyTransform(juce::AffineTransform::translation(stateLeft-off.getBounds().getX(),raised.getBounds().getBottom()-off.getBounds().getBottom()));
+    const float stateMidpoint=(on.getBounds().getBottom()+off.getBounds().getY())*.5f;
+    const float stateShift=power.getBounds().getCentreY()-stateMidpoint;
+    for(auto* outline:{&depressed,&raised,&on,&off})
+        outline->applyTransform(juce::AffineTransform::translation(0,stateShift));
+    for(const auto* outline:{&power,&depressed,&raised,&on,&off})g.fillPath(*outline);
+
 }
 
 struct LegendMaterial {
-    static constexpr int scale = 4, width = 68 * scale, height = 24 * scale;
+    static constexpr int scale = 4, width = 92 * scale, height = 24 * scale;
     juce::Image original {juce::Image::ARGB, width, height, true, juce::SoftwareImageType()};
     juce::Image worn {juce::Image::ARGB, width, height, true, juce::SoftwareImageType()};
     float lastAge = -1.0f;
 
     LegendMaterial() {
         juce::Graphics mask(original);
-        mask.addTransform(juce::AffineTransform::translation(-174.0f, -454.0f)
+        mask.addTransform(juce::AffineTransform::translation(-159.0f, -454.0f)
                           .scaled(float(scale)));
         paintLegend(mask, juce::Colours::white);
     }
@@ -270,15 +299,15 @@ inline void drawPowerLegend(juce::Graphics& g, juce::Colour ink, float age = 0) 
     // Alpha-only print loss reveals the actual panel beneath it; the almost
     // intact lettering and solid silhouettes keep exactly the same outlines.
     g.drawImage(material.render(juce::jlimit(0.0f, 1.0f, age)),
-                juce::Rectangle<float>(174, 454, 68, 24),
+                juce::Rectangle<float>(159, 454, 92, 24),
                 juce::RectanglePlacement::stretchToFit, true);
 }
 
 inline void drawPowerScrew(juce::Graphics& g, juce::Point<float> centre,
-                          float age, bool lower,int pair=0) {
+                          float age, bool lower,int pair=0,float radius=4.7f) {
     juce::Graphics::ScopedSaveState save(g);
     age = juce::jlimit(0.0f, 1.0f, age);
-    constexpr float radius = 4.7f, viewCos = .981627f;
+    constexpr float viewCos = .981627f;
     const auto head = juce::Rectangle<float>(centre.x - radius,
         centre.y - radius * viewCos, 2 * radius, 2 * radius * viewCos);
     // Layered soft contact shadows anchor the curved head without a graphic
@@ -294,4 +323,3 @@ inline void drawPowerScrew(juce::Graphics& g, juce::Point<float> centre,
 }
 
 } // namespace kb09_gui
-
