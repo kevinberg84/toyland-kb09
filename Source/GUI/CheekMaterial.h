@@ -82,7 +82,9 @@ public:
             // reveal their original photo detail at each fixed birth stage.
             const int w=worn.getWidth(),h=worn.getHeight(),n=w*h;
             std::array<std::vector<float>,5> masks;
+            std::array<std::vector<float>,5> retainedMasks;
             for(auto& mask:masks)mask.resize(size_t(n),0.f);
+            for(auto& mask:retainedMasks)mask.resize(size_t(n),0.f);
             for(int y=0;y<h;++y)for(int x=0;x<w;++x) {
                 const juce::Point<float> point((x+.5f)/scale,(y+.5f)/scale);
                 for(const auto& mark:marks[size_t(side)]) {
@@ -91,7 +93,13 @@ public:
                     const float along=length>0?juce::jlimit(0.f,1.f,((point.x-a.x)*line.x+(point.y-a.y)*line.y)/length):0.f;
                     const float distance=point.getDistanceFrom(a+line*along);
                     const float cover=1.f-power_detail::smoothRange(mark.radius-1.2f,mark.radius,distance);
-                    for(int stage=mark.birth;stage<5;++stage)masks[size_t(stage)][size_t(y*w+x)]=juce::jmax(masks[size_t(stage)][size_t(y*w+x)],cover);
+                    for(int stage=mark.birth;stage<5;++stage) {
+                        masks[size_t(stage)][size_t(y*w+x)]=juce::jmax(masks[size_t(stage)][size_t(y*w+x)],cover);
+                        // Broad pale rubs are replaced in the proposal. Keep
+                        // the separate deep cuts, edge chips and short scratches.
+                        if(mark.radius>3.f||length<=25.f*25.f)
+                            retainedMasks[size_t(stage)][size_t(y*w+x)]=juce::jmax(retainedMasks[size_t(stage)][size_t(y*w+x)],cover);
+                    }
                 }
             }
             // Copy intact photographic plastic from the same horizontal
@@ -114,20 +122,22 @@ public:
                 undercoat[at]=juce::Colour::fromFloatRGBA(juce::jlimit(0.f,1.f,tone*ratio*.99f),
                     juce::jlimit(0.f,1.f,tone*ratio*1.01f),juce::jlimit(0.f,1.f,tone*ratio),original.getFloatAlpha());
             }
-            for(int stage=1;stage<5;++stage) {
-                auto& result=images[size_t(side)][size_t(stage)];
+            revisedImages[size_t(side)][0]=images[size_t(side)][0].createCopy();
+            for(int variant=0;variant<2;++variant)for(int stage=1;stage<5;++stage) {
+                auto& result=(variant?revisedImages:images)[size_t(side)][size_t(stage)];
                 result=juce::Image(juce::Image::ARGB,width*scale,height*scale,true,juce::SoftwareImageType());
                 juce::Image::BitmapData output(result,juce::Image::BitmapData::writeOnly);
                 for(int y=0;y<result.getHeight();++y)for(int x=0;x<result.getWidth();++x) {
                     const auto clean=fresh.getPixelColour(x,y),photo=photograph.getPixelColour(x,y);
                     const size_t at=size_t(y*w+x);
-                    const float all=masks[4][at],revealed=all>0?masks[size_t(stage)][at]/all:0.f;
+                    const float all=masks[4][at],revealed=all>0?(variant?retainedMasks:masks)[size_t(stage)][at]/all:0.f;
                     const auto body=photo.interpolatedWith(undercoat[at],all);
-                    const float coverage=.5f*photo.getFloatAlpha(),progress=float(stage)*.25f;
+                    const float coverage=.5f*photo.getFloatAlpha(),progress=float(stage)*.03125f;
                     const auto channel=[&](float c,float damaged,float paint) {
-                        // At max AGE this resolves exactly to the earlier
-                        // photographic endpoint, with no capsule-shaped colour
-                        // replacement or flat global average underneath a cut.
+                        // Fire Hazard body tone reaches only the previous
+                        // Seen Some Shit tone; damage remains independent.
+                        // The separate damage term keeps every original mark,
+                        // its full contrast and its original appearance stage.
                         return juce::jlimit(0.f,1.f,c+coverage*(progress*(paint-c)+revealed*(damaged-paint)));
                     };
                     // Full fixed-contrast local cuts are added one at a time.
@@ -137,15 +147,59 @@ public:
                         channel(clean.getFloatBlue(),photo.getFloatBlue(),body.getFloatBlue()),clean.getFloatAlpha()));
                 }
             }
+            // Narrow reflected bands on the molded edges. Keep the body dark
+            // and leave every revealed photographic scratch/cut unchanged.
+            for(int variant=0;variant<2;++variant)for(int stage=0;stage<5;++stage) {
+                juce::Image::BitmapData pixels((variant?revisedImages:images)[size_t(side)][size_t(stage)],juce::Image::BitmapData::readWrite);
+                for(int y=0;y<h;++y)for(int x=0;x<w;++x) {
+                    const auto colour=pixels.getPixelColour(x,y);
+                    if(colour.isTransparent())continue;
+                    const float px=(x+.5f)/scale,py=(y+.5f)/scale;
+                    const float curved=py<12.f?12.f-std::sqrt(juce::jmax(0.f,144.f-(py-12.f)*(py-12.f))):0.f;
+                    const float edge=px-curved;
+                    const float vertical=std::exp(-std::pow((edge-5.65f)/.65f,2.f));
+                    const float core=std::exp(-std::pow((edge-5.42f)/.22f,2.f));
+                    const float end=power_detail::smoothRange(1.f,11.f,py)*(1.f-power_detail::smoothRange(height-24.f,height-3.f,py));
+                    const float top=std::exp(-std::pow((py-4.1f)/.65f,2.f))*power_detail::smoothRange(10.f,17.f,px)
+                        *(1.f-power_detail::smoothRange(width-16.f,width-5.f,px));
+                    const float focus=.70f+.30f*power_detail::smoothNoise(py*.024f,0,seedForSide(side));
+                    const float damage=(variant?retainedMasks:masks)[size_t(stage)][size_t(y*w+x)];
+                    const float reflection=((side?.085f:.145f)*vertical+.045f*core)*end*focus+.13f*top;
+                    const float lift=reflection*(1.f-damage);
+                    pixels.setPixelColour(x,y,juce::Colour::fromFloatRGBA(
+                        juce::jmin(1.f,colour.getFloatRed()+lift*.99f),juce::jmin(1.f,colour.getFloatGreen()+lift),
+                        juce::jmin(1.f,colour.getFloatBlue()+lift*1.025f),colour.getFloatAlpha()));
+                }
+            }
+            // Same fine, curved abrasions as the black-key material: fixed
+            // paths, low contrast, rounded ends and equal additions per age.
+            for(int stage=1;stage<5;++stage) {
+                juce::Graphics g(revisedImages[size_t(side)][size_t(stage)]);
+                g.addTransform(juce::AffineTransform::scale(float(scale)));
+                juce::Path outline;outline.addRoundedRectangle(0,0,float(width),float(height),12);g.reduceClipRegion(outline);
+                const uint32_t seed=seedForSide(side)^0x9c1721u;
+                const auto random=[](uint32_t key) {
+                    key^=key>>16;key*=0x7feb352du;key^=key>>15;key*=0x846ca68bu;key^=key>>16;
+                    return float(key&65535u)/65535.f;
+                };
+                for(uint32_t scratch=0;scratch<uint32_t(24*stage);++scratch) {
+                    const float x=width*(.14f+.68f*random(seed+scratch*127));
+                    const float y=height*(.04f+.90f*random(seed+scratch*419));
+                    const float dx=(random(seed+scratch*199)-.5f)*16.f,dy=1.f+9.f*random(seed+scratch*733);
+                    juce::Path trace;trace.startNewSubPath(x,y);trace.quadraticTo(x+dx*.2f+1,y+dy*.5f,x+dx,y+dy);
+                    g.setColour(juce::Colour(0xffb7b9ae).withAlpha(.12f+.12f*random(seed+scratch*37)));
+                    g.strokePath(trace,juce::PathStrokeType(.11f+.08f*random(seed+scratch*59),juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+                }
+            }
         }
     }
-    void paint(juce::Graphics& g,int side,float age,float y,float totalWidth) const {
+    void paint(juce::Graphics& g,int side,float age,float y,float totalWidth,bool revised=false) const {
         juce::Graphics::ScopedSaveState save(g);
         const float x=side?totalWidth-width:0.f;
         const juce::Rectangle<float> bounds(x,y,float(width),float(height));
         g.setColour(juce::Colour(0xff0a0d0e));g.fillRect(bounds);
         juce::Path outline;outline.addRoundedRectangle(bounds,12);g.reduceClipRegion(outline);
-        g.setOpacity(1);g.drawImage(images[size_t(side)][size_t(appearanceStage(age))],bounds);
+        g.setOpacity(1);g.drawImage((revised?revisedImages:images)[size_t(side)][size_t(appearanceStage(age))],bounds);
         if(side) {g.setColour(juce::Colours::black.withAlpha(.12f));g.fillPath(outline);}
         // The independently generated photo-informed endpoint already holds
         // each cheek's cuts, scuffs and larger corner damage. Do not stamp a
@@ -153,7 +207,9 @@ public:
 
     }
 private:
+    static uint32_t seedForSide(int side) {return side?0x7e21a53bu:0x18b64cd9u;}
     std::array<std::array<juce::Image,5>,2> images;
+    std::array<std::array<juce::Image,5>,2> revisedImages;
 };
 inline const CheekMaterial& cheekMaterial() {static const CheekMaterial material;return material;}
 }

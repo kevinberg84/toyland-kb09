@@ -253,16 +253,34 @@ int main(int argc,char** argv) {
     expect(actionGapsAreEven()&&done->getX()-clearAll->getRight()==10,"hidden OPTIONS leaves no empty slot between CLEAR ALL and DONE");
     overlay->select(index("cutoff"));send(1,74,0);map.pump();overlay->refresh();
     expect(map.assignment(index("cutoff"))==74,"highlighted control learns the selected destination");
+    expect(done->getToggleState(),"MIDI mapping starts with DONE as its keyboard default");
+    overlay->keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
+    expect(clear->getToggleState()&&!done->getToggleState(),"right arrow wraps from DONE to CLEAR SELECTED");
+    overlay->keyPressed(juce::KeyPress(juce::KeyPress::downKey));
+    expect(clearAll->getToggleState(),"down arrow selects CLEAR ALL");
+    overlay->refresh();
+    expect(clearAll->getToggleState(),"MIDI updates preserve keyboard action selection");
+    overlay->keyPressed(juce::KeyPress(juce::KeyPress::leftKey));
+    expect(clear->getToggleState(),"left arrow selects the previous visible action");
+    overlay->keyPressed(juce::KeyPress(juce::KeyPress::upKey));
+    expect(done->getToggleState(),"up arrow wraps back to DONE and skips hidden OPTIONS");
     if(argc>1) {
         auto directory=juce::File(argv[1]);directory.createDirectory();
         auto capture=[&](const char* name){juce::MessageManager::getInstance()->runDispatchLoopUntil(120);auto image=editor->createComponentSnapshot(editor->getLocalBounds(),true,1.5f);juce::MemoryOutputStream bytes;expect(juce::PNGImageFormat{}.writeImageToStream(image,bytes)&&directory.getChildFile(name).replaceWithData(bytes.getData(),bytes.getDataSize()),juce::String("actual editor screenshot: ")+name);};
         capture("midi-map-assigned.png");
+        overlay->keyPressed(juce::KeyPress(juce::KeyPress::rightKey));capture("midi-map-arrow-clear-selected.png");
+        overlay->keyPressed(juce::KeyPress(juce::KeyPress::rightKey));capture("midi-map-arrow-clear-all.png");
+        overlay->keyPressed(juce::KeyPress(juce::KeyPress::rightKey));capture("midi-map-arrow-done.png");
         overlay->select(index("resonance"));capture("midi-map-learn.png");
         overlay->select(index("vcaMode"));send(1,23,127);map.pump();overlay->refresh();capture("midi-map-button-check.png");
         const auto box=overlay->getMessageBounds();bool actionsFit=true;
         for(auto* action:{clear,clearAll,done})actionsFit&=box.contains(action->getBounds());
         expect(actionsFit&&overlay->getLocalBounds().contains(box)&&box.getHeight()<=216&&box.getWidth()<=660,"compact mapping strip and its actions fit the unscaled editor");
         map.finishLearn();overlay->refresh();capture("midi-map-button-ready.png");
+        overlay->keyPressed(juce::KeyPress(juce::KeyPress::leftKey));
+        auto* options=dynamic_cast<juce::TextButton*>(find(*editor,"OPTIONS"));
+        expect(options&&options->getToggleState(),"visible OPTIONS participates in arrow cycling");
+        overlay->keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
         expect(actionGapsAreEven(),"visible OPTIONS uses the same compact gap as every other action");
         overlay->setVisible(false);set("age",.75f);capture("sold-as-is-key-cracks.png");
         set("age",1.f);capture("fire-hazard-key-cracks.png");
@@ -283,11 +301,12 @@ int main(int argc,char** argv) {
                 &&close(scale*mappingTheme->getAlertWindowTitleFont().getHeight(),alertScale*actualReference.theme.getAlertWindowTitleFont().getHeight())
                 &&close(scale*mappingTheme->getTextButtonFont(*done,done->getHeight()).getHeight(),alertScale*actualReference.theme.getTextButtonFont(*referenceAction,referenceAction->getHeight()).getHeight()),
                 "effective title/body/button screen size matches Save/Don't Save at editor width "+juce::String(size.x));
-            auto* keyboard=find(*editor,"keyboard");
-            const auto keys=overlay->getLocalArea(keyboard,keyboard->getLocalBounds());
-            expect(overlay->getLocalBounds().contains(overlay->getMessageBounds())
-                &&overlay->getMessageBounds().getCentre()==keys.getCentre(),"mapping window stays centered in the keyboard at editor width "+juce::String(size.x));
+            expect(overlay->getLocalBounds().contains(overlay->getMessageBounds()),"mapping window fits the editor at width "+juce::String(size.x));
             if(size.x>=1483) {
+                const auto offset=overlay->getMessageBounds().getCentre()-overlay->getLocalBounds().getCentre();
+                expect(std::abs(offset.x)<=1&&std::abs(offset.y)<=1,"mapping window is centered on the synth within integer rounding at editor width "+juce::String(size.x));
+            }
+            {
                 bool unobstructed=true;
                 for(size_t i=0;i<sh09::StandaloneMidiMap::count;++i)if(auto* control=find(*editor,sh09::specs[i].id))
                     unobstructed&=!overlay->getMessageBounds().intersects(overlay->getLocalArea(control,control->getLocalBounds()));
@@ -301,8 +320,13 @@ int main(int argc,char** argv) {
         {juce::Graphics g(comparison);g.fillAll(juce::Colour(0xff151515));g.drawImageAt(strip,0,0);g.drawImageAt(save,0,strip.getHeight()+32);}
         expect(writeImage(comparison,"mapping-save-same-scale.png"),"actual MIDI strip and Save/Don't Save exported together at identical raster scale");
     }
-    clearAll->onClick();expect(map.assignment(index("cutoff"))==74,"first clear-all click requests confirmation without deleting assignments");
-    clearAll->onClick();expect(map.assignment(index("cutoff"))==-1&&!map.isLearning(),"confirmed clear-all removes assignments and cancels learning");
+    overlay->keyPressed(juce::KeyPress(juce::KeyPress::leftKey));
+    if(!clearAll->getToggleState())overlay->keyPressed(juce::KeyPress(juce::KeyPress::leftKey));
+    expect(clearAll->getToggleState(),"keyboard reaches CLEAR ALL after optional actions");
+    overlay->keyPressed(juce::KeyPress(juce::KeyPress::returnKey));juce::MessageManager::getInstance()->runDispatchLoopUntil(60);
+    expect(map.assignment(index("cutoff"))==74&&clearAll->getToggleState(),"Enter requests clear-all confirmation and preserves selected action");
+    overlay->keyPressed(juce::KeyPress(juce::KeyPress::returnKey));juce::MessageManager::getInstance()->runDispatchLoopUntil(60);
+    expect(map.assignment(index("cutoff"))==-1&&!map.isLearning(),"second Enter confirms clear-all without activating DONE");
     overlay->select(index("cutoff"));done->onClick();
     expect(!overlay->isVisible()&&!map.isLearning(),"DONE closes mapping and cancels pending learn");
     editor.reset();

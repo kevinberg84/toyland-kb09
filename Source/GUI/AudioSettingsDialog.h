@@ -6,10 +6,10 @@ namespace kb09_gui {
 class AudioSettingsDialog final : public ThemedAlert {
 public:
     AudioSettingsDialog(juce::AudioDeviceManager& manager, juce::Component* owner,
-                        juce::Value* muteInput = nullptr, float condition = -1)
+                        juce::Value* muteInput = nullptr, float condition = -1, std::function<void()> closed = {})
         : ThemedAlert("Audio / MIDI settings", "Choose your audio device and MIDI inputs.",
                       juce::MessageBoxIconType::NoIcon, owner, condition),
-          contents(manager,muteInput) {
+          contents(manager,muteInput),onClosed(std::move(closed)) {
         viewport.setComponentID("audioSettingsViewport");
         viewport.setViewedComponent(&contents,false);
         viewport.setScrollBarsShown(true,false);
@@ -18,9 +18,9 @@ public:
         addButton("Close",0,juce::KeyPress(juce::KeyPress::escapeKey));
         ready=true;fitViewport();
     }
-    ~AudioSettingsDialog() override { removeCustomComponent(0); }
-    static void show(juce::AudioDeviceManager& manager,juce::Component* owner,juce::Value* muteInput) {
-        (new AudioSettingsDialog(manager,owner,muteInput))->enterModalState(true,nullptr,true);
+    ~AudioSettingsDialog() override { removeCustomComponent(0);if(onClosed)onClosed(); }
+    static void show(juce::AudioDeviceManager& manager,juce::Component* owner,juce::Value* muteInput,std::function<void()> closed = {}) {
+        (new AudioSettingsDialog(manager,owner,muteInput,-1,std::move(closed)))->enterModalState(true,nullptr,true);
     }
 private:
     // The selector chooses its own height as drivers and channel lists change.
@@ -66,6 +66,7 @@ private:
         }
     }
     SettingsContents contents;
+    std::function<void()> onClosed;
     juce::Viewport viewport;
     bool ready=false,fitting=false;
 };

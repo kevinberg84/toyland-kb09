@@ -1,10 +1,8 @@
 # Toyland KB-09 — Windows, Mac and Linux synthesizer
 
-**Current release preparation: 1.5.3.** The approved resonant filter uses stage-dependent headroom and a separate nonlinear feedback limiter, solved together at each internal processing step. Comparisons use Kevin's 96 kHz SH-09 recordings. The revised model improves slow resonant-sweep amplitude consistency while retaining natural harmonic interaction; there is no automatic leveling or additional sine oscillator. Hardware calibration and individual patches can differ.
+**Current release: 1.7.0.** The standalone remembers MIDI inputs and reconnects them automatically. MIDI MAP and other action dialogs support arrow-key selection. The approved hardware rendering includes moving knob details, individual dust and wear, refined POWER and bender geometry, and consistent materials across standalone and plug-ins. AUTHENTIC onscreen bender return is linear over 50 ms; MODERN remains immediate.
 
-Deferred MIDI feedback now distinguishes its own publications from external edits. VST3 CC1 follows the next wheel movement after presets and host edits; standalone soft pickup remains intact. All 35 parameter identities, saved-state format, 24 factory sounds, fixed 4x processing and 128-sample reported latency are retained. CPU cost is higher, so the smallest reliable playing buffer needs user testing.
-
-Windows provides standalone/VST3, universal Mac provides standalone/AU/VST3, and Linux x86-64 provides standalone only. Linux remains UNVERIFIED pending physical Arch playback and MIDI. The [current HTML manual](docs/manual/index.html) includes the filter-modeling account, comparisons, dark reading theme, setup recommendations and October 2026 footer. The first key crack appears at Vintage, Baby!, at 40% of its Sold As-Is length. [Release validation](docs/VALIDATION_1.5.3.md) records final-build evidence and distribution status as it is completed.
+Windows includes standalone/VST3; universal Mac includes standalone/AU/VST3; Linux x86-64 includes standalone only and remains UNVERIFIED pending real Arch audio and MIDI. Each download includes OS-specific installation instructions, an illustrated HTML manual and release notes. The sound engine, parameter identities, saved presets and 128-sample reported latency are retained. See [release validation](docs/VALIDATION_1.7.0.md).
 
 ## Historical engineering record
 

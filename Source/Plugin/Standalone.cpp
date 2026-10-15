@@ -1,4 +1,5 @@
 #include "Processor.h"
+#include "StandaloneMidiInputs.h"
 #include "../GUI/PresetFiles.h"
 #include "../GUI/Editor.h"
 #include "../GUI/ClosePrompt.h"
@@ -58,6 +59,7 @@ public:
         holder->stopPlaying();
         auto* processor = dynamic_cast<SH09Processor*>(holder->processor.get());
         if (processor == nullptr) { quit(); return; }
+        midiInputs=std::make_unique<sh09::StandaloneMidiInputs>(holder->deviceManager,*settings);
         if(processor->midiMap) {
             processor->midiMap->restore(settings->getValue("standaloneMidiMap"));
             processor->midiMap->onChanged=[this,processor] {
@@ -73,6 +75,8 @@ public:
         }
         holder->startPlaying();
         window = std::make_unique<InstrumentWindow>(getApplicationName(), juce::Colour(0xff151a1d), std::move(holder));
+        if(auto* editor=dynamic_cast<SH09Editor*>(processor->getActiveEditor()))
+            editor->setAudioSettingsObserver([this](bool editing){if(midiInputs)midiInputs->setEditing(editing);});
         presets = std::make_unique<sh09::PresetFiles>(*processor, *window);
         presets->onCancelled = [this] { closing = false; };
         presets->onCompleted = [this](const juce::Result& result, const juce::File& file, bool loading) {
@@ -111,7 +115,7 @@ public:
     }
 
     void shutdown() override {
-        question.reset(); presets.reset(); window.reset();
+        question.reset(); presets.reset(); midiInputs.reset(); window.reset();
         juce::LookAndFeel::setDefaultLookAndFeel(nullptr);
         properties.getUserSettings()->removeValue("filterState");
         properties.saveIfNeeded();
@@ -147,6 +151,7 @@ private:
         window->grabKeyboardFocus();
     }
     juce::ApplicationProperties properties;
+    std::unique_ptr<sh09::StandaloneMidiInputs> midiInputs;
     std::unique_ptr<InstrumentWindow> window;
     std::unique_ptr<sh09::PresetFiles> presets;
     std::unique_ptr<kb09_gui::ClosePrompt> question;

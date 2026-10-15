@@ -11,6 +11,7 @@ public:
     void parentHierarchyChanged() override;
     void visibilityChanged() override;
     void prepareStandaloneWindow();
+    void setAudioSettingsObserver(std::function<void(bool)>);
 private:
     class Panel;
     sh09::WindowSizing sizing;

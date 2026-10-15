@@ -228,7 +228,7 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  for(int s=0;s<buffer.getNumSamples();++s){
    if(bendReturnRemaining>0) {
      const auto remaining=float(--bendReturnRemaining)/float(bendReturnLength);
-     soundingBendTarget=bendReturnFrom*remaining*remaining;
+     soundingBendTarget=bendReturnFrom*remaining;
      engine.pitchBend(soundingBendTarget);springAdvanced=true;
    }
    while(event!=end&&(*event).samplePosition<=s){const auto meta=*event;handleMidi(meta.data,meta.numBytes);++event;}

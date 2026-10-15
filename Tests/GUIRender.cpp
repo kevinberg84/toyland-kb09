@@ -1,10 +1,13 @@
-#include "../Source/Plugin/Processor.h"
+﻿#include "../Source/Plugin/Processor.h"
 #include "../Source/GUI/ClosePrompt.h"
 #include "../Source/GUI/UpdateInstructions.h"
 #include "../Source/GUI/KeyboardFeedback.h"
 #include "../Source/GUI/CheekMaterial.h"
 #include "../Source/GUI/RustMaterial.h"
 #include "../Source/GUI/PowerDetails.h"
+#include "../Source/GUI/FaderDetails.h"
+#include "../Source/GUI/BenderBreakGeometry.h"
+#include "../Source/GUI/MidiMapOverlay.h"
 #include <BinaryData.h>
 #include <algorithm>
 #include <array>
@@ -449,7 +452,7 @@ void checkOpaqueCaps(juce::Component& editor, Checks& checks) {
                   "cap-opacity check retains genuinely different surrounding backgrounds");
 }
 
-void checkRotaryTicks(SH09Processor& processor,juce::Component& editor,Checks& checks) {
+void checkRotaryTicks(SH09Processor& processor,juce::Component& editor,Checks& checks,const juce::File& directory={}) {
     const float initialAge=processor.state.getRawParameterValue("age")->load();
     constexpr float origin=10,diameter=100,centreX=origin+diameter*.497f,centreY=origin+diameter*.410f;
     // Independent visual contract: a predominantly round metal top and a short
@@ -492,6 +495,7 @@ void checkRotaryTicks(SH09Processor& processor,juce::Component& editor,Checks& c
                 g.addTransform(juce::AffineTransform::scale(float(controlRenderScale)));
                 slider->getLookAndFeel().drawRotarySlider(g,int(origin),int(origin),int(diameter),int(diameter),
                     normalized,rotary.startAngleRadians,rotary.endAngleRadians,*slider);
+                if(directory!=juce::File{})writePNG(images[state],directory.getChildFile(juce::String(id)+"_age"+juce::String(age,1)+"_"+juce::String(int(state))+".png"));
             }
             const auto context=juce::String(id)+" Age "+juce::String(age,2);
             checks.expect(movingTicks(images,angles),context+" has a visible moving black top tick at minimum, midpoint and maximum");
@@ -507,16 +511,48 @@ void checkRotaryTicks(SH09Processor& processor,juce::Component& editor,Checks& c
                     const float cy=((float(y)+.5f)/controlRenderScale-(origin+diameter*.505f))/(diameter*projectedCos);
                     const float collarRadius=std::sqrt(cx*cx+cy*cy);
                     if(collarRadius>.35f&&collarRadius<.49f)continue;
+                    const float u=((float(x)+.5f)/controlRenderScale-origin)/diameter;
+                    const float v=((float(y)+.5f)/controlRenderScale-origin)/diameter;
+                    if(u>.14f&&u<.86f&&v>.39f&&v<.86f)continue; // moving cylindrical grip and its wear
                     const auto p=a.getPixelColour(x,y),q=b.getPixelColour(x,y);
                     const int delta=std::max({std::abs(int(p.getRed())-int(q.getRed())),std::abs(int(p.getGreen())-int(q.getGreen())),
                                               std::abs(int(p.getBlue())-int(q.getBlue()))});
                     if(delta>2)fixedLighting=false;
                 }
             }
-            checks.expect(fixedLighting,context+" rotation leaves body, skirt, shadow and lighting outside the top and collar indicator masks fixed");
+            checks.expect(fixedLighting,context+" rotation retains fixed lighting and silhouette outside moving material and indicators");
+            int gripChanges=0,wearChanges=0;
+            for(int y=0;y<images[0].getHeight();++y)for(int x=0;x<images[0].getWidth();++x) {
+                const float u=((x+.5f)/controlRenderScale-origin)/diameter,v=((y+.5f)/controlRenderScale-origin)/diameter;
+                const auto a=images[0].getPixelAt(x,y),b=images[1].getPixelAt(x,y);
+                const int delta=std::max({std::abs(int(a.getRed())-int(b.getRed())),std::abs(int(a.getGreen())-int(b.getGreen())),std::abs(int(a.getBlue())-int(b.getBlue()))});
+                if(u>.32f&&u<.68f&&v>.72f&&v<.79f&&delta>12)++gripChanges;
+                // The upper-left interior is clear of all three pointer rays.
+                if(u>.35f&&u<.44f&&v>.29f&&v<.42f&&delta>5)++wearChanges;
+            }
+            checks.expect(gripChanges>50,context+" photographed grip ribs visibly travel with knob rotation");
+            if(age>0)checks.expect(wearChanges>20,context+" surface pitting rotates across the metal top");
             const std::array<juce::Image,3> staticTick{{images[0],images[0],images[0]}};
             checks.expect(!movingTicks(staticTick,angles),context+" tick detector rejects a static or absent moving indicator");
         }
+        setParameter(processor,"age",0);settleEditor();
+        std::array<juce::Image,2> directionFrames;
+        for(int frame=0;frame<2;++frame) {
+            directionFrames[size_t(frame)]=juce::Image(juce::Image::ARGB,120*controlRenderScale,120*controlRenderScale,true,juce::SoftwareImageType());
+            juce::Graphics g(directionFrames[size_t(frame)]);g.fillAll(juce::Colour(0xff232927));g.addTransform(juce::AffineTransform::scale(float(controlRenderScale)));
+            slider->getLookAndFeel().drawRotarySlider(g,int(origin),int(origin),int(diameter),int(diameter),
+                .5f+float(frame)*.08f/(rotary.endAngleRadians-rotary.startAngleRadians),rotary.startAngleRadians,rotary.endAngleRadians,*slider);
+        }
+        double bestError=1.e30;int bestShift=0;
+        for(int shift=-16;shift<=16;++shift) {
+            double error=0;
+            for(int y=85*controlRenderScale;y<88*controlRenderScale;++y)for(int x=48*controlRenderScale;x<71*controlRenderScale;++x) {
+                const auto a=directionFrames[0].getPixelAt(x,y),b=directionFrames[1].getPixelAt(x+shift,y);
+                error+=std::abs(int(a.getRed())-int(b.getRed()))+std::abs(int(a.getGreen())-int(b.getGreen()))+std::abs(int(a.getBlue())-int(b.getBlue()));
+            }
+            if(error<bestError){bestError=error;bestShift=shift;}
+        }
+        checks.expect(bestShift<=-3,juce::String(id)+" front ribs travel left with a clockwise top-pointer turn (tracked shift "+juce::String(bestShift)+")");
         slider->setValue(original,juce::sendNotificationSync);settleEditor();
     }
     setParameter(processor,"age",initialAge);settleEditor();
@@ -1639,6 +1675,437 @@ int main(int argc, char** argv) {
     }
     juce::ScopedJuceInitialiser_GUI initialiseGUI;
     Checks checks;
+    if(juce::String(argv[1]).startsWith("--midi-centre31-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Standalone);
+        SH09Processor processor;juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Undefined);processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* button=dynamic_cast<juce::TextButton*>(findComponent(*editor,"midiMap"));if(!button)return 1;
+        button->setToggleState(true,juce::dontSendNotification);button->onClick();settleEditor();
+        auto* overlay=dynamic_cast<kb09_gui::MidiMapOverlay*>(findComponent(*editor,"midiMapOverlay"));if(!overlay)return 1;
+        juce::String report;
+        for(const auto size:{juce::Point<int>(700,450),juce::Point<int>(1483,816),juce::Point<int>(2100,1150)}) {
+            editor->setSize(size.x,size.y);settleEditor();
+            for(bool proposed:{false,true}) {
+                overlay->getProperties().set("previewMidiCentre31",proposed);overlay->refresh();settleEditor();
+                const auto bounds=overlay->getMessageBounds();int covered=0;
+                for(size_t i=0;i<sh09::StandaloneMidiMap::count;++i)if(auto* target=findComponent(*editor,sh09::specs[i].id))covered+=bounds.intersects(overlay->getLocalArea(target,target->getLocalBounds()));
+                if(proposed) {
+                    checks.expect(covered==0,"centered MIDI message exposes every assignable parameter at width "+juce::String(size.x));
+                    if(size.x>=1483)checks.expect(std::abs(bounds.getCentreX()-editor->getWidth()/2)<=1,"MIDI message is horizontally centered on the synth at width "+juce::String(size.x));
+                }
+                report+=juce::String(size.x)+(proposed?" proposal ":" current ")+bounds.toString()+" covered="+juce::String(covered)+"\n";
+                checks.expect(writePNG(editor->createComponentSnapshot(editor->getLocalBounds(),true,1.f),directory.getChildFile("mapping_"+juce::String(size.x)+(proposed?"_proposal.png":"_current.png"))),"native full synth MIDI placement export");
+            }
+        }
+        directory.getChildFile("mapping-layout.txt").replaceWithText(report);
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--power-sliver33-review=")||juce::String(argv[1]).startsWith("--power-shoulder32-review=")||juce::String(argv[1]).startsWith("--power-finish31-review=")) {
+        const bool sliverReview=juce::String(argv[1]).startsWith("--power-sliver33-review=");
+        const bool shoulderReview=sliverReview||juce::String(argv[1]).startsWith("--power-shoulder32-review=");
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* control=findComponent(*editor,"power");if(!control)return 1;
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",float(stage)*.25f);settleEditor();
+            for(int pose=0;pose<2;++pose) {
+                processor.setPowerEnabled(pose==1);
+                for(bool proposed:{false,true}) {
+                    control->getProperties().set("previewPowerFinish31",!shoulderReview&&proposed);
+                    control->getProperties().set("previewPowerShoulder32",shoulderReview&&(sliverReview||proposed));
+                    if(sliverReview)control->getProperties().set("previewPowerSliver33",proposed);control->repaint();settleEditor();
+                    const auto region=editor->getLocalArea(control,control->getLocalBounds()).expanded(12,14);
+                    const auto name=juce::String(pose?"power_on_":"power_off_")+juce::String(stage)+(proposed?"_proposal.png":"_current.png");
+                    checks.expect(writePNG(editor->createComponentSnapshot(region,true,4.f),directory.getChildFile(name)),"native POWER finish comparison "+name);
+                }
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--bender-motion31-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        const auto timing="{\"currentMs\":"+juce::String(SH09Processor::benderReturnSeconds*1000,1)+",\"proposedMs\":"+juce::String(SH09Processor::proposedBenderReturnSeconds*1000,1)+",\"exponent\":1}";
+        directory.getChildFile("timing.json").replaceWithText(timing);
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* control=dynamic_cast<juce::Slider*>(findComponent(*editor,"bender"));if(!control)return 1;
+        control->getProperties().set("previewBenderSeam31",true);
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",float(stage)*.25f);settleEditor();
+            for(int frame=0;frame<=40;++frame) {
+                control->setValue(-1.f+float(frame)/20.f,juce::dontSendNotification);control->repaint();
+                const auto region=editor->getLocalArea(control,control->getLocalBounds()).expanded(5);
+                const auto name="motion_"+juce::String(stage)+"_"+juce::String(frame)+".png";
+                checks.expect(writePNG(editor->createComponentSnapshot(region,true,4.f),directory.getChildFile(name)),"native spring preview frame "+name);
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--approved-switch28-check=")||juce::String(argv[1]).startsWith("--switch-dust28-review=")) {
+        const bool approvedDefaults=juce::String(argv[1]).startsWith("--approved-switch28-check=");
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",float(stage)*.25f);settleEditor();
+            for(const auto* id:{"pwmMode","lfoWave"}) {
+                auto* control=findComponent(*editor,id);if(!control)return 1;
+                setParameter(processor,id,.5f);settleEditor();
+                for(bool proposed:{false,true}) {
+                    if(approvedDefaults&&!proposed)continue;
+                    if(!approvedDefaults)control->getProperties().set("previewSwitchGrooveDust28",proposed);
+                    control->repaint();settleEditor();
+                    const auto region=editor->getLocalArea(control,control->getLocalBounds()).expanded(5);
+                    const auto name=juce::String(id)+"_"+juce::String(stage)+(proposed?"_proposal.png":"_current.png");
+                    checks.expect(writePNG(editor->createComponentSnapshot(region,true,6.f),directory.getChildFile(name)),"native switch groove dust comparison "+name);
+                }
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--bender-seam31-review=")||juce::String(argv[1]).startsWith("--bender-root30-review=")||juce::String(argv[1]).startsWith("--bender-finish29-review=")||juce::String(argv[1]).startsWith("--bender-sheen28-review=")) {
+        const bool seamReview=juce::String(argv[1]).startsWith("--bender-seam31-review=");
+        const bool rootReview=seamReview||juce::String(argv[1]).startsWith("--bender-root30-review=");
+        const bool continuousReview=rootReview||juce::String(argv[1]).startsWith("--bender-finish29-review=");
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* control=dynamic_cast<juce::Slider*>(findComponent(*editor,"bender"));if(!control)return 1;
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",float(stage)*.25f);settleEditor();
+            for(int pose=0;pose<3;++pose) {
+                control->setValue(pose==0?0:pose==1?-1:1,juce::dontSendNotification);
+                for(bool proposed:{false,true}) {
+                    control->getProperties().set("previewBenderSheen28",continuousReview||proposed);
+                    control->getProperties().set("previewContinuousBenderFinish29",continuousReview&&(rootReview||proposed));
+                    if(rootReview)control->getProperties().set("previewBenderJoinedRoot30",seamReview||proposed);
+                    if(seamReview)control->getProperties().set("previewBenderSeam31",proposed);control->repaint();settleEditor();
+                    const auto region=editor->getLocalArea(control,control->getLocalBounds()).expanded(5);
+                    const auto name=juce::String(pose==0?"bender_center_":pose==1?"bender_left_":"bender_right_")+juce::String(stage)+(proposed?"_proposal.png":"_current.png");
+                    checks.expect(writePNG(editor->createComponentSnapshot(region,true,4.f),directory.getChildFile(name)),"native bender gloss comparison "+name);
+                }
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--approved27-check=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        // Capture the shipping defaults, without setting any preview properties.
+        // Compare these files with the user-approved proposal outside the fixture.
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",float(stage)*.25f);settleEditor();
+            for(const auto* id:{"power","bender"}) {
+                auto* control=findComponent(*editor,id);if(!control)return 1;
+                const bool power=juce::String(id)=="power";
+                for(int pose=0;pose<(power?2:3);++pose) {
+                    if(power)processor.setPowerEnabled(pose==1);
+                    else dynamic_cast<juce::Slider*>(control)->setValue(pose==0?0:pose==1?-1:1,juce::dontSendNotification);
+                    control->repaint();settleEditor();
+                    const auto region=editor->getLocalArea(control,control->getLocalBounds()).expanded(power?12:5,power?14:5);
+                    const auto name=juce::String(id)+"_"+(power?(pose?"on":"off"):(pose==0?"center":pose==1?"left":"right"))+"_"+juce::String(stage)+"_proposal.png";
+                    checks.expect(writePNG(editor->createComponentSnapshot(region,true,4.f),directory.getChildFile(name)),"approved default capture "+name);
+                }
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--hardware27-review=")||juce::String(argv[1]).startsWith("--hardware26-review=")||juce::String(argv[1]).startsWith("--hardware25-review=")||juce::String(argv[1]).startsWith("--power-rib24-review=")||juce::String(argv[1]).startsWith("--power-final24-review=")) {
+        const bool frontReview=juce::String(argv[1]).startsWith("--hardware27-review=");
+        const bool bevelReview=frontReview||juce::String(argv[1]).startsWith("--hardware26-review=");
+        const bool contourReview=bevelReview||juce::String(argv[1]).startsWith("--hardware25-review=");
+        if(contourReview) {
+            bool stayedInside=true;int corrected=0;
+            const auto fracture=kb09_gui::recessedBenderBreak();
+            for(float angle:{-.610865f,0.f,.610865f})for(float t:{0.f,.25f,.5f,.75f,1.f})for(size_t i=0;i<fracture.size();++i) {
+                const auto original=kb09_gui::benderFractureLocal(fracture[i],int(i),t,1.15f,16.f);
+                const float axle=kb09_gui::benderDiscAxle(original,t,16.f);
+                const auto fixed=kb09_gui::constrainBenderFractureToRim(original,axle,16.f,angle);
+                if(fixed.getDistanceFrom(original)>.001f)++corrected;
+                const float x=fixed.x*std::cos(angle)+fixed.y*std::sin(angle),z=fixed.y*std::cos(angle)-fixed.x*std::sin(angle);
+                if(std::abs(x)<58.85f)stayedInside&=(-z*.190809f+axle*.981627f<=16.f*.981627f-std::sqrt(58.85f*58.85f-x*x)*.190809f+.001f);
+            }
+            checks.expect(stayedInside&&corrected>0,"broken shoulders stay behind the intact disc front curve at center and both bends");
+        }
+        const bool powerOnly=juce::String(argv[1]).startsWith("--power-final24-review=");
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",float(stage)*.25f);settleEditor();
+            for(const auto* id:{"power","bender"}) {
+                if(powerOnly&&juce::String(id)!="power")continue;
+                auto* control=findComponent(*editor,id);if(!control)return 1;
+                const bool power=juce::String(id)=="power";
+                for(const auto& key:power?juce::StringArray{"previewPowerCorners18","previewPowerMount20","previewPowerHeight18","previewPowerHalf23"}:juce::StringArray{"previewBenderFit19","previewBenderRib21","previewConcentricRib22","previewParallelRib23"})
+                    control->getProperties().set(key,true);
+                if(power)control->getParentComponent()->getProperties().set("previewPowerMount20",true);
+                for(int pose=0;pose<(power?2:3);++pose) {
+                    if(power)processor.setPowerEnabled(pose==1);
+                    else dynamic_cast<juce::Slider*>(control)->setValue(pose==0?0:pose==1?-1:1,juce::dontSendNotification);
+                    for(bool proposed:{false,true}) {
+                        control->getProperties().set(power?"previewPowerNudge24":"previewThickRib24",contourReview||proposed);
+                        if(power)control->getParentComponent()->getProperties().set("previewPowerNudge24",contourReview||proposed);
+                        if(contourReview) {
+                            control->getProperties().set(power?"previewContourMount25":"previewBrokenContour25",bevelReview||proposed);
+                            if(power)control->getParentComponent()->getProperties().set("previewContourMount25",bevelReview||proposed);
+                            if(bevelReview&&!power)control->getProperties().set("previewBrokenBevel26",frontReview||proposed);
+                            if(frontReview&&!power)control->getProperties().set("previewContinuousFront27",proposed);
+                        }
+                        control->repaint();settleEditor();
+                        const auto region=editor->getLocalArea(control,control->getLocalBounds()).expanded(power?12:5,power?14:5);
+                        const auto image=editor->createComponentSnapshot(region,true,4.f);
+                        const auto name=juce::String(id)+"_"+(power?(pose?"on":"off"):(pose==0?"center":pose==1?"left":"right"))+"_"+juce::String(stage)+(proposed?"_proposal.png":"_current.png");
+                        checks.expect(writePNG(image,directory.getChildFile(name)),"native rib thickness / power mount comparison "+name);
+                    }
+                }
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--bender-fit-review=")||juce::String(argv[1]).startsWith("--bender-rib-review=")||juce::String(argv[1]).startsWith("--bender-concentric-review=")||juce::String(argv[1]).startsWith("--bender-parallel-review=")) {
+        const bool parallelReview=juce::String(argv[1]).startsWith("--bender-parallel-review=");
+        const bool concentricReview=parallelReview||juce::String(argv[1]).startsWith("--bender-concentric-review=");
+        const bool ribReview=concentricReview||juce::String(argv[1]).startsWith("--bender-rib-review=");
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* control=dynamic_cast<juce::Slider*>(findComponent(*editor,"bender"));if(!control)return 1;
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",float(stage)*.25f);settleEditor();
+            for(int pose=0;pose<3;++pose) {
+                control->setValue(pose==0?0:pose==1?-1:1,juce::dontSendNotification);
+                for(bool proposed:{false,true}) {
+                    control->getProperties().set("previewBenderFit19",concentricReview||proposed);
+                    control->getProperties().set("previewBenderRib21",ribReview&&(concentricReview||proposed));
+                    control->getProperties().set("previewConcentricRib22",parallelReview||(concentricReview&&proposed));
+                    control->getProperties().set("previewParallelRib23",parallelReview&&proposed);control->repaint();settleEditor();
+                    const auto region=editor->getLocalArea(control,control->getLocalBounds()).expanded(5);
+                    const auto image=editor->createComponentSnapshot(region,true,4.f);
+                    const auto name=juce::String(pose==0?"bender_center_":pose==1?"bender_left_":"bender_right_")+juce::String(stage)+(proposed?"_proposal.png":"_current.png");
+                    checks.expect(writePNG(image,directory.getChildFile(name)),"native bender proportions and scuffs "+name);
+                }
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--power-corners-review=")||juce::String(argv[1]).startsWith("--power-height-review=")||juce::String(argv[1]).startsWith("--power-mount-review=")||juce::String(argv[1]).startsWith("--power-half-review=")) {
+        const bool halfReview=juce::String(argv[1]).startsWith("--power-half-review=");
+        const bool mountReview=halfReview||juce::String(argv[1]).startsWith("--power-mount-review=");
+        const bool heightReview=mountReview||juce::String(argv[1]).startsWith("--power-height-review=");
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* control=findComponent(*editor,"power");if(!control)return 1;
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",float(stage)*.25f);settleEditor();
+            for(int pose=0;pose<2;++pose) {
+                processor.setPowerEnabled(pose==1);
+                for(bool proposed:{false,true}) {
+                    control->getProperties().set("previewPowerCorners18",halfReview||proposed);
+                    control->getProperties().set("previewPowerMount20",mountReview&&(halfReview||proposed));
+                    control->getParentComponent()->getProperties().set("previewPowerMount20",mountReview&&(halfReview||proposed));
+                    control->getProperties().set("previewPowerHeight18",heightReview&&(halfReview||proposed));
+                    control->getProperties().set("previewPowerHalf23",halfReview&&proposed);control->repaint();settleEditor();
+                    // Include both complete neighboring chassis screws and
+                    // the surrounding paint, rather than cropping at the cap.
+                    const auto region=editor->getLocalArea(control,control->getLocalBounds()).expanded(12,14);
+                    const auto image=editor->createComponentSnapshot(region,true,4.f);
+                    const auto name=juce::String(pose?"power_on_":"power_off_")+juce::String(stage)+(proposed?"_proposal.png":"_current.png");
+                    checks.expect(writePNG(image,directory.getChildFile(name)),"native POWER corner comparison "+name);
+                }
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--cheek17-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        for(int side=0;side<2;++side)for(int stage=0;stage<5;++stage)for(bool proposed:{false,true}) {
+            juce::Image image(juce::Image::ARGB,165,2196,true,juce::SoftwareImageType());
+            juce::Graphics g(image);g.addTransform(juce::AffineTransform::scale(3.f));
+            kb09_gui::cheekMaterial().paint(g,side,float(stage)*.25f,0,55,proposed);
+            const auto name=juce::String(side?"cheek_right_":"cheek_left_")+juce::String(stage)+(proposed?"_proposal.png":"_current.png");
+            checks.expect(writePNG(image,directory.getChildFile(name)),"native cheek scuff comparison "+name);
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--finish17-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",float(stage)*.25f);settleEditor();
+            for(const auto* id:{"range","wave","volume","power","bender"}) {
+                auto* control=findComponent(*editor,id);if(!control)return 1;
+                const bool power=juce::String(id)=="power",bender=juce::String(id)=="bender";
+                for(int pose=0;pose<(power?2:bender?3:1);++pose) {
+                    if(power)processor.setPowerEnabled(pose==1);
+                    if(bender)dynamic_cast<juce::Slider*>(control)->setValue(pose==0?0:pose==1?-1:1,juce::dontSendNotification);
+                    for(bool proposed:{false,true}) {
+                        control->getProperties().set(power?"previewSolidPower17":bender?"previewMatchedDisc17":"previewGentleGrip17",proposed);
+                        control->repaint();settleEditor();
+                        const auto region=editor->getLocalArea(control,control->getLocalBounds()).expanded(5);
+                        const auto image=editor->createComponentSnapshot(region,true,4.f);
+                        const auto name=juce::String(id)+(power?(pose?"_on":"_off"):bender?(pose==0?"_center":pose==1?"_left":"_right"):"")+"_"+juce::String(stage)+(proposed?"_proposal.png":"_current.png");
+                        checks.expect(writePNG(image,directory.getChildFile(name)),"native all-age comparison "+name);
+                    }
+                }
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--finish-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",float(stage)*.25f);settleEditor();
+            for(const auto* id:{"range","wave","volume","power"}) {
+                auto* control=findComponent(*editor,id);if(!control)return 1;
+                const bool power=juce::String(id)=="power";
+                for(int pose=0;pose<(power?2:1);++pose) {
+                    if(power)processor.setPowerEnabled(pose==1);
+                    for(bool proposed:{false,true}) {
+                        control->getProperties().set(power?"previewPowerCrown":"previewGripDulling",proposed);control->repaint();settleEditor();
+                        const auto region=editor->getLocalArea(control,control->getLocalBounds()).expanded(5);
+                        const auto image=editor->createComponentSnapshot(region,true,4.f);
+                        const auto name=juce::String(id)+(power?(pose?"_on":"_off"):"")+"_"+juce::String(stage)+(proposed?"_proposal.png":"_current.png");
+                        checks.expect(writePNG(image,directory.getChildFile(name)),"native material comparison "+name);
+                    }
+                }
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--bender-break-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        bool inside=true,thickness=true;
+        const auto edge=kb09_gui::recessedBenderBreak();
+        for(size_t i=0;i<edge.size();++i)for(float t:{0.f,.25f,.5f,.75f,1.f}) {
+            const auto p=edge[i];
+            const auto q=kb09_gui::benderFractureLocal(p,int(i)+1,t,t>0?1.15f:.4f);
+            inside&=p.getDistanceFromOrigin()<60.f&&q.getDistanceFromOrigin()<=60.f-(t>0?1.15f:.4f)+.0001f;
+            thickness&=kb09_gui::benderDiscDepth(q)*t<=kb09_gui::benderPreviewDepth+.0001f;
+        }
+        checks.expect(inside,"fracture remains inside the original rounded disc silhouette");
+        checks.expect(thickness,"fracture cannot exceed the disc's existing local thickness");
+        checks.expect(std::abs(kb09_gui::benderDiscDepth({0,50})/kb09_gui::benderPreviewDepth-.25f)<.001f&&kb09_gui::benderDiscDepth({0,60})==kb09_gui::benderPreviewDepth,
+                      "exposed inner web is one quarter of the intact rim thickness before individual chips");
+        const float webMid=(kb09_gui::benderDiscAxle({0,48},0)+kb09_gui::benderDiscAxle({0,48},1))*.5f;
+        const float shoulderHeight=std::sqrt(60.f*60.f-20.f*20.f);
+        checks.expect(std::abs((shoulderHeight-48.f)*.190809f+(webMid-kb09_gui::benderPreviewDepth*.5f)*.981627f)<.25f,
+                      "single inner fracture aligns with the projected seam at the broken shoulders");
+        checks.expect(kb09_gui::benderBrokenShoulder(true,1)-kb09_gui::benderBrokenShoulder(true,0)>8.f&&
+                      std::abs(kb09_gui::benderBrokenShoulder(true,.5f)-kb09_gui::benderBrokenShoulder(false,.5f))>1.f,
+                      "outer fracture boundaries slope through the depth with different left and right contours");
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());setParameter(processor,"age",1);settleEditor();
+        auto* bender=findComponent(*editor,"bender");if(!bender)return 1;
+        for(int variant=0;variant<3;++variant) {
+            bender->getProperties().set("previewDiscBreak",variant>0);
+            bender->getProperties().set("previewFractureDust",variant!=1);bender->repaint();settleEditor();
+            const auto region=editor->getLocalArea(bender,bender->getLocalBounds()).expanded(5);
+            const auto image=editor->createComponentSnapshot(region,true,4.f);
+            checks.expect(writePNG(image,directory.getChildFile(variant==0?"break_before.png":variant==1?"break_clean.png":"break_dust.png")),"native broken disc proposal capture");
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--bender-dust-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());setParameter(processor,"age",1);settleEditor();
+        auto* bender=findComponent(*editor,"bender");if(!bender)return 1;
+        for(bool dust:{false,true}) {
+            bender->getProperties().set("previewFractureDust",dust);bender->repaint();settleEditor();
+            const auto region=editor->getLocalArea(bender,bender->getLocalBounds()).expanded(5);
+            const auto image=editor->createComponentSnapshot(region,true,4.f);
+            checks.expect(writePNG(image,directory.getChildFile(dust?"fracture_dust.png":"fracture_current.png")),"native fracture dust preview");
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--screw-light-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* control=findComponent(*editor,"pwmMode");if(!control)return 1;
+        auto* panel=control->getParentComponent();
+        for(int stage=0;stage<5;++stage)for(bool proposed:{false,true}) {
+            setParameter(processor,"age",float(stage)*.25f);
+            panel->getProperties().set("previewScrewRotation",proposed);panel->repaint();settleEditor();
+            // Capture the actual chassis paint, with no control overlay or invented background.
+            const auto region=editor->getLocalArea(panel,juce::Rectangle<int>(0,34,1483,365));
+            const auto image=editor->createComponentSnapshot(region,true,2.f);
+            checks.expect(writePNG(image,directory.getChildFile("screws_"+juce::String(stage)+(proposed?"_proposal.png":"_current.png"))),"native screw lighting capture");
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--switch-track-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        for(float age:{0.f,1.f})for(const auto* id:{"lfoWave","pwmMode","subMode","vcfEnvMode","vcaMode","envMode"}) {
+            setParameter(processor,"age",age);settleEditor();
+            auto* component=findComponent(*editor,id);if(!component)return 1;
+            for(bool proposed:{false,true}) {
+                component->getProperties().set("previewSwitchTrack",proposed);component->repaint();settleEditor();
+                const auto region=juce::String(id)=="pwmMode"?editor->getLocalArea(component->getParentComponent(),juce::Rectangle<int>(490,121,140,165)):
+                    juce::String(id)=="lfoWave"?editor->getLocalArea(component->getParentComponent(),juce::Rectangle<int>(80,120,160,165)):
+                    editor->getLocalArea(component,component->getLocalBounds()).expanded(5);
+                const auto image=editor->createComponentSnapshot(region,true,4.f);
+                checks.expect(writePNG(image,directory.getChildFile(juce::String(id)+(age>0?"_fire":"_minty")+(proposed?"_proposal.png":"_current.png"))),"native switch recess capture");
+            }
+            component->getProperties().remove("previewSwitchTrack");component->repaint();
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--knob-motion-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        checkRotaryTicks(processor,*editor,checks,directory);
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--dust-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));
+        directory.createDirectory();
+        const std::array<const char*,18> ids{{"lfoRate","lfoDelay","vcoMod","pulseWidth","vcoLevel","subLevel","extLevel",
+            "cutoff","resonance","vcfEnv","vcfMod","attack","decay","sustain","release","bendVco","bendVcf","portamento"}};
+        std::vector<juce::Image> covers;
+        for(const auto* id:ids) {
+            const auto& cover=kb09_gui::faderDustCover(uint32_t(juce::String(id).hashCode()),4);
+            bool distinct=true;
+            for(const auto& other:covers) {
+                int different=0;
+                for(int y=0;y<cover.getHeight();++y)for(int x=0;x<cover.getWidth();++x)
+                    different+=cover.getPixelAt(x,y)!=other.getPixelAt(x,y);
+                distinct &= different>cover.getWidth()*cover.getHeight()/2;
+            }
+            checks.expect(distinct,juce::String(id)+" dust differs across more than half its pixels from every earlier track");
+            bool notTiled=true;
+            for(int start=80;start<480;start+=80) {
+                int different=0;
+                for(int y=0;y<80;++y)for(int x=0;x<32;++x)
+                    different+=cover.getPixelAt(x,y+start)!=cover.getPixelAt(x,y+start-80);
+                notTiled &= different>1280;
+            }
+            checks.expect(notTiled,juce::String(id)+" cover has no repeated adjacent 20-unit texture segments");
+            checks.expect(writePNG(cover,directory.getChildFile(juce::String(id)+".png")),"native full-length dust texture export");
+            covers.push_back(cover);
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';
+        return checks.failures?1:0;
+    }
+    if(juce::String(argv[1])=="--hardware-regression") {
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());
+        settleEditor();checkRotaryTicks(processor,*editor,checks);
+        checkPerformanceBayGeometry(*editor,checks);checkSwitchAttachment(processor,*editor,checks);
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';
+        return checks.failures?1:0;
+    }
     if(juce::String(argv[1])=="--meter-regression") {
         SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());

@@ -1,5 +1,6 @@
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
+#include "ButtonCycle.h"
 
 namespace kb09_gui {
 struct DialogFonts {
@@ -50,7 +51,17 @@ public:
     ThemedAlert(const juce::String& title, const juce::String& message, juce::MessageBoxIconType icon,
                 juce::Component* owner = nullptr, float condition = -1);
     ~ThemedAlert() override { setLookAndFeel(nullptr); }
+    void addButton(const juce::String& name,int value,const juce::KeyPress& key1={},const juce::KeyPress& key2={}) {
+        juce::AlertWindow::addButton(name,value,key1,key2);
+        navigation.add(dynamic_cast<juce::TextButton*>(getButton(getNumButtons()-1)));
+    }
+    void setNavigationActions(std::initializer_list<juce::TextButton*> buttons) {navigation.setActions(buttons);}
+    void selectAction(int index) {navigation.select(dynamic_cast<juce::TextButton*>(getButton(index)));}
+    bool keyPressed(const juce::KeyPress& key) override {
+        return navigation.handle(key)||juce::AlertWindow::keyPressed(key);
+    }
     DialogTheme theme;
+    ButtonCycle navigation;
 };
 
 class UpdateMenuTheme final : public DialogTheme {

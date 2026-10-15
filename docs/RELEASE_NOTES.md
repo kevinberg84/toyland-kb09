@@ -1,3 +1,13 @@
+# 1.7.0 — Toyland KB-09
+
+- The standalone remembers enabled MIDI inputs and reconnects them when available. Change your selection in AUDIO / MIDI at any time.
+- Use arrow keys to select actions in MIDI MAP and other button dialogs; press Enter to activate the selection. MIDI MAP is centered while keeping assignable controls exposed.
+- Refined SH-09-inspired hardware: moving grouped knob grips and top wear, six-rib switches, darker switch-track edges, individual dust patterns, and clearer lighting and aging on POWER, cheeks, screws and the bender.
+- The onscreen bender returns at constant speed over 50 ms in AUTHENTIC mode and stops at center without easing. MODERN still returns immediately.
+- Improved panel alignment and smaller left-side lettering. Each platform includes its own installation guide, illustrated manual and these release notes.
+
+The sound engine, parameter identities, saved presets and 128-sample processing latency are retained. Linux standalone remains UNVERIFIED pending real Arch audio and MIDI confirmation.
+
 # 1.6.2 — Toyland KB-09
 
 Fixes the ENV meter's first segment remaining lit after a note has released. Meter redraws now follow visible segment transitions, including the final transition to zero; the same correction applies to the external follower and input meters. The audio envelope, MIDI note handling and sound engine are unchanged.

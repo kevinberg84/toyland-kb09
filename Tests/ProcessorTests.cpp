@@ -158,6 +158,8 @@ int main(){
    while(elapsed<duration+blockSize) {
      render();elapsed+=blockSize;const float bend=spring.displayedPitchBend.load();
      springTiming=springTiming&&bend<=previous&&bend>=0;
+     const float expected=juce::jmax(0.f,1.f-float(elapsed)/float(duration));
+     springTiming=springTiming&&std::abs(bend-expected)<.000001f;
      if(elapsed<duration/2)springTiming=springTiming&&bend>0;
      if(elapsed>=duration)springTiming=springTiming&&bend==0&&!spring.displayedPitchBendReturning.load();
      previous=bend;
@@ -172,7 +174,7 @@ int main(){
    spring.queuePitchBendReturn();render();mode(1);render();
    modernReturn=modernReturn&&spring.displayedPitchBend.load()==0&&!spring.displayedPitchBendReturning.load();
  }
- expect(springTiming,"Authentic spring returns continuously to exact center in 100 ms across sample rates and buffers");
+ expect(springTiming,"Authentic spring returns at constant speed to exact center at its configured duration across sample rates and buffers");
  expect(modernReturn,"Modern returns immediately, including when entered during an Authentic return");
  expect(interruptions,"new controller wheel and GUI gestures cancel an in-progress spring without stale bend");
  // Observe actual oscillator pitch, rather than relying only on the display target.
@@ -186,8 +188,17 @@ int main(){
    for(int i=0;i<240;++i)render();
    sound.queuePitchBendReturn();std::array<float,9600> samples{};
    for(size_t start=0;start<samples.size();start+=64){render();for(size_t j=0;j<64;++j)samples[start+j]=block.getSample(0,int(j));}
-   auto frequency=[&](int begin,int end){bool below=false;int cycles=0;for(int i=begin;i<end;++i){if(samples[size_t(i)]<-.005f)below=true;else if(samples[size_t(i)]>.005f&&below){++cycles;below=false;}}return double(cycles)*48000/(end-begin);};
-   return std::array<double,3>{frequency(0,960),frequency(1920,2880),frequency(6720,9600)};
+   // Measure complete periods between interpolated crossings, avoiding the
+   // coarse cycle-count rounding of short windows after a quicker return.
+   auto frequency=[&](int begin,int end){double first=-1,last=-1;int crossings=0;
+     for(int i=begin+1;i<end;++i) {
+       const double before=samples[size_t(i-1)],after=samples[size_t(i)];
+       if(before<=0&&after>0){const double t=double(i-1)-before/(after-before);if(first<0)first=t;last=t;++crossings;}
+     }
+     return crossings>=2?double(crossings-1)*48000/(last-first):0.;
+   };
+   const int duration=int(std::lround(48000*SH09Processor::benderReturnSeconds));
+   return std::array<double,3>{frequency(0,duration/5),frequency(duration*2/5,duration*3/5),frequency(6720,9600)};
  };
  const auto authenticPitch=audibleReturn(false),modernPitch=audibleReturn(true);
  std::cout<<"Return pitch Hz Authentic="<<authenticPitch[0]<<','<<authenticPitch[1]<<','<<authenticPitch[2]

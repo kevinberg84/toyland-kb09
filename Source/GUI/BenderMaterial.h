@@ -27,7 +27,7 @@ inline float benderHardReflection(float nx,float ny,float nz,float age) {
 // Fixed object-space handling scratches, with equal count increments across
 // the five conditions. Texture construction happens once, never while dragging.
 struct BenderScuffMaterial {
-    std::array<juce::Image,5> rim,tab;
+    std::array<juce::Image,5> rim,tab,keyRim,keyTab;
     static float random(unsigned value) {
         value^=value>>16;value*=0x7feb352du;value^=value>>15;value*=0x846ca68bu;value^=value>>16;
         return float(value&65535u)/65535.f;
@@ -59,6 +59,23 @@ struct BenderScuffMaterial {
                 }
             }
         }
+        for(int stage=0;stage<5;++stage)for(int surface=0;surface<2;++surface) {
+            auto& image=(surface?keyTab:keyRim)[size_t(stage)];
+            const float width=surface?14.f:juce::MathConstants<float>::twoPi*60.f;
+            image=juce::Image(juce::Image::ARGB,int(std::ceil(width*4)),54,true,juce::SoftwareImageType());
+            juce::Graphics g(image);g.addTransform(juce::AffineTransform::scale(4.f));
+            const unsigned seed=surface?0x781c31u:0xa63117u;
+            for(unsigned scratch=0;scratch<unsigned((surface?64:176)*stage/4);++scratch) {
+                const float x=width*(.06f+.88f*random(seed+scratch*127));
+                const float y=.6f+9.3f*random(seed+scratch*419);
+                const float dx=(random(seed+scratch*199)-.5f)*(surface?6.f:16.f);
+                const float dy=.5f+2.8f*random(seed+scratch*733);
+                juce::Path trace;trace.startNewSubPath(x,y);
+                trace.quadraticTo(x+dx*.2f+.4f,y+dy*.5f,x+dx,y+dy);
+                g.setColour(juce::Colours::white.withAlpha(.12f+.12f*random(seed+scratch*37)));
+                g.strokePath(trace,juce::PathStrokeType(.11f+.08f*random(seed+scratch*59),juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+            }
+        }
     }
 };
 inline const BenderScuffMaterial& benderScuffs() {static const BenderScuffMaterial material;return material;}
@@ -73,12 +90,14 @@ inline float sampleBenderScuff(const juce::Image::BitmapData& pixels,float u,flo
 // The finger tab is one rounded moulding, including the two axial ends.
 // Shade its continuous surface instead of rounding each mesh facet separately.
 inline void paintRoundedBenderTab(juce::Graphics& g,float centre,float baseline,
-                                  float angle,float age,int samples) {
-    constexpr float viewSin=.190809f,viewCos=.981627f,depth=13.5f;
-    constexpr float lower=58.3f,upper=87.f,halfWidth=7.f;
+                                  float angle,float age,int samples,float depth=13.5f,bool proportional=false,bool keyScuffs=false,bool gentleAgeFinish=false) {
+    constexpr float viewSin=.190809f,viewCos=.981627f;
+    constexpr float lower=58.3f,upper=87.f;
+    const float halfWidth=proportional?depth*.5f:7.f;
     // Wider roll at the two sides, tighter rounds at the axial/top-bottom edges.
     // Elliptical corner sections keep a curved normal rather than a flat chamfer.
-    constexpr float roundX=5.2f,roundA=3.6f,roundZ=6.0f;
+    const float roundX=5.2f*halfWidth/7.f;
+    constexpr float roundA=3.6f,roundZ=6.0f;
     const float sa=std::sin(angle),ca=std::cos(angle),zc=(lower+upper)*.5f;
     const auto project=[&](float x,float z,float axle) {
         return juce::Point<float>(centre+x*ca+z*sa,baseline-(z*ca-x*sa)*viewSin+axle*viewCos);
@@ -92,7 +111,8 @@ inline void paintRoundedBenderTab(juce::Graphics& g,float centre,float baseline,
     bounds=bounds.expanded(1.f).getSmallestIntegerContainer().toFloat();
     juce::Image image(juce::Image::ARGB,int(bounds.getWidth()*samples),int(bounds.getHeight()*samples),true,juce::SoftwareImageType());
     juce::Image::BitmapData pixels(image,juce::Image::BitmapData::writeOnly);
-    const juce::Image::BitmapData scuffPixels(benderScuffs().tab[size_t(juce::jlimit(0,4,juce::roundToInt(age*4)))],juce::Image::BitmapData::readOnly);
+    const auto& scuffs=benderScuffs();
+    const juce::Image::BitmapData scuffPixels((keyScuffs?scuffs.keyTab:scuffs.tab)[size_t(juce::jlimit(0,4,juce::roundToInt(age*4)))],juce::Image::BitmapData::readOnly);
     const auto distance=[&](float x,float a,float z) {
         const float qx=(std::abs(x)-(halfWidth-roundX))/roundX;
         const float qa=(std::abs(a-depth*.5f)-(depth*.5f-roundA))/roundA;
@@ -129,7 +149,8 @@ inline void paintRoundedBenderTab(juce::Graphics& g,float centre,float baseline,
         const float diffuse=juce::jmax(0.f,-.27f*worldX+.09f*ny+.959f*worldZ);
         const float reflection=polishedBenderHighlight(-.137f*worldX+.125f*ny+.982f*worldZ,age);
         const float edgeLight=std::pow(juce::jmax(0.f,-.46f*worldX-.24f*ny+.855f*worldZ),24.f);
-        float value=juce::jlimit(0.f,1.f,.066f+.089f*diffuse+(.95f*reflection+.12f*edgeLight)*(1-.45f*age));
+        const float gloss=gentleAgeFinish?1.f-.18f*age:1.f;
+        float value=juce::jlimit(0.f,1.f,.066f+.089f*diffuse+(.95f*reflection+.12f*edgeLight)*(1-.45f*age)*gloss);
         if(age>0) {
             const float scratch=sampleBenderScuff(scuffPixels,(lx+halfWidth)/(2*halfWidth),a/depth)*juce::jlimit(0.f,1.f,nz*2.f);
             value=value*(1-.75f*scratch)+(.18f+.25f*diffuse)*scratch;
@@ -172,6 +193,50 @@ inline void paintBenderUndersideRing(juce::Graphics& g,float centre,float baseli
         }
     }
     g.setOpacity(1);g.drawImage(image,bounds.translated(centre,baseline));
+}
+
+// Follow the visible front lip with one constant normal inset. Deriving both
+// edges from this outline avoids the changing gap of a separately projected
+// torus, especially beside the central break.
+inline void paintParallelBenderRib(juce::Graphics& g,float centre,float baseline,
+                                   float radius,float depth,float age,int samples,float ribWidth=1.3f,bool noGlint=false) {
+    constexpr float viewSin=.190809f,viewCos=.981627f,gap=2.4f;
+    struct Entry {juce::Image image;float radius=0,depth=0,width=0;bool noGlint=false;};
+    static std::array<std::array<Entry,4>,5> cache;
+    samples=juce::jlimit(1,4,samples);
+    const int stage=juce::jlimit(0,4,juce::roundToInt(age*4));
+    auto& entry=cache[size_t(stage)][size_t(samples-1)];
+    const juce::Rectangle<float> bounds(-radius-1,depth*viewCos-radius*viewSin-1,2*radius+2,radius*viewSin+2);
+    if(entry.image.isNull()||entry.radius!=radius||entry.depth!=depth||entry.width!=ribWidth||entry.noGlint!=noGlint) {
+        entry.radius=radius;entry.depth=depth;entry.width=ribWidth;entry.noGlint=noGlint;
+        entry.image=juce::Image(juce::Image::ARGB,int(std::ceil(bounds.getWidth()*samples)),int(std::ceil(bounds.getHeight()*samples)),true,juce::SoftwareImageType());
+        juce::Graphics material(entry.image);
+        material.addTransform(juce::AffineTransform::translation(-bounds.getX(),-bounds.getY()).scaled(float(samples)));
+        const auto point=[&](float theta,float inset) {
+            const float s=std::sin(theta),c=std::cos(theta);
+            float nx=s,ny=-c/viewSin;
+            const float length=std::hypot(nx,ny);nx/=length;ny/=length;
+            return juce::Point<float>(radius*s-nx*inset,depth*viewCos-radius*c*viewSin-ny*inset);
+        };
+        for(int segment=0;segment<256;++segment) {
+            const float a=-juce::MathConstants<float>::halfPi+juce::MathConstants<float>::pi*float(segment)/256.f;
+            const float b=-juce::MathConstants<float>::halfPi+juce::MathConstants<float>::pi*float(segment+1)/256.f;
+            for(int band=0;band<12;++band) {
+                const float t0=float(band)/12.f,t1=float(band+1)/12.f;
+                const float cross=juce::MathConstants<float>::pi*(.5f-(t0+t1)*.5f);
+                const float radial=std::sin(cross),ny=std::cos(cross),theta=(a+b)*.5f;
+                const float nx=radial*std::sin(theta),nz=radial*std::cos(theta);
+                const float diffuse=juce::jmax(0.f,-.27f*nx+.09f*ny+.959f*nz);
+                const float shine=std::pow(juce::jmax(0.f,-.137f*nx+.125f*ny+.982f*nz),32.f);
+                const float value=.055f+.075f*diffuse+.075f*ny+(noGlint?0.f:.19f*shine+.35f*benderHardReflection(nx,ny,nz,age))*(1-.45f*age);
+                juce::Path face;face.startNewSubPath(point(a,gap+ribWidth*t0));
+                face.lineTo(point(b,gap+ribWidth*t0));face.lineTo(point(b,gap+ribWidth*t1));face.lineTo(point(a,gap+ribWidth*t1));face.closeSubPath();
+                material.setColour(juce::Colour::fromFloatRGBA(value,value*1.02f,value*.99f,1.f));
+                material.fillPath(face);material.strokePath(face,juce::PathStrokeType(.04f));
+            }
+        }
+    }
+    g.setOpacity(1);g.drawImage(entry.image,bounds.translated(centre,baseline));
 }
 
 }

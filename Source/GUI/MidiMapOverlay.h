@@ -1,6 +1,8 @@
-#pragma once
+﻿#pragma once
 #include "../Plugin/StandaloneMidiMap.h"
 #include "DialogTheme.h"
+#include <algorithm>
+#include <limits>
 
 namespace kb09_gui {
 class MidiMapOverlay final : public juce::Component, public juce::SettableTooltipClient {
@@ -27,6 +29,8 @@ public:
                     if(safe&&result>0){safe->map.cancelLearn();safe->map.setBehavior(target,sh09::StandaloneMidiMap::Behavior(result-1));safe->refresh();}
                 });
         };
+        navigation.setActions({&clear,&clearAll,&options,&done});
+        navigation.select(&done,false);
         refresh();
     }
     ~MidiMapOverlay() override {setLookAndFeel(nullptr);}
@@ -39,7 +43,7 @@ public:
         theme.age=age;theme.refreshColours();status.setColour(juce::Label::textColourId,theme.paper());repaint();
     }
     void resized() override {layoutMessage();}
-    void setTargets(std::vector<Target> list) {targets=std::move(list);}
+    void setTargets(std::vector<Target> list) {targets=std::move(list);layoutMessage();}
     void select(int index) {
         map.finishLearn();selected=index;confirmClear=false;map.learn(index);refresh();
     }
@@ -56,7 +60,7 @@ public:
         clearAll.setButtonText(confirmClear?"CONFIRM CLEAR":"CLEAR ALL");
         options.setVisible(selected>=0&&sh09::StandaloneMidiMap::supportsButtons(selected)&&map.assignment(selected)>=0);
         layoutMessage();
-        done.setToggleState(true,juce::dontSendNotification);
+        navigation.refresh();
         repaint();
     }
     bool hitTest(int x,int y) override {
@@ -86,6 +90,7 @@ public:
         for(const auto& target:targets)if(target.bounds.contains(event.getPosition())){select(target.index);return;}
     }
     bool keyPressed(const juce::KeyPress& key) override {
+        if(navigation.handle(key))return true;
         if(key==juce::KeyPress::escapeKey){if(onDone)onDone();return true;}
         return false;
     }
@@ -112,9 +117,36 @@ private:
         const int y=juce::jlimit(headerBounds.getBottom()+8,juce::jmax(headerBounds.getBottom()+8,getHeight()-height-12),centreY-height/2);
         const int centre=keyboardBounds.isEmpty()?getWidth()/2:keyboardBounds.getCentreX();
         messageBounds={juce::jlimit(12,juce::jmax(12,getWidth()-width-12),centre-width/2),y,width,height};
+        if(bool(getProperties().getWithDefault("previewMidiCentre31",true))) {
+            const int minimumY=headerBounds.getBottom()+8,maximumY=juce::jmax(minimumY,getHeight()-height-12);
+            const int idealY=juce::jlimit(minimumY,maximumY,(getHeight()-height)/2);
+            const int middleX=juce::jlimit(12,juce::jmax(12,getWidth()-width-12),(getWidth()-width)/2);
+            // Prefer the synth's centre. If a parameter occupies it, move only
+            // far enough vertically to expose every assignable target.
+            bool placed=false;int nearest=std::numeric_limits<int>::max();
+            for(int candidateX:{middleX,messageBounds.getX()}) {
+                for(int margin:{6,0}) {
+                    std::vector<int> candidates{idealY,messageBounds.getY(),minimumY,maximumY};
+                    for(const auto& target:targets) {
+                        candidates.push_back(target.bounds.getBottom()+margin);
+                        candidates.push_back(target.bounds.getY()-height-margin);
+                    }
+                    for(int candidateY:candidates) {
+                        if(candidateY<minimumY||candidateY>maximumY)continue;
+                        const juce::Rectangle<int> candidate(candidateX,candidateY,width,height);
+                        const bool clear=std::none_of(targets.begin(),targets.end(),[&](const Target& target){return candidate.intersects(target.bounds.expanded(margin));});
+                        const int distance=std::abs(candidateY-idealY);
+                        if(clear&&distance<nearest){messageBounds=candidate;nearest=distance;placed=true;}
+                    }
+                    if(placed)break;
+                }
+                if(placed)break;
+            }
+        }
         const int x=messageBounds.getX();
-        status.setBounds(x+20,y+50,width-40,28);
-        for(const auto& action:actions)action.first->setBounds(action.first->getBounds().translated(x,y));
+        const int actualY=messageBounds.getY();
+        status.setBounds(x+20,actualY+50,width-40,28);
+        for(const auto& action:actions)action.first->setBounds(action.first->getBounds().translated(x,actualY));
     }
     void setup(juce::TextButton& button,const char* label,juce::Rectangle<int> bounds,const char* tip) {
         addAndMakeVisible(button);button.setButtonText(label);button.setBounds(bounds);button.setTooltip(tip);
@@ -124,5 +156,6 @@ private:
     juce::Rectangle<int> messageBounds,headerBounds,descriptionBounds,keyboardBounds;
     int selected=-1;bool confirmClear=false;
     juce::Label status;juce::TextButton clear,clearAll,done,options;
+    ButtonCycle navigation;
 };
 }

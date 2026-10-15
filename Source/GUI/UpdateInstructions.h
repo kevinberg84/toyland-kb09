@@ -64,6 +64,8 @@ public:
         };
         addCustomComponent(&controls);
         addButton("Close", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+        setNavigationActions({&download,&copy,dynamic_cast<juce::TextButton*>(getButton(0))});
+        selectAction(0);
     }
     ~UpdateInstructions() override { removeCustomComponent(0); }
     static void show(const juce::String& link, juce::Component* owner = nullptr) {

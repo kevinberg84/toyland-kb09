@@ -19,6 +19,36 @@ int main(int argc,char** argv){
     if(argc!=2)return 2;
     const juce::File out(juce::String::fromUTF8(argv[1]));out.createDirectory();
     juce::Component stage;stage.setSize(1800,1400);
+    {
+        const auto expect=[](bool ok,const char* label){if(!ok)throw std::runtime_error(label);};
+        kb09_gui::ClosePrompt close(&stage);
+        expect(close.getButton(1)->getToggleState(),"Save prompt must retain Don't Save default");
+        close.keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
+        expect(close.getButton(2)->getToggleState(),"right arrow must select Cancel");
+        close.keyPressed(juce::KeyPress(juce::KeyPress::downKey));
+        expect(close.getButton(0)->getToggleState(),"down arrow must wrap to Save");
+        close.keyPressed(juce::KeyPress(juce::KeyPress::upKey));
+        expect(close.getButton(2)->getToggleState(),"up arrow must wrap to Cancel");
+        kb09_gui::ThemedAlert alert("Keyboard actions","",juce::MessageBoxIconType::InfoIcon,&stage);
+        alert.addButton("First",1);alert.addButton("Second",2);alert.addButton("Last",0);
+        alert.getButton(1)->setEnabled(false);
+        alert.keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
+        expect(alert.getButton(2)->getToggleState(),"arrows must skip disabled actions");
+        int first=0,last=0;
+        alert.getButton(0)->onClick=[&]{++first;};alert.getButton(2)->onClick=[&]{++last;};
+        alert.keyPressed(juce::KeyPress(juce::KeyPress::returnKey));
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(50);
+        expect(first==0&&last==1,"Enter must invoke only the selected action");
+        kb09::UpdateInstructions instructions("https://example.invalid/",&stage,false);
+        expect(instructions.navigation.current()->getButtonText()=="Close","update instructions default must be Close");
+        instructions.keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
+        expect(instructions.navigation.current()->getButtonText()=="Open download folder","custom download action must join navigation");
+        instructions.keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
+        expect(instructions.navigation.current()->getButtonText()=="Copy instructions","custom copy action must join navigation");
+        instructions.keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
+        expect(instructions.navigation.current()->getButtonText()=="Close","custom actions must wrap to Close");
+        std::cout<<"PASS dialog arrows wrap in both directions, skip disabled actions, include custom actions and Enter invokes only selected action.\n";
+    }
     for(int level=0;level<3;++level){
         const float age=float(level)*.5f;kb09_gui::DialogTheme ownerTheme(age);stage.setLookAndFeel(&ownerTheme);
         kb09_gui::ClosePrompt reference(&stage);
