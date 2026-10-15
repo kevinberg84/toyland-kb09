@@ -554,7 +554,12 @@ void checkRotaryTicks(SH09Processor& processor,juce::Component& editor,Checks& c
             }
             if(error<bestError){bestError=error;bestShift=shift;}
         }
-        checks.expect(bestShift<=-3,juce::String(id)+" front ribs travel left with a clockwise top-pointer turn (tracked shift "+juce::String(bestShift)+")");
+        // The discrete controls must reject this sub-detent draw request; the
+        // continuous VOLUME control still verifies clockwise grip direction.
+        const bool discrete=juce::String(id)=="range"||juce::String(id)=="wave";
+        checks.expect(discrete?bestShift==0:bestShift<=-3,juce::String(id)
+            +(discrete?" rejects fractional visual travel between detents (tracked shift ":" front ribs travel left with a clockwise top-pointer turn (tracked shift ")
+            +juce::String(bestShift)+")");
         slider->setValue(original,juce::sendNotificationSync);settleEditor();
     }
     setParameter(processor,"age",initialAge);settleEditor();
@@ -632,7 +637,7 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
         slider->setValue(original,juce::sendNotificationSync);settleEditor();
     }
     juce::MemoryBlock state;processor.getStateInformation(state);
-    SH09Processor restored;restored.setStateInformation(state.getData(),int(state.getSize()));
+    auto restoredObject=std::make_unique<SH09Processor>();auto& restored=*restoredObject;restored.setStateInformation(state.getData(),int(state.getSize()));
     bool roundTrips=true;
     for(const auto* id:legacyParameterIDs)
         roundTrips=roundTrips&&std::abs(processor.state.getParameter(id)->getValue()-restored.state.getParameter(id)->getValue())<1.e-6f;
@@ -1081,7 +1086,7 @@ void checkMidiBender(SH09Processor& processor,juce::Component& editor,const juce
                                 "MIDI lamp clears after its short activity flash");
     // Reopening must reflect a held external wheel; closing must not centre it.
     {
-        SH09Processor reopened;reopened.prepareToPlay(sampleRate,blockSize);
+        auto reopenedObject=std::make_unique<SH09Processor>();auto& reopened=*reopenedObject;reopened.prepareToPlay(sampleRate,blockSize);
         processMidi(reopened,juce::MidiMessage::pitchWheel(3,12288));
         auto another=std::unique_ptr<juce::AudioProcessorEditor>(reopened.createEditor());
         auto* control=dynamic_cast<juce::Slider*>(findComponent(*another,"bender"));
@@ -1334,7 +1339,7 @@ void checkSwitchAttachment(SH09Processor& processor, juce::Component& editor, Ch
 }
 
 void checkCompatibility(Checks& checks) {
-    SH09Processor source;
+    auto sourceObject=std::make_unique<SH09Processor>();auto& source=*sourceObject;
     const auto& parameters = source.getParameters();
     checks.expect(parameters.size() == int(legacyParameterIDs.size()), "all 35 legacy parameter slots retained");
     bool sameOrder = parameters.size() == int(legacyParameterIDs.size());
@@ -1364,7 +1369,7 @@ void checkCompatibility(Checks& checks) {
         auto xml = juce::AudioProcessor::getXmlFromBinary(state.getData(), int(state.getSize()));
         checks.expect(xml != nullptr && xml->hasTagName("SH09State") && xml->getIntAttribute("schema", -1) == 1,
                       "legacy SH09State root and schema 1, branding=" + juce::String(legacyValue));
-        SH09Processor restored;
+        auto restoredObject=std::make_unique<SH09Processor>();auto& restored=*restoredObject;
         restored.setStateInformation(state.getData(), int(state.getSize()));
         bool matches = true;
         for (size_t i = 0; i < expected.size(); ++i)
@@ -1445,7 +1450,7 @@ struct Fixture {
 };
 
 void checkCachedKeyboard(Checks& checks) {
-    SH09Processor processor;
+    auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;
     processor.prepareToPlay(sampleRate,blockSize);
     std::unique_ptr<juce::AudioProcessorEditor,EditorDeleter> editor(processor.createEditorAndMakeActive(),{&processor});
     settleEditor();
@@ -1516,7 +1521,7 @@ void checkPerformanceBayGeometry(juce::Component& editor,Checks& checks) {
 }
 
 void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& checks) {
-    SH09Processor processor;
+    auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;
     processor.setCurrentProgram(0);
     processor.prepareToPlay(sampleRate, blockSize);
     std::unique_ptr<juce::AudioProcessorEditor, EditorDeleter> editor(processor.createEditorAndMakeActive(), {&processor});
@@ -1820,7 +1825,7 @@ int main(int argc, char** argv) {
     if(juce::String(argv[1]).startsWith("--screws73-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
         for(int stage=0;stage<5;++stage)for(bool proposed:{false,true}) {
-            SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
+            auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
             setParameter(processor,"age",stage*.25f);
             auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());
             auto* panel=findComponent(*editor,"range")->getParentComponent();
@@ -1838,7 +1843,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--collar71-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* knob=dynamic_cast<juce::Slider*>(findComponent(*editor,"volume"));if(!knob)return 1;
         for(int stage=0;stage<5;++stage) {
@@ -1855,7 +1860,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--hardware64-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* range=findComponent(*editor,"range");if(!range)return 1;auto* panel=range->getParentComponent();
         for(int stage=0;stage<5;++stage)for(bool proposed:{false,true}) {
@@ -1897,7 +1902,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--wear63-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* range=findComponent(*editor,"range");if(!range)return 1;auto* panel=range->getParentComponent();
         std::array<juce::Image,5> fresh;
@@ -1942,7 +1947,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--label36-review=")||juce::String(argv[1]).startsWith("--hardware51-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* range=findComponent(*editor,"range");if(!range)return 1;
         auto* panel=range->getParentComponent();
@@ -2054,7 +2059,7 @@ int main(int argc, char** argv) {
     if(juce::String(argv[1]).startsWith("--collar35-review=")||juce::String(argv[1]).startsWith("--collar35-defaults=")) {
         const bool defaults=juce::String(argv[1]).startsWith("--collar35-defaults=");
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* range=dynamic_cast<juce::Slider*>(findComponent(*editor,"range"));auto* wave=dynamic_cast<juce::Slider*>(findComponent(*editor,"wave"));auto* volume=dynamic_cast<juce::Slider*>(findComponent(*editor,"volume"));
         if(!range||!wave||!volume)return 1;
@@ -2096,7 +2101,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--recoil34-check=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* bend=dynamic_cast<juce::Slider*>(findComponent(*editor,"bender"));
         auto* power=findComponent(*editor,"power");if(!bend||!power)return 1;
@@ -2135,7 +2140,7 @@ int main(int argc, char** argv) {
     if(juce::String(argv[1]).startsWith("--midi-centre31-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
         juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Standalone);
-        SH09Processor processor;juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Undefined);processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Undefined);processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* button=dynamic_cast<juce::TextButton*>(findComponent(*editor,"midiMap"));if(!button)return 1;
         button->setToggleState(true,juce::dontSendNotification);button->onClick();settleEditor();
@@ -2162,7 +2167,7 @@ int main(int argc, char** argv) {
         const bool sliverReview=juce::String(argv[1]).startsWith("--power-sliver33-review=");
         const bool shoulderReview=sliverReview||juce::String(argv[1]).startsWith("--power-shoulder32-review=");
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* control=findComponent(*editor,"power");if(!control)return 1;
         for(int stage=0;stage<5;++stage) {
@@ -2185,7 +2190,7 @@ int main(int argc, char** argv) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
         const auto timing="{\"currentMs\":"+juce::String(SH09Processor::benderReturnSeconds*1000,1)+",\"proposedMs\":"+juce::String(SH09Processor::proposedBenderReturnSeconds*1000,1)+",\"exponent\":1}";
         directory.getChildFile("timing.json").replaceWithText(timing);
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* control=dynamic_cast<juce::Slider*>(findComponent(*editor,"bender"));if(!control)return 1;
         control->getProperties().set("previewBenderSeam31",true);
@@ -2203,7 +2208,7 @@ int main(int argc, char** argv) {
     if(juce::String(argv[1]).startsWith("--approved-switch28-check=")||juce::String(argv[1]).startsWith("--switch-dust28-review=")) {
         const bool approvedDefaults=juce::String(argv[1]).startsWith("--approved-switch28-check=");
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         for(int stage=0;stage<5;++stage) {
             setParameter(processor,"age",float(stage)*.25f);settleEditor();
@@ -2227,7 +2232,7 @@ int main(int argc, char** argv) {
         const bool rootReview=seamReview||juce::String(argv[1]).startsWith("--bender-root30-review=");
         const bool continuousReview=rootReview||juce::String(argv[1]).startsWith("--bender-finish29-review=");
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* control=dynamic_cast<juce::Slider*>(findComponent(*editor,"bender"));if(!control)return 1;
         for(int stage=0;stage<5;++stage) {
@@ -2249,7 +2254,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--approved27-check=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         // Capture the shipping defaults, without setting any preview properties.
         // Compare these files with the user-approved proposal outside the fixture.
@@ -2289,7 +2294,7 @@ int main(int argc, char** argv) {
         }
         const bool powerOnly=juce::String(argv[1]).startsWith("--power-final24-review=");
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         for(int stage=0;stage<5;++stage) {
             setParameter(processor,"age",float(stage)*.25f);settleEditor();
@@ -2328,7 +2333,7 @@ int main(int argc, char** argv) {
         const bool concentricReview=parallelReview||juce::String(argv[1]).startsWith("--bender-concentric-review=");
         const bool ribReview=concentricReview||juce::String(argv[1]).startsWith("--bender-rib-review=");
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* control=dynamic_cast<juce::Slider*>(findComponent(*editor,"bender"));if(!control)return 1;
         for(int stage=0;stage<5;++stage) {
@@ -2354,7 +2359,7 @@ int main(int argc, char** argv) {
         const bool mountReview=halfReview||juce::String(argv[1]).startsWith("--power-mount-review=");
         const bool heightReview=mountReview||juce::String(argv[1]).startsWith("--power-height-review=");
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* control=findComponent(*editor,"power");if(!control)return 1;
         for(int stage=0;stage<5;++stage) {
@@ -2391,7 +2396,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--finish17-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         for(int stage=0;stage<5;++stage) {
             setParameter(processor,"age",float(stage)*.25f);settleEditor();
@@ -2416,7 +2421,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--finish-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         for(int stage=0;stage<5;++stage) {
             setParameter(processor,"age",float(stage)*.25f);settleEditor();
@@ -2458,7 +2463,7 @@ int main(int argc, char** argv) {
         checks.expect(kb09_gui::benderBrokenShoulder(true,1)-kb09_gui::benderBrokenShoulder(true,0)>8.f&&
                       std::abs(kb09_gui::benderBrokenShoulder(true,.5f)-kb09_gui::benderBrokenShoulder(false,.5f))>1.f,
                       "outer fracture boundaries slope through the depth with different left and right contours");
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());setParameter(processor,"age",1);settleEditor();
         auto* bender=findComponent(*editor,"bender");if(!bender)return 1;
         for(int variant=0;variant<3;++variant) {
@@ -2472,7 +2477,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--bender-dust-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());setParameter(processor,"age",1);settleEditor();
         auto* bender=findComponent(*editor,"bender");if(!bender)return 1;
         for(bool dust:{false,true}) {
@@ -2485,7 +2490,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--screw-light-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* control=findComponent(*editor,"pwmMode");if(!control)return 1;
         auto* panel=control->getParentComponent();
@@ -2501,7 +2506,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--switch-track-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         for(float age:{0.f,1.f})for(const auto* id:{"lfoWave","pwmMode","subMode","vcfEnvMode","vcaMode","envMode"}) {
             setParameter(processor,"age",age);settleEditor();
@@ -2520,7 +2525,7 @@ int main(int argc, char** argv) {
     }
     if(juce::String(argv[1]).startsWith("--knob-motion-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         checkRotaryTicks(processor,*editor,checks,directory);
         std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
@@ -2556,7 +2561,7 @@ int main(int argc, char** argv) {
         return checks.failures?1:0;
     }
     if(juce::String(argv[1])=="--hardware-regression") {
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());
         settleEditor();checkRotaryTicks(processor,*editor,checks);
         checkPerformanceBayGeometry(*editor,checks);checkSwitchAttachment(processor,*editor,checks);
@@ -2564,7 +2569,7 @@ int main(int argc, char** argv) {
         return checks.failures?1:0;
     }
     if(juce::String(argv[1])=="--meter-regression") {
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());
         settleEditor();checkEnvelopeMeter(processor,*editor,checks);
         std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';
@@ -2606,7 +2611,7 @@ int main(int argc, char** argv) {
             checks.expect(writePNG(image,directory.getChildFile("cheek_"+juce::String(side)+"_"+juce::String(stage)+".png")),"cheek material actual-render export");
         }
         checkRustGrowth(directory,checks);
-        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto processorObject=std::make_unique<SH09Processor>();auto& processor=*processorObject;processor.prepareToPlay(sampleRate,blockSize);
         std::unique_ptr<juce::AudioProcessorEditor,EditorDeleter> editor(processor.createEditorAndMakeActive(),{&processor});
         renderBenderPositions(processor,*editor,directory,checks);
         processor.releaseResources();
@@ -2630,7 +2635,7 @@ int main(int argc, char** argv) {
         checkMovingControlPerformance(checks);
         {
             juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Standalone);
-            SH09Processor standalone;
+            auto standaloneObject=std::make_unique<SH09Processor>();auto& standalone=*standaloneObject;
             juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Undefined);
             std::unique_ptr<juce::AudioProcessorEditor, EditorDeleter> editor(standalone.createEditorAndMakeActive(), {&standalone});
             auto* left=findComponent(*editor,"updates");
