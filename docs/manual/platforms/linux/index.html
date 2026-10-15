@@ -15,7 +15,7 @@
     <a class="brand" href="#top" aria-label="Toyland KB-09 home">
       <svg viewBox="85 308 722 158" role="img" aria-labelledby="toyland-title"><title id="toyland-title">Toyland</title><image href="../../assets/marks.png" width="2172" height="724" /></svg>
     </a>
-    <span class="edition">Linux — UNVERIFIED User Manual · Version 1.7.0 · October 15, 2026</span>
+    <span class="edition">Linux — UNVERIFIED User Manual · Version 1.7.1 · October 15, 2026</span>
     <button class="print-button" type="button" onclick="window.print()">Print / Save PDF</button>
   </div>
 </header>
@@ -47,7 +47,7 @@
   <div class="quick-links"><a href="#start">Play your first sound <span aria-hidden="true">↗</span></a><a href="#age">Explore AGE <span aria-hidden="true">↗</span></a><a href="#daws">Audio setup <span aria-hidden="true">↗</span></a></div>
   <p class="project-mark">UNOFFICIAL PERSONAL PROJECT — NOT AFFILIATED WITH ROLAND CORPORATION — NOT FOR SALE</p>
 </section>
-<aside class="notice"><strong>KB-09 1.7.0 for Linux — UNVERIFIED.</strong> This download is standalone only. Real Arch desktop audio and MIDI playback remain unverified.</aside>
+<aside class="notice"><strong>KB-09 1.7.1.</strong> Windows and Mac downloads include standalone and DAW versions. A separate Linux x86-64 download is standalone only; see <a href="#install">Which file do I need?</a>.</aside>
 
 <section id="features">
   <p class="section-number">01 / DISCOVER KB-09</p><h2>A personal synth, ready to explore</h2>
@@ -113,11 +113,11 @@
 
 <section id="panel">
   <p class="section-number">06 / HANDS ON</p><h2>Learn the panel</h2>
-  <div class="panel-age-controls"><button id="panel-age-next" type="button" aria-controls="panel-age-picture">Next AGE ↻</button><span id="panel-age-label" role="status" aria-live="polite">1 / Minty</span></div><figure id="panel-age-picture"><img data-panel-age="1" src="../../assets/panel-age-1.png" alt="KB-09 at Minty" width="3840" height="2160">
-<img data-panel-age="2" src="../../assets/panel-age-2.png" alt="KB-09 at Seen Some Shit" width="3840" height="2160" hidden>
-<img data-panel-age="3" src="../../assets/panel-age-3.png" alt="KB-09 at Vintage, Baby!" width="3840" height="2160" hidden>
-<img data-panel-age="4" src="../../assets/panel-age-4.png" alt="KB-09 at Sold As-Is" width="3840" height="2160" hidden>
-<img data-panel-age="5" src="../../assets/panel-age-5.png" alt="KB-09 at Fire Hazard" width="3840" height="2160" hidden><figcaption>Compare all five appearances with Next AGE. This illustration does not change the synth’s sound.</figcaption></figure>
+  <div class="panel-age-controls"><button id="panel-age-next" type="button" aria-controls="panel-age-picture">Next AGE ↻</button><span id="panel-age-label" role="status" aria-live="polite">1 / Minty</span></div><figure id="panel-age-picture"><img data-panel-age="1" src="../../assets/panel-age-1.png" alt="KB-09 at Minty" width="2880" height="1620">
+<img data-panel-age="2" src="../../assets/panel-age-2.png" alt="KB-09 at Seen Some Shit" width="2880" height="1620" hidden>
+<img data-panel-age="3" src="../../assets/panel-age-3.png" alt="KB-09 at Vintage, Baby!" width="2880" height="1620" hidden>
+<img data-panel-age="4" src="../../assets/panel-age-4.png" alt="KB-09 at Sold As-Is" width="2880" height="1620" hidden>
+<img data-panel-age="5" src="../../assets/panel-age-5.png" alt="KB-09 at Fire Hazard" width="2880" height="1620" hidden><figcaption>Compare all five appearances with Next AGE. This illustration does not change the synth’s sound.</figcaption></figure>
   <p>Drag sliders vertically; drag a knob vertically or horizontally. Hover or drag to read its value bubble. Most sound controls use a <strong>0–10</strong> display; TUNE displays cents in Authentic mode and semitones in Modern mode. Double-click a continuous control to return to its default. Click or drag the ridged switches, or click their adjacent labels. Focused switches also accept arrow keys, Home and End.</p>
   <p>Click the gray <strong>POWER</strong> button to switch the instrument on or off. It stands tall when OFF and sits lower when ON; the red lamp below the POWER label lights when the synth is on. Switching it off mutes the sound and clears held notes. Play a fresh note after switching it back on.</p>
   <div class="table-wrap"><table class="control-table"><thead><tr><th>Section</th><th>What it does</th><th>A first experiment</th></tr></thead><tbody>
@@ -190,7 +190,7 @@
 <p>Buttons assigned to controls with three or more positions cycle one position per press. Knobs and faders select positions directly. Continuous controls use pickup: cross the onscreen position to take control without a jump. <strong>OPTIONS</strong> provides a correction for unusual button behavior.</p>
 <p><strong>CLEAR SELECTED</strong> removes one assignment; <strong>CLEAR ALL</strong> asks for confirmation before resetting them all. Mappings remember the MIDI channel and are saved between launches, separately from sound presets. They support absolute CC 0–119 on channels 1–16; set relative encoders to absolute mode. Pitch bend, notes and channel aftertouch keep their normal functions.</p>
 <p>Enable <strong>DESCRIPTION</strong> for hover help. </p></section>
-<section id="bender-readout"><h2>Pitch-bender readout</h2><p>Hover over or drag the spring-return bender to see its signed position, from -100% to +100%; center is 0%. The VCO and VCF depth faders determine the resulting pitch and filter movement, so the position is not a fixed semitone amount. Release the onscreen bender for a short, 50 ms return in AUTHENTIC mode at constant speed, stopping at center without easing; sound and animation return together. MODERN returns immediately, retaining click-free audio smoothing. The spring duration is a playing approximation, not a measured SH-09 calibration. An external MIDI wheel moves the GUI bender and follows the controller’s own return messages. The wheel’s position is a performance control; the VCO and VCF depth faders set its sensitivities.</p></section><section id="hands-on"><h2>A little more control, a lot more playing</h2>
+<section id="bender-readout"><h2>Pitch-bender readout</h2><p>Hover over or drag the spring-return bender to see its signed position, from -100% to +100%; center is 0%. The VCO and VCF depth faders determine the resulting pitch and filter movement, so the position is not a fixed semitone amount. Release the onscreen bender for a short, 35 ms return in AUTHENTIC mode at constant speed without easing. The pointer then makes one small visual recoil over 20 ms before resting at center; the sound reaches neutral at 35 ms without overshooting. MODERN returns immediately, retaining click-free audio smoothing. The spring duration is a playing approximation, not a measured SH-09 calibration. An external MIDI wheel moves the GUI bender and follows the controller’s own return messages. The wheel’s position is a performance control; the VCO and VCF depth faders set its sensitivities.</p></section><section id="hands-on"><h2>A little more control, a lot more playing</h2>
 <p>Hold <strong>SHIFT</strong> while dragging any knob, fader or the bender for ten-times finer adjustment. Release SHIFT to return to normal speed, even during a drag. AGE selects five marked conditions while dragging. Five cached appearances keep movement responsive; full visual detail returns on release. During automation, control positions and key feedback may stay at the last complete preview while you drag AGE; they return live on release. The four utility sliders have larger handles and grab areas. Faders move relative to where you grab them, so a fine adjustment will not jump to the pointer. The <strong>DESCRIPTION</strong> button in the bottom strip enables hover descriptions; it starts off and lights amber with DESCRIPTION ON when enabled. Hover over DESCRIPTION itself for help even when it is off. Value readouts work with DESCRIPTION off or on. Switches show their selected mode in a readable value box when hovered or adjusted; the box disappears after you leave or finish the adjustment.</p>
 <p><strong>VOLUME</strong> has an audio taper: quiet levels occupy useful knob travel, 0 mutes, and 10 is full output.</p>
 <p>In <strong>Modern</strong>, choose <strong>FREE</strong> for the continuous 0.05–25 Hz LFO, or <strong>SYNC</strong> to follow the host tempo. RATE then selects 21 divisions, from four bars to 1/64-note triplets. Its value box displays the division. D means dotted (one-and-a-half times the straight duration); T means triplet (two-thirds). Bar labels assume 4/4; divisions are quarter-note beat durations and do not change with the host time signature. Without host tempo information the clock uses 120 BPM. Authentic always uses the original free rate, even with a saved SYNC setting.</p>
@@ -221,7 +221,7 @@
     <input type="hidden" name="shotName" value=""><input type="hidden" name="shotType" value=""><input type="hidden" name="shotData" value="">
     <div class="report-trap" aria-hidden="true"><label>Leave this empty<input name="website" maxlength="80" tabindex="-1" autocomplete="off"></label></div>
     <div class="report-grid">
-      <label>KB-09 version <span>(required)</span><input name="version" value="1.7.0" maxlength="40" required autocomplete="off"></label>
+      <label>KB-09 version <span>(required)</span><input name="version" value="1.7.1" maxlength="40" required autocomplete="off"></label>
       <label>Operating system and version <span>(required)</span><input name="os" placeholder="e.g. Arch Linux / Wayland" maxlength="120" required autocomplete="off"></label>
       <label>DAW / host and version <span>(required)</span><input name="host" placeholder="Standalone" maxlength="160" required autocomplete="off"></label>
       <label>Issue category <span>(required)</span><select name="category" required><option value="">Choose a category</option><option>Sound / MIDI</option><option>Interface / display</option><option>Installation / updates</option><option>Crash / performance</option><option>Manual / documentation</option><option>Other</option></select></label>
