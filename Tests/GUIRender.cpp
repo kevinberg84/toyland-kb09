@@ -1502,9 +1502,9 @@ void checkPerformanceBayGeometry(juce::Component& editor,Checks& checks) {
     int topInk=0;for(int x=80;x<200;++x)
         if(panel.getPixelAt(x,404).getBrightness()>.6f)++topInk;
     checks.expect(topInk<10,"performance bay has no horizontal top outline");
-    checks.expect(vco->getX()+vco->getWidth()/2==133&&vcf->getX()+vcf->getWidth()/2==169
+    checks.expect(vco->getX()+vco->getWidth()/2==129&&vcf->getX()+vcf->getWidth()/2==165
         &&port->getX()+port->getWidth()/2==261&&key->getX()==326,
-        "centering shifts bay controls together while retaining keyboard dimensions");
+        "approved depth-slider centering retains portamento position and keyboard dimensions");
     const float midpoint=.5f*(mod->getBounds().getCentreX()+range->getBounds().getCentreX());
     checks.expect(lineX>mod->getBounds().getCentreX()&&lineX<range->getBounds().getCentreX(),"rendered performance-bay right rule aligns below the MOD–RANGE gap");
     checks.expect(key->getX()-lineX>=15&&key->getRight()==1428,"performance bay retains an interior painted margin before the keys and their right edge");
