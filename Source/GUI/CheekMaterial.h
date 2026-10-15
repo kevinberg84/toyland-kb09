@@ -11,7 +11,20 @@ namespace kb09_gui {
 class CheekMaterial {
 public:
     static constexpr int width=55,height=732,scale=3;
-    CheekMaterial() {
+    explicit CheekMaterial(bool cornerPreview=false,bool edgeProposal=false) {
+        if(cornerPreview&&!edgeProposal) {
+            // Prepared from this generator at the native 3x material resolution.
+            // Keep the approved photo pixels; no masks/noise/abrasions to build
+            // on the message thread when the editor first opens.
+            const auto atlas=juce::SoftwareImageType().convert(juce::ImageFileFormat::loadFrom(
+                BinaryData::cheekspreparedv83_png,BinaryData::cheekspreparedv83_pngSize));
+            if(atlas.isValid()&&atlas.getWidth()==width*scale*4&&atlas.getHeight()==height*scale*5) {
+                for(int variant=0;variant<2;++variant)for(int side=0;side<2;++side)for(int stage=0;stage<5;++stage)
+                    (variant?revisedImages:images)[size_t(side)][size_t(stage)]=atlas.getClippedImage(
+                        {(variant*2+side)*width*scale,stage*height*scale,width*scale,height*scale});
+                return;
+            }
+        }
         for(int side=0;side<2;++side)for(int endpoint=0;endpoint<1;++endpoint) {
             auto& image=images[size_t(side)][size_t(endpoint)];
             image=juce::Image(juce::Image::ARGB,width*scale,height*scale,true,juce::SoftwareImageType());
@@ -122,6 +135,30 @@ public:
                 undercoat[at]=juce::Colour::fromFloatRGBA(juce::jlimit(0.f,1.f,tone*ratio*.99f),
                     juce::jlimit(0.f,1.f,tone*ratio*1.01f),juce::jlimit(0.f,1.f,tone*ratio),original.getFloatAlpha());
             }
+            std::array<std::vector<float>,5> cornerDamage;
+            if(cornerPreview)for(auto& mask:cornerDamage)mask.resize(size_t(n),0);
+            std::vector<juce::Point<float>> cornerSources;
+            for(const auto& mark:marks[size_t(side)]) {
+                const juce::Point<float> a(mark.x1*width,mark.y1*height),b(mark.x2*width,mark.y2*height);
+                auto source=(a+b)*.5f;
+                if(cornerPreview&&((edgeProposal&&mark.radius>3.f)
+                    ||(mark.radius>3.f&&(source.y<height*.09f||source.y>height*.93f)
+                    &&(source.x<width*.35f||source.x>width*.70f)))) {
+                    double weights=0,sx=0,sy=0;
+                    const auto line=b-a;const float length=line.getDistanceSquaredFromOrigin();
+                    for(int yy=juce::jmax(0,int((juce::jmin(a.y,b.y)-mark.radius)*scale));yy<juce::jmin(h,int((juce::jmax(a.y,b.y)+mark.radius)*scale));++yy)
+                    for(int xx=juce::jmax(0,int((juce::jmin(a.x,b.x)-mark.radius)*scale));xx<juce::jmin(w,int((juce::jmax(a.x,b.x)+mark.radius)*scale));++xx) {
+                        const juce::Point<float> point((xx+.5f)/scale,(yy+.5f)/scale);
+                        const float along=length>0?juce::jlimit(0.f,1.f,((point.x-a.x)*line.x+(point.y-a.y)*line.y)/length):0;
+                        if(point.getDistanceFrom(a+line*along)>mark.radius)continue;
+                        const auto photo=photograph.getPixelColour(xx,yy),paint=undercoat[size_t(yy*w+xx)];
+                        const float contrast=std::abs(photo.getBrightness()-paint.getBrightness());
+                        const double weight=contrast*contrast*photo.getFloatAlpha();weights+=weight;sx+=point.x*weight;sy+=point.y*weight;
+                    }
+                    if(weights>0)source={float(sx/weights),float(sy/weights)};
+                }
+                cornerSources.push_back(source);
+            }
             revisedImages[size_t(side)][0]=images[size_t(side)][0].createCopy();
             for(int variant=0;variant<2;++variant)for(int stage=1;stage<5;++stage) {
                 auto& result=(variant?revisedImages:images)[size_t(side)][size_t(stage)];
@@ -132,7 +169,7 @@ public:
                     const size_t at=size_t(y*w+x);
                     const float all=masks[4][at],revealed=all>0?(variant?retainedMasks:masks)[size_t(stage)][at]/all:0.f;
                     const auto body=photo.interpolatedWith(undercoat[at],all);
-                    const float coverage=.5f*photo.getFloatAlpha(),progress=float(stage)*.03125f;
+                    const float coverage=.5f*(cornerPreview&&variant&&side==0&&y>h*.90f?clean.getFloatAlpha():photo.getFloatAlpha()),progress=float(stage)*.03125f;
                     const auto channel=[&](float c,float damaged,float paint) {
                         // Fire Hazard body tone reaches only the previous
                         // Seen Some Shit tone; damage remains independent.
@@ -145,6 +182,65 @@ public:
                         channel(clean.getFloatRed(),photo.getFloatRed(),body.getFloatRed()),
                         channel(clean.getFloatGreen(),photo.getFloatGreen(),body.getFloatGreen()),
                         channel(clean.getFloatBlue(),photo.getFloatBlue(),body.getFloatBlue()),clean.getFloatAlpha()));
+                    if(variant) {
+                        // Remove the original full-size cuts, then sample each
+                        // photographic gouge at 2/3 size around its own centre.
+                        // Scale its complete fracture and shadow, not just a mask.
+                        const juce::Point<float> point((x+.5f)/scale,(y+.5f)/scale);
+                        float dr=0,dg=0,db=0,best=0;
+                        size_t markIndex=0;
+                        for(const auto& mark:marks[size_t(side)]) {
+                            const auto sourceCentre=cornerSources[markIndex++];
+                            if(mark.birth>stage)continue;
+                            const juce::Point<float> a(mark.x1*width,mark.y1*height),b(mark.x2*width,mark.y2*height);
+                            const auto line=b-a;const float length=line.getDistanceSquaredFromOrigin();
+                            if(mark.radius<=3.f&&length>625.f)continue;
+                            const auto centre=(a+b)*.5f;
+                            auto origin=centre,destination=centre;
+                            // Move the complete reduced fracture, including its
+                            // shadow, onto the rounded corner rather than near it.
+                            if(cornerPreview&&mark.radius>3.f&&(centre.y<height*.09f||centre.y>height*.93f)) {
+                                if(centre.x<width*.35f||centre.x>width*.70f)
+                                    {origin=sourceCentre;destination={centre.x<width*.5f?6.f:width-6.f,centre.y<height*.5f?6.f:height-6.f};}
+                            }
+                            if(edgeProposal&&mark.radius>3.f) {
+                                origin=sourceCentre;
+                                // Only the large fractures move. The original
+                                // small photographic scrapes stay in place.
+                                const bool outerLeft=side==0;
+                                if(centre.y<height*.09f||centre.y>height*.93f) {
+                                    destination={outerLeft?6.f:width-6.f,centre.y<height*.5f?6.f:height-6.f};
+                                    if(side==1&&centre.y>height*.93f)
+                                        destination={width-3.5f,height-3.5f};
+                                } else destination={outerLeft?1.25f:width-1.25f,sourceCentre.y};
+                            }
+                            // Retain the owner's chosen vertical scoring on
+                            // the upper right face at its original position.
+                            if(edgeProposal&&side==1&&markIndex==5) {
+                                origin=centre;destination=centre;
+                            }
+                            const auto q=mark.radius>3.f?origin+(point-destination)*1.5f:point;
+                            const float along=length>0?juce::jlimit(0.f,1.f,((q.x-a.x)*line.x+(q.y-a.y)*line.y)/length):0.f;
+                            const float cover=1.f-power_detail::smoothRange(mark.radius-1.2f,mark.radius,q.getDistanceFrom(a+line*along));
+                            const int sx=int(q.x*scale),sy=int(q.y*scale);
+                            if(cover<=0||sx<0||sy<0||sx>=w||sy>=h)continue;
+                            const size_t source=size_t(sy*w+sx);
+                            const auto sample=photograph.getPixelColour(sx,sy),paint=undercoat[source];
+                            const float score=cornerPreview?cover*std::abs(sample.getBrightness()-paint.getBrightness()):cover;
+                            if(score<=best)continue;
+                            const float amount=cover*masks[4][source];best=score;
+                            if(cornerPreview)cornerDamage[size_t(stage)][at]=cover;
+                            dr=(sample.getFloatRed()-paint.getFloatRed())*amount;
+                            dg=(sample.getFloatGreen()-paint.getFloatGreen())*amount;
+                            db=(sample.getFloatBlue()-paint.getFloatBlue())*amount;
+                        }
+                        const auto c=[&](float freshChannel,float paintChannel,float delta) {
+                            return juce::jlimit(0.f,1.f,freshChannel+coverage*(progress*(paintChannel-freshChannel)+delta));
+                        };
+                        output.setPixelColour(x,y,juce::Colour::fromFloatRGBA(
+                            c(clean.getFloatRed(),body.getFloatRed(),dr),c(clean.getFloatGreen(),body.getFloatGreen(),dg),
+                            c(clean.getFloatBlue(),body.getFloatBlue(),db),clean.getFloatAlpha()));
+                    }
                 }
             }
             // Narrow reflected bands on the molded edges. Keep the body dark
@@ -163,7 +259,7 @@ public:
                     const float top=std::exp(-std::pow((py-4.1f)/.65f,2.f))*power_detail::smoothRange(10.f,17.f,px)
                         *(1.f-power_detail::smoothRange(width-16.f,width-5.f,px));
                     const float focus=.70f+.30f*power_detail::smoothNoise(py*.024f,0,seedForSide(side));
-                    const float damage=(variant?retainedMasks:masks)[size_t(stage)][size_t(y*w+x)];
+                    const float damage=(cornerPreview&&variant?cornerDamage:(variant?retainedMasks:masks))[size_t(stage)][size_t(y*w+x)];
                     const float reflection=((side?.085f:.145f)*vertical+.045f*core)*end*focus+.13f*top;
                     const float lift=reflection*(1.f-damage);
                     pixels.setPixelColour(x,y,juce::Colour::fromFloatRGBA(
@@ -182,7 +278,7 @@ public:
                     key^=key>>16;key*=0x7feb352du;key^=key>>15;key*=0x846ca68bu;key^=key>>16;
                     return float(key&65535u)/65535.f;
                 };
-                for(uint32_t scratch=0;scratch<uint32_t(24*stage);++scratch) {
+                for(uint32_t scratch=0;scratch<uint32_t(40*stage);++scratch) {
                     const float x=width*(.14f+.68f*random(seed+scratch*127));
                     const float y=height*(.04f+.90f*random(seed+scratch*419));
                     const float dx=(random(seed+scratch*199)-.5f)*16.f,dy=1.f+9.f*random(seed+scratch*733);
@@ -190,16 +286,102 @@ public:
                     g.setColour(juce::Colour(0xffb7b9ae).withAlpha(.12f+.12f*random(seed+scratch*37)));
                     g.strokePath(trace,juce::PathStrokeType(.11f+.08f*random(seed+scratch*59),juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
                 }
+                for(uint32_t i=0;i<uint32_t((cornerPreview?88:52)*stage);++i) {
+                    const uint32_t key=seed^0x45a721u;
+                    const float x=5.f+(width-10.f)*random(key+i*127),y=12.f+(height-24.f)*random(key+i*419);
+                    const float dx=(random(key+i*199)-.5f)*3.4f,dy=.6f+3.2f*random(key+i*733);
+                    juce::Path scratch;scratch.startNewSubPath(x,y);scratch.quadraticTo(x+dx*.4f,y+dy*.6f,x+dx,y+dy);
+                    g.setColour(juce::Colour(0xff080b0b).withAlpha(.22f));
+                    g.strokePath(scratch,juce::PathStrokeType(.20f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+                    g.setColour(juce::Colour(0xffbdc1ba).withAlpha(.10f+.08f*random(key+i*59)));
+                    g.strokePath(scratch,juce::PathStrokeType(.075f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded),juce::AffineTransform::translation(-.08f,-.07f));
+                }
+                if(edgeProposal)for(uint32_t serial=0;serial<uint32_t(stage*16);++serial) {
+                    // Shallow irregular scoring: a dark micro-groove and one
+                    // softly lit edge, with tapered, interrupted ends. Fixed
+                    // birth order prevents scratches jumping when age changes.
+                    const uint32_t key=seed^0x8ba317u;
+                    const float x=width*(.12f+.76f*random(key+serial*127));
+                    const float y=height*(.025f+.95f*random(key+serial*419));
+                    const float length=3.f+15.f*random(key+serial*199);
+                    const float angle=-1.25f+2.5f*random(key+serial*733);
+                    const float dx=std::sin(angle)*length,dy=std::cos(angle)*length;
+                    const float bend=(random(key+serial*337)-.5f)*2.4f;
+                    const float width=.19f+.22f*random(key+serial*59);
+                    const float contrast=.20f+.21f*random(key+serial*37);
+                    auto point=[&](float t){return juce::Point<float>(x+dx*t+bend*std::sin(t*juce::MathConstants<float>::pi),y+dy*t);};
+                    for(uint32_t segment=0;segment<9;++segment) {
+                        if(random(key+serial*997+segment*73)>.90f)continue;
+                        const float t0=float(segment)/9,t1=float(segment+1)/9;
+                        const float taper=std::pow(std::sin((t0+t1)*.5f*juce::MathConstants<float>::pi),.6f);
+                        const auto a=point(t0),b=point(t1);
+                        g.setColour(juce::Colour(0xff080a09).withAlpha(.26f*taper));g.drawLine({a,b},width+.15f);
+                        g.setColour(juce::Colour(0xff9fa49c).withAlpha(contrast*taper));
+                        g.drawLine({a.translated(-.10f,-.07f),b.translated(-.10f,-.07f)},width*taper);
+                    }
+                }
+                if(cornerPreview)for(uint32_t rub=0;rub<uint32_t(stage*2);++rub) {
+                    // A few broad, shallow handling rubs: many interrupted
+                    // hairlines form a soft patch, without a gouge's dark wall
+                    // or a single pale crayon-like stroke.
+                    const uint32_t key=seed^0x176dc9u;
+
+                    const float x=width*(.32f+.34f*random(key+rub*127));
+                    const float y=height*(.09f+.82f*random(key+rub*419));
+                    const float length=7.f+19.f*random(key+rub*199),breadth=1.4f+4.1f*random(key+rub*733);
+                    const float angle=-.65f+1.3f*random(key+rub*331)+(side?.18f:0.f);
+                    const auto point=[&](float u,float v){return juce::Point<float>(x+u*std::cos(angle)-v*std::sin(angle),y+u*std::sin(angle)+v*std::cos(angle));};
+                    for(uint32_t track=0;track<24;++track) {
+                        const float across=(float(track)+.5f)/12.f-1.f;
+                        const float span=length*.5f*std::sqrt(juce::jmax(0.f,1.f-across*across));
+                        const float offset=across*breadth*.5f;
+                        const float trim=.12f+.32f*random(key+rub*997+track*79);
+                        juce::Path scuff;scuff.startNewSubPath(point(-span,offset));
+                        scuff.quadraticTo(point(-span*trim,offset+.18f),point(span*(1-trim),offset));
+                        g.setColour(juce::Colour(0xffa7aaa3).withAlpha(.035f+.045f*random(key+rub*131+track*37)));
+                        g.strokePath(scuff,juce::PathStrokeType(.10f+.05f*random(key+track*59),juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+                    }
+                }
             }
         }
     }
-    void paint(juce::Graphics& g,int side,float age,float y,float totalWidth,bool revised=false) const {
+    bool exportPrepared(const juce::File& target,bool enhanced=false) const {
+        juce::Image atlas(juce::Image::ARGB,width*scale*4,height*scale*5,true,juce::SoftwareImageType());
+        juce::Graphics g(atlas);
+        for(int variant=0;variant<2;++variant)for(int side=0;side<2;++side)for(int stage=0;stage<5;++stage) {
+            const auto& source=enhanced&&variant&&stage>0?contrastImages[size_t(side)][size_t(stage)]
+                :(variant?revisedImages:images)[size_t(side)][size_t(stage)];
+            if(!source.isValid())return false;
+            g.drawImageAt(source,(variant*2+side)*width*scale,stage*height*scale);
+        }
+        target.deleteFile();auto stream=target.createOutputStream();
+        return stream&&juce::PNGImageFormat().writeImageToStream(atlas,*stream);
+    }
+    void paint(juce::Graphics& g,int side,float age,float y,float totalWidth,bool revised=false,bool contrastWear=false) const {
         juce::Graphics::ScopedSaveState save(g);
         const float x=side?totalWidth-width:0.f;
         const juce::Rectangle<float> bounds(x,y,float(width),float(height));
         g.setColour(juce::Colour(0xff0a0d0e));g.fillRect(bounds);
         juce::Path outline;outline.addRoundedRectangle(bounds,12);g.reduceClipRegion(outline);
-        g.setOpacity(1);g.drawImage((revised?revisedImages:images)[size_t(side)][size_t(appearanceStage(age))],bounds);
+        const int stage=appearanceStage(age);
+        const auto& source=(revised?revisedImages:images)[size_t(side)];
+        const juce::Image* surface=&source[size_t(stage)];
+        if(contrastWear&&revised&&stage>0) {
+            auto& enhanced=contrastImages[size_t(side)][size_t(stage)];
+            if(!enhanced.isValid()) {
+                enhanced=surface->createCopy();
+                juce::Image::BitmapData fresh(source[0],juce::Image::BitmapData::readOnly),
+                    worn(*surface,juce::Image::BitmapData::readOnly),output(enhanced,juce::Image::BitmapData::writeOnly);
+                for(int yy=0;yy<enhanced.getHeight();++yy)for(int xx=0;xx<enhanced.getWidth();++xx) {
+                    const auto a=fresh.getPixelColour(xx,yy),b=worn.getPixelColour(xx,yy);
+                    const auto contrast=[](float clean,float aged){return juce::jlimit(0.f,1.f,clean+(aged-clean)*1.65f);};
+                    output.setPixelColour(xx,yy,juce::Colour::fromFloatRGBA(contrast(a.getFloatRed(),b.getFloatRed()),
+                        contrast(a.getFloatGreen(),b.getFloatGreen()),contrast(a.getFloatBlue(),b.getFloatBlue()),b.getFloatAlpha()));
+                }
+            }
+            surface=&enhanced;
+        }
+        g.setOpacity(1);g.drawImage(*surface,bounds);
         if(side) {g.setColour(juce::Colours::black.withAlpha(.12f));g.fillPath(outline);}
         // The independently generated photo-informed endpoint already holds
         // each cheek's cuts, scuffs and larger corner damage. Do not stamp a
@@ -210,6 +392,57 @@ private:
     static uint32_t seedForSide(int side) {return side?0x7e21a53bu:0x18b64cd9u;}
     std::array<std::array<juce::Image,5>,2> images;
     std::array<std::array<juce::Image,5>,2> revisedImages;
+    mutable std::array<std::array<juce::Image,5>,2> contrastImages;
 };
-inline const CheekMaterial& cheekMaterial() {static const CheekMaterial material;return material;}
+inline const CheekMaterial& cheekMaterial(bool corners=false) {
+    if(corners){static const CheekMaterial proposal(true);return proposal;}
+    static const CheekMaterial material;return material;
+}
+inline const CheekMaterial& cheekEdgeProposal() {
+    static const CheekMaterial material(true,true);return material;
+}
+
+// A separate recessed joint leaves the moulded cheek above the sheet-metal
+// panel. Dust is confined to the top-panel section, not the lower bay/keybed.
+inline void paintCheekJoint(juce::Graphics& g,float age,float top,float synthWidth) {
+    static const auto joints=[] {
+        std::array<std::array<juce::Image,5>,2> result;
+        constexpr int scale=4;
+        for(int side=0;side<2;++side)for(int stage=0;stage<5;++stage) {
+            auto& image=result[size_t(side)][size_t(stage)];
+            image=juce::Image(juce::Image::ARGB,20,732*scale,true,juce::SoftwareImageType());
+            juce::Image::BitmapData pixels(image,juce::Image::BitmapData::writeOnly);
+            const uint32_t seed=side?29417u:13759u;
+            const float wear=stage*.25f;
+            for(int y=0;y<image.getHeight();++y)for(int x=0;x<20;++x) {
+                const float px=(x+.5f)/scale,py=(y+.5f)/scale;
+                const float across=side?5.f-px:px;
+                const float endFade=power_detail::smoothRange(3.f,10.f,py)
+                    *(1.f-power_detail::smoothRange(722.f,730.f,py));
+                // Thin raised cheek lip, deep slot, then a soft panel contact edge.
+                const float lip=std::exp(-std::pow((across-.65f)/.23f,2.f));
+                const float trough=std::exp(-std::pow((across-2.0f)/1.0f,4.f));
+                const float panelShadow=std::exp(-std::pow((across-3.1f)/.9f,2.f));
+                const float patches=power_detail::smoothNoise(across*1.8f,py*.085f,seed);
+                const float grains=power_detail::smoothNoise(across*13.f,py*13.f,seed+917u);
+                const float fine=power_detail::smoothNoise(across*5.1f,py*4.9f,seed+811u);
+                const float topOnly=1.f-power_detail::smoothRange(362.f,365.f,py);
+                const float deposit=wear*topOnly*trough*power_detail::smoothRange(.28f,.70f,patches)
+                    *(.24f+.76f*power_detail::smoothRange(.37f,.72f,grains));
+                float light=.021f+.15f*lip+.022f*panelShadow;
+                light+=(fine-.5f)*.009f;
+                auto colour=juce::Colour::fromFloatRGBA(light,light*1.01f,light,.92f*endFade);
+                const auto dust=juce::Colour::fromFloatRGBA(.42f,.37f,.28f,.92f*endFade);
+                colour=colour.interpolatedWith(dust,juce::jlimit(0.f,.8f,deposit*1.18f));
+                const float edgeFade=1.f-power_detail::smoothRange(3.5f,5.f,across);
+                pixels.setPixelColour(x,y,colour.withMultipliedAlpha(edgeFade));
+            }
+        }
+        return result;
+    }();
+    const int stage=appearanceStage(age);
+    g.drawImage(joints[0][size_t(stage)],{54.25f,top,5.f,732.f});
+    g.drawImage(joints[1][size_t(stage)],{synthWidth-59.25f,top,5.f,732.f});
+}
+
 }

@@ -62,6 +62,20 @@ public:
     }
     DialogTheme theme;
     ButtonCycle navigation;
+    void mouseDown(const juce::MouseEvent& event) override {
+        dragStartedHere=event.originalComponent==this&&event.mods.isLeftButtonDown()
+            &&event.mouseDownTime>=createdAt;
+        if(dragStartedHere)juce::AlertWindow::mouseDown(event);
+    }
+    void mouseDrag(const juce::MouseEvent& event) override {
+        if(dragStartedHere&&event.mods.isLeftButtonDown())juce::AlertWindow::mouseDrag(event);
+    }
+    void mouseUp(const juce::MouseEvent& event) override {
+        dragStartedHere=false;juce::AlertWindow::mouseUp(event);
+    }
+private:
+    const juce::Time createdAt=juce::Time::getCurrentTime();
+    bool dragStartedHere=false;
 };
 
 class UpdateMenuTheme final : public DialogTheme {

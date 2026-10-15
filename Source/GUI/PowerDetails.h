@@ -254,12 +254,17 @@ struct LegendMaterial {
     juce::Image original {juce::Image::ARGB, width, height, true, juce::SoftwareImageType()};
     juce::Image worn {juce::Image::ARGB, width, height, true, juce::SoftwareImageType()};
     float lastAge = -1.0f;
+    float inkCentreY=0;
 
     LegendMaterial() {
         juce::Graphics mask(original);
         mask.addTransform(juce::AffineTransform::translation(-159.0f, -454.0f)
                           .scaled(float(scale)));
         paintLegend(mask, juce::Colours::white);
+        int top=height,bottom=-1;
+        for(int y=0;y<height;++y)for(int x=0;x<width;++x)
+            if(original.getPixelAt(x,y).getAlpha()>0){top=juce::jmin(top,y);bottom=juce::jmax(bottom,y);}
+        inkCentreY=454.f+float(top+bottom+1)/(2.f*scale);
     }
 
     const juce::Image& render(float age) {
@@ -291,9 +296,10 @@ struct LegendMaterial {
 
 } // namespace power_detail
 
-inline void drawPowerLegend(juce::Graphics& g, juce::Colour ink, float age = 0) {
+inline void drawPowerLegend(juce::Graphics& g, juce::Colour ink, float age = 0,float centreY=-1) {
     juce::Graphics::ScopedSaveState save(g);
     static power_detail::LegendMaterial material;
+    if(centreY>=0)g.addTransform(juce::AffineTransform::translation(0,centreY-material.inkCentreY));
     g.setColour(ink);
     g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
     // Alpha-only print loss reveals the actual panel beneath it; the almost

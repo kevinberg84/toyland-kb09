@@ -1,3 +1,15 @@
+# 1.7.2 — Toyland KB-09
+
+- Refined photographic screw heads, smaller profiles, restrained Minty shine and gradual dark tarnish. Worn heads stay matte without excessive pitting; selected heads become stripped.
+- More natural cheek scratches and scuffs, edge and corner gouges, and clearer wear at normal viewing sizes. Recessed cheek joints gather dust along the upper panel; the lower textured rail stays out of the gap.
+- Corrected knob top markings and shorter, tapered inner collar ticks, with less top rust and uneven grime deposits.
+- The bottom utility strip, its switches and all dialogs remain clean at every AGE setting. Utility caps retain their silver markings.
+- Refined POWER and bender markings, ENV / GATE symbols and legend spacing.
+- SAVE / DON'T SAVE no longer inherits a drag when it opens; moving it requires a fresh deliberate click.
+- Prepared cheek materials and lazy screw rendering reduce editor startup work. RANGE and WAVEFORM retain instantaneous switching between fixed positions.
+
+The sound engine, parameter identities, saved presets, 24 factory sounds and 128-sample processing latency are retained. AUTHENTIC bender return remains 35 ms with a 20 ms visual recoil, and POWER springs back immediately on release. Linux standalone remains UNVERIFIED pending real Arch audio and MIDI confirmation.
+
 # 1.7.1 — Toyland KB-09
 
 - AUTHENTIC bender snaps to center over 35 ms without easing, followed by a small 20 ms visual recoil. Pitch reaches neutral without overshoot. MODERN remains immediate.

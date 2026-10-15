@@ -20,7 +20,7 @@ DialogFonts::DialogFonts()
     : regular(juce::Typeface::createSystemTypefaceFor(BinaryData::JostRegular_ttf, BinaryData::JostRegular_ttfSize)),
       semibold(juce::Typeface::createSystemTypefaceFor(BinaryData::JostSemibold_ttf, BinaryData::JostSemibold_ttfSize)) {}
 DialogTheme::DialogTheme(float condition):age(juce::jlimit(0.f,1.f,condition)){setUsingNativeAlertWindows(false);refreshColours();}
-juce::Colour DialogTheme::paper() const { return juce::Colours::white.interpolatedWith(juce::Colour(0xffd1bd86),age*.86f); }
+juce::Colour DialogTheme::paper() const { return juce::Colours::white; }
 juce::Font DialogTheme::lettering(float height,bool bold) {
     // Keep native font ownership scoped to active windows, avoiding
     // typeface ownership in DLL-static destructors.
@@ -51,11 +51,8 @@ void DialogTheme::refreshColours() {
     setColour(juce::ScrollBar::thumbColourId,paper().withAlpha(.5f));
 }
 void DialogTheme::wear(juce::Graphics& g,juce::Rectangle<int> bounds,int seed) const {
-    if(age<=0)return;
-    juce::Random r(seed);g.setColour(black.withAlpha(age*.9f));
-    const int count=int(bounds.getWidth()*bounds.getHeight()*.017f*age*age);
-    for(int i=0;i<count;++i){const float x=bounds.getX()+r.nextFloat()*bounds.getWidth(),y=bounds.getY()+r.nextFloat()*bounds.getHeight();
-        const float d=.25f+r.nextFloat()*.8f;g.fillEllipse(x,y,d,d*(.35f+r.nextFloat()*.8f));}
+    // Application chrome and dialogs are outside the physical instrument.
+    juce::ignoreUnused(g,bounds,seed);
 }
 void DialogTheme::brand(juce::Graphics& g,juce::Rectangle<float> area) const {
     static auto mask=logoMask();g.setColour(paper());g.drawImage(mask,area,juce::RectanglePlacement::centred,true);wear(g,area.toNearestInt(),83);

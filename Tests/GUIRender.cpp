@@ -1601,7 +1601,7 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
 }
 
 void checkMovingControlPerformance(Checks& checks) {
-    SH09Processor processor;processor.prepareToPlay(48000,128);
+    auto ownedProcessor=std::make_unique<SH09Processor>();auto& processor=*ownedProcessor;processor.prepareToPlay(48000,128);
     std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditor());
     editor->setSize(1500,816);settleEditor();
     // Expire the temporary resize backdrop and buffered children first.
@@ -1682,6 +1682,264 @@ int main(int argc, char** argv) {
     }
     juce::ScopedJuceInitialiser_GUI initialiseGUI;
     Checks checks;
+    if(juce::String(argv[1])=="--knobs83") {
+        auto processor=std::make_unique<SH09Processor>();processor->prepareToPlay(sampleRate,blockSize);processor->setCurrentProgram(1);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor->createEditor());settleEditor();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(350);
+        for(const auto id:{"range","wave"}) {
+            auto* slider=dynamic_cast<juce::Slider*>(findComponent(*editor,id));if(!slider)return 1;
+            slider->setValue(slider->getMinimum(),juce::sendNotificationSync);
+            const auto start=slider->getLocalBounds().toFloat().getCentre();
+            auto event=[&](juce::Point<float> p,bool down) {
+                const auto now=juce::Time::getCurrentTime();
+                return juce::MouseEvent(juce::Desktop::getInstance().getMainMouseSource(),p,
+                    juce::ModifierKeys(down?juce::ModifierKeys::leftButtonModifier:0),1,0,0,0,0,slider,slider,now,start,now,1,true);
+            };
+            slider->mouseDown(event(start,true));bool valid=true,immediate=true,held=true;int changes=0;double previous=slider->getValue();
+            for(int pixel=1;pixel<=72;++pixel) {
+                slider->mouseDrag(event(start+juce::Point<float>(float(pixel),0),true));
+                const double selected=slider->getValue();valid&=selected==std::round(selected);
+                immediate&=std::abs(processor->state.getRawParameterValue(id)->load()-selected)<.00001;
+                if(selected!=previous)++changes;previous=selected;
+                auto frame=slider->createComponentSnapshot(slider->getLocalBounds(),true,1.f);
+                juce::MessageManager::getInstance()->runDispatchLoopUntil(30);
+                auto rested=slider->createComponentSnapshot(slider->getLocalBounds(),true,1.f);
+                held&=slider->getValue()==selected&&!slider->getProperties().contains("detentVisualPosition");
+            }
+            slider->mouseUp(event(start+juce::Point<float>(72,0),false));
+            checks.expect(valid&&changes>=1,"slow one-pixel drags select only whole detents "+juce::String(id));
+            checks.expect(immediate,"every selected detent immediately reaches the audio parameter "+juce::String(id));
+            checks.expect(held,"pausing input never leaves an interpolated visual position "+juce::String(id));
+            slider->setValue(slider->getMinimum()+.37,juce::sendNotificationSync);
+            checks.expect(slider->getValue()==slider->getMinimum(),"fractional input cannot become a resting detent "+juce::String(id));
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--contrast82-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        auto processor=std::make_unique<SH09Processor>();processor->prepareToPlay(sampleRate,blockSize);processor->setCurrentProgram(1);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor->createEditor());settleEditor();juce::MessageManager::getInstance()->runDispatchLoopUntil(350);
+        auto* panel=findComponent(*editor,"range")->getParentComponent();
+        for(int stage=0;stage<5;++stage)for(bool proposed:{false,true}) {
+            setParameter(*processor,"age",stage*.25f);panel->getProperties().set("previewCheekContrast82",proposed);settleEditor();
+            const juce::String prefix=proposed?"proposal-":"approved-";
+            checks.expect(writePNG(panel->createComponentSnapshot(panel->getLocalBounds(),true,900.f/1483),directory.getChildFile(prefix+"synth-"+juce::String(stage)+".png")),"normal size cheek contrast age "+juce::String(stage));
+            for(int side=0;side<2;++side)
+                checks.expect(writePNG(panel->createComponentSnapshot({side?1413:0,34,70,732},true,2.f),directory.getChildFile(prefix+"cheek-"+juce::String(side)+"-"+juce::String(stage)+".png")),"cheek close view age "+juce::String(stage));
+        }
+        checks.expect(kb09_gui::cheekMaterial(true).exportPrepared(directory.getChildFile("cheeks-contrast-prepared.png"),true),"export approved higher contrast without runtime generation");
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--cheeks79-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        auto processor=std::make_unique<SH09Processor>();processor->prepareToPlay(sampleRate,blockSize);processor->setCurrentProgram(1);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor->createEditor());
+        settleEditor();juce::MessageManager::getInstance()->runDispatchLoopUntil(350);
+        auto* panel=findComponent(*editor,"range")->getParentComponent();
+        for(int stage=0;stage<5;++stage)for(bool proposed:{false,true}) {
+            setParameter(*processor,"age",stage*.25f);panel->getProperties().set("previewCheekEdges79",proposed);settleEditor();
+            const juce::String prefix=proposed?"proposal-":"approved-";
+            for(int side=0;side<2;++side)
+                checks.expect(writePNG(panel->createComponentSnapshot({side?1413:0,34,70,732},true,2.f),directory.getChildFile(prefix+"cheek-"+juce::String(side)+"-"+juce::String(stage)+".png")),"cheek edge gouges and scoring age "+juce::String(stage));
+        }
+        checks.expect(kb09_gui::cheekEdgeProposal().exportPrepared(directory.getChildFile("cheeks-proposal-prepared.png")),"prepared proposal for approval without startup generation");
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--startup78=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        auto processor=std::make_unique<SH09Processor>();processor->prepareToPlay(sampleRate,blockSize);processor->setCurrentProgram(1);
+        const double start=juce::Time::getMillisecondCounterHiRes();
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor->createEditor());
+        const double made=juce::Time::getMillisecondCounterHiRes();
+        auto* panel=findComponent(*editor,"range")->getParentComponent();
+        auto first=panel->createComponentSnapshot(panel->getLocalBounds(),true,1.f);
+        const double painted=juce::Time::getMillisecondCounterHiRes();
+        std::cout<<"STARTUP editor_ms="<<made-start<<" first_paint_ms="<<painted-made<<" total_ms="<<painted-start<<std::endl;
+        if(!directory.getChildFile("cheeks-prepared.png").existsAsFile())
+            checks.expect(kb09_gui::cheekMaterial(true).exportPrepared(directory.getChildFile("cheeks-prepared.png")),"export exact prepared cheek atlas");
+        for(int stage=0;stage<5;++stage) {
+            setParameter(*processor,"age",stage*.25f);settleEditor();
+            checks.expect(writePNG(panel->createComponentSnapshot({0,34,1483,732},true,1.f),directory.getChildFile("age-"+juce::String(stage)+".png")),"startup appearance age "+juce::String(stage));
+        }
+        const double reopenStart=juce::Time::getMillisecondCounterHiRes();
+        auto reopened=std::unique_ptr<juce::AudioProcessorEditor>(processor->createEditor());
+        auto* reopenedPanel=findComponent(*reopened,"range")->getParentComponent();
+        auto next=reopenedPanel->createComponentSnapshot(reopenedPanel->getLocalBounds(),true,1.f);
+        std::cout<<"STARTUP cached_reopen_ms="<<juce::Time::getMillisecondCounterHiRes()-reopenStart<<std::endl;
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--rail76-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        auto ownedProcessor=std::make_unique<SH09Processor>();auto& processor=*ownedProcessor;
+        processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());
+        auto* panel=findComponent(*editor,"range")->getParentComponent();
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",stage*.25f);settleEditor();
+            for(int side=0;side<2;++side)
+                checks.expect(writePNG(panel->createComponentSnapshot({side?1368:0,650,115,135},true,4.f),directory.getChildFile("rail-"+juce::String(side)+"-"+juce::String(stage)+".png")),"rail clear of joint age "+juce::String(stage));
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--joint74-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        auto ownedProcessor=std::make_unique<SH09Processor>();auto& processor=*ownedProcessor;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());
+        auto* panel=findComponent(*editor,"range")->getParentComponent();
+        for(int stage=0;stage<5;++stage)for(bool proposed:{false,true}) {
+            setParameter(processor,"age",stage*.25f);
+            panel->getProperties().set("previewCheekJoint74",proposed);settleEditor();
+            const juce::String prefix=proposed?"proposal-":"approved-";
+            for(int side=0;side<2;++side) {
+                checks.expect(writePNG(panel->createComponentSnapshot({side?1383:0,34,100,420},true,3.f),directory.getChildFile(prefix+"edge-"+juce::String(side)+"-"+juce::String(stage)+".png")),"joint detail "+juce::String(stage));
+                checks.expect(writePNG(panel->createComponentSnapshot({side?1383:0,34,100,732},true,1.5f),directory.getChildFile(prefix+"full-"+juce::String(side)+"-"+juce::String(stage)+".png")),"joint full context "+juce::String(stage));
+            }
+            checks.expect(writePNG(panel->createComponentSnapshot({0,34,1483,410},true,1.f),directory.getChildFile(prefix+"panel-"+juce::String(stage)+".png")),"joint panel "+juce::String(stage));
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--screws77-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        for(int stage=0;stage<5;++stage)for(bool proposed:{false,true}) {
+            auto ownedProcessor=std::make_unique<SH09Processor>();auto& processor=*ownedProcessor;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
+            setParameter(processor,"age",stage*.25f);
+            auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());
+            auto* panel=findComponent(*editor,"range")->getParentComponent();
+            panel->getProperties().set("previewScrewAging77",proposed);settleEditor();
+            const juce::String prefix=proposed?"proposal-":"approved-";
+            juce::Image screws(juce::Image::ARGB,1080,180,true,juce::SoftwareImageType());juce::Graphics sg(screws);int index=0;
+            for(const auto p:{juce::Point<float>(88,37),{1686,37},{88,328},{1686,328},{83,399},{1692,399}}) {
+                const float cx=(p.x-2)*1483.f/1770.f,cy=(p.y-7)*750.f/873.f+34;
+                sg.drawImageAt(panel->createComponentSnapshot({juce::roundToInt(cx)-15,juce::roundToInt(cy)-15,30,30},true,6.f),index++*180,0);
+            }
+            checks.expect(writePNG(screws,directory.getChildFile(prefix+"screws-"+juce::String(stage)+".png")),"six screws age "+juce::String(stage));
+            checks.expect(writePNG(panel->createComponentSnapshot({80,394,225,340},true,3.f),directory.getChildFile(prefix+"bay-"+juce::String(stage)+".png")),"bay age "+juce::String(stage));
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--screws73-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        for(int stage=0;stage<5;++stage)for(bool proposed:{false,true}) {
+            SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
+            setParameter(processor,"age",stage*.25f);
+            auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());
+            auto* panel=findComponent(*editor,"range")->getParentComponent();
+            panel->getProperties().set("previewScrews73",proposed);settleEditor();
+            const juce::String prefix=proposed?"proposal-":"approved-";
+            juce::Image screws(juce::Image::ARGB,1080,180,true,juce::SoftwareImageType());juce::Graphics sg(screws);int index=0;
+            for(const auto p:{juce::Point<float>(88,37),{1686,37},{88,328},{1686,328},{83,399},{1692,399}}) {
+                const float cx=(p.x-2)*1483.f/1770.f,cy=(p.y-7)*750.f/873.f+34;
+                sg.drawImageAt(panel->createComponentSnapshot({juce::roundToInt(cx)-15,juce::roundToInt(cy)-15,30,30},true,6.f),index++*180,0);
+            }
+            checks.expect(writePNG(screws,directory.getChildFile(prefix+"screws-"+juce::String(stage)+".png")),"six screws age "+juce::String(stage));
+            checks.expect(writePNG(panel->createComponentSnapshot({80,394,225,340},true,3.f),directory.getChildFile(prefix+"bay-"+juce::String(stage)+".png")),"bay age "+juce::String(stage));
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--collar71-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* knob=dynamic_cast<juce::Slider*>(findComponent(*editor,"volume"));if(!knob)return 1;
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",stage*.25f);settleEditor();
+            for(int position=0;position<5;++position)for(bool proposed:{false,true}) {
+                knob->getProperties().set("previewCollarFraction71",proposed);
+                knob->setValue(knob->proportionOfLengthToValue(position*.25),juce::dontSendNotification);
+                if(auto* cache=knob->getCachedComponentImage())cache->invalidateAll();knob->repaint();settleEditor();
+                checks.expect(writePNG(knob->createComponentSnapshot(knob->getLocalBounds().expanded(3),true,5.f),
+                    directory.getChildFile(juce::String(proposed?"proposal-":"approved-")+juce::String(stage)+"-"+juce::String(position)+".png")),"collar fraction age/position "+juce::String(stage)+"/"+juce::String(position));
+            }
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--hardware64-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* range=findComponent(*editor,"range");if(!range)return 1;auto* panel=range->getParentComponent();
+        for(int stage=0;stage<5;++stage)for(bool proposed:{false,true}) {
+            setParameter(processor,"age",stage*.25f);
+            panel->getProperties().set("previewCornerGouges64",proposed);
+            panel->getProperties().set("previewPanelSockets64",proposed);
+            for(const auto id:{"range","wave","noise","volume"})if(auto* knob=findComponent(*editor,id)) {
+                knob->getProperties().set("previewThickTicks65",proposed);
+                if(auto* cache=knob->getCachedComponentImage())cache->invalidateAll();
+                knob->repaint();
+            }
+            settleEditor();
+            const juce::String prefix=proposed?"proposal-":"approved-";
+            // Separate complete ends keep the curved corner profile visible.
+            for(int side=0;side<2;++side)for(int end=0;end<2;++end)
+                checks.expect(writePNG(panel->createComponentSnapshot({side?1428:0,end?676:34,55,90},true,6.f),
+                    directory.getChildFile(prefix+"corner-"+juce::String(side)+"-"+juce::String(end)+"-"+juce::String(stage)+".png")),"corner age "+juce::String(stage));
+            for(const auto id:{"range","wave","noise","volume"})if(auto* knob=findComponent(*editor,id))
+                checks.expect(writePNG(knob->createComponentSnapshot(knob->getLocalBounds().expanded(3),true,5.f),directory.getChildFile(prefix+juce::String(id)+"-"+juce::String(stage)+".png")),"knob index age "+juce::String(stage));
+            for(int side=0;side<2;++side)writePNG(panel->createComponentSnapshot({side?1428:0,250,55,160},true,5.f),directory.getChildFile(prefix+"scratches-"+juce::String(side)+"-"+juce::String(stage)+".png"));
+            checks.expect(writePNG(panel->createComponentSnapshot({0,34,55,732},true,3.f),directory.getChildFile(prefix+"left-full-"+juce::String(stage)+".png")),"left cheek full context");
+            checks.expect(writePNG(panel->createComponentSnapshot({1428,34,55,732},true,3.f),directory.getChildFile(prefix+"right-full-"+juce::String(stage)+".png")),"right cheek full context");
+            juce::Image screws(juce::Image::ARGB,1080,180,true,juce::SoftwareImageType());juce::Graphics sg(screws);
+            int index=0;
+            for(const auto p:{juce::Point<float>(88,37),{1686,37},{88,328},{1686,328},{83,399},{1692,399}}) {
+                const float cx=(p.x-2)*1483.f/1770.f,cy=(p.y-7)*750.f/873.f+34;
+                sg.drawImageAt(panel->createComponentSnapshot({juce::roundToInt(cx)-15,juce::roundToInt(cy)-15,30,30},true,6.f),index++*180,0);
+            }
+            checks.expect(writePNG(screws,directory.getChildFile(prefix+"screws-"+juce::String(stage)+".png")),"all six panel screws age "+juce::String(stage));
+            juce::Image bayScrews(juce::Image::ARGB,720,180,true,juce::SoftwareImageType());juce::Graphics bg(bayScrews);
+            int bayIndex=0;
+            for(const auto c:{juce::Point<int>(113,671),{267,671},{261,419},{261,471}})
+                bg.drawImageAt(panel->createComponentSnapshot({c.x-15,c.y-15,30,30},true,6.f),bayIndex++*180,0);
+            checks.expect(writePNG(bayScrews,directory.getChildFile(prefix+"bay-screws-"+juce::String(stage)+".png")),"performance screws share photographic material at age "+juce::String(stage));
+            writePNG(panel->createComponentSnapshot({80,394,225,340},true,3.f),directory.getChildFile(prefix+"bay-"+juce::String(stage)+".png"));
+
+        }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
+    if(juce::String(argv[1]).startsWith("--wear63-review=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        auto* range=findComponent(*editor,"range");if(!range)return 1;auto* panel=range->getParentComponent();
+        std::array<juce::Image,5> fresh;
+        const std::array<const char*,5> utilityIds{"modern","lfoSync","velocity","aftertouch","extGain"};
+        for(int stage=0;stage<5;++stage) {
+            setParameter(processor,"age",stage*.25f);settleEditor();
+            checks.expect(writePNG(panel->createComponentSnapshot({0,34,55,732},true,3.f),directory.getChildFile("left-"+juce::String(stage)+".png")),"left cheek age "+juce::String(stage));
+            checks.expect(writePNG(panel->createComponentSnapshot({1428,34,55,732},true,3.f),directory.getChildFile("right-"+juce::String(stage)+".png")),"right cheek age "+juce::String(stage));
+            checks.expect(writePNG(panel->createComponentSnapshot({80,394,225,340},true,3.f),directory.getChildFile("bay-"+juce::String(stage)+".png")),"performance hardware age "+juce::String(stage));
+            checks.expect(writePNG(panel->createComponentSnapshot({0,766,1483,50},true,2.f),directory.getChildFile("footer-"+juce::String(stage)+".png")),"unaged utility strip age "+juce::String(stage));
+            writePNG(panel->createComponentSnapshot({57,45,30,30},true,6.f),directory.getChildFile("panel-screw-"+juce::String(stage)+".png"));
+            if(stage==0||stage==4) {
+                auto* env=findComponent(*editor,"pwmMode");if(!env)return 1;
+                writePNG(env->createComponentSnapshot(env->getLocalBounds(),true,6.f),directory.getChildFile("env-"+juce::String(stage)+".png"));
+                auto* gate=findComponent(*editor,"vcaMode");if(!gate)return 1;
+                writePNG(gate->createComponentSnapshot(gate->getLocalBounds(),true,6.f),directory.getChildFile("gate-"+juce::String(stage)+".png"));
+            }
+            for(size_t i=0;i<utilityIds.size();++i) {
+                auto* c=findComponent(*editor,utilityIds[i]);if(!c)return 1;
+                const auto image=c->createComponentSnapshot(c->getLocalBounds(),true,4.f);
+                if(stage==0)fresh[i]=image;
+                else checks.expect(changedPixels(fresh[i],image,0)==0,juce::String(utilityIds[i])+" pixels do not age at stage "+juce::String(stage));
+                if(stage==0)writePNG(image,directory.getChildFile(juce::String(utilityIds[i])+".png"));
+            }
+        }
+        kb09_gui::ClosePrompt prompt(nullptr);prompt.setBounds(100,100,500,220);
+        const auto original=prompt.getBounds();const auto now=juce::Time::getCurrentTime();
+        const auto event=[&](juce::Point<float> position,juce::ModifierKeys mods,juce::Time down) {
+            return juce::MouseEvent(juce::Desktop::getInstance().getMainMouseSource(),position,mods,1,0,0,0,0,&prompt,&prompt,now,{20,20},down,1,true);
+        };
+        const juce::ModifierKeys held(juce::ModifierKeys::leftButtonModifier);
+        prompt.mouseDrag(event({60,55},held,now));checks.expect(prompt.getBounds()==original,"orphaned modal drag cannot move prompt");
+        prompt.mouseDown(event({20,20},held,now-juce::RelativeTime::seconds(2)));
+        prompt.mouseDrag(event({60,55},held,now));checks.expect(prompt.getBounds()==original,"inherited close-button press cannot move prompt");
+        prompt.mouseDown(event({20,20},held,juce::Time::getCurrentTime()));
+        prompt.mouseDrag(event({60,55},held,now));checks.expect(prompt.getBounds()!=original,"fresh deliberate prompt drag remains available");
+        prompt.mouseUp(event({60,55},{},now));const auto released=prompt.getBounds();
+        prompt.mouseDrag(event({80,75},held,now));checks.expect(prompt.getBounds()==released,"released prompt never stays latched to cursor");
+        kb09_gui::DialogTheme theme(1);checks.expect(theme.paper()==juce::Colours::white,"dialogs retain clean white printing at Fire Hazard");
+        writePNG(prompt.createComponentSnapshot(prompt.getLocalBounds(),true,1.5f),directory.getChildFile("close-prompt.png"));
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
     if(juce::String(argv[1]).startsWith("--label36-review=")||juce::String(argv[1]).startsWith("--hardware51-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
         SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
