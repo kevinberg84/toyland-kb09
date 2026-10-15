@@ -2,7 +2,7 @@ name: Build Mac release
 on:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: macos-15
@@ -73,11 +73,22 @@ jobs:
           chmod +x "$folder/INSTALL KB-09.command"
           cp docs/open-me-first-mac.html "$folder/OPEN ME FIRST!.html"
           ditto -c -k --sequesterRsrc --keepParent "$folder" 'Toyland KB-09 for Mac.zip'
-      - uses: actions/upload-artifact@v4
-        with:
-          name: KB-09-Mac
-          path: Toyland KB-09 for Mac.zip
-          retention-days: 30
+      # Release assets are not subject to the Actions artifact-storage quota.
+      # Keep this transfer private as a draft; Drive remains the shared download.
+      - name: Preserve validated Mac package as a draft release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(sed -nE 's/^project\(SH09 VERSION ([0-9.]+).*/\1/p' CMakeLists.txt)
+          test -n "$version"
+          tag="build-transfer-$version"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Private package transfer $version" --notes "Validated build transfer for the Google Drive release; not a published GitHub release."
+          fi
+          gh release upload "$tag" 'Toyland KB-09 for Mac.zip' --clobber
 
 
 
