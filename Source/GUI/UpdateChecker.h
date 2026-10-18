@@ -2,6 +2,7 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "UpdateInstructions.h"
 #include "DialogMessages.h"
+#include "StartupDialogReservation.h"
 
 namespace kb09 {
 // Public announcement endpoint only; release downloads remain user initiated.
@@ -36,20 +37,27 @@ public:
 #endif
         m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(target).withMinimumWidth(380).withStandardItemHeight(34),[theme,owner=juce::Component::SafePointer<juce::Component>(target)](int item){auto& s=instance();if(item==1){if(s.configured())s.check(true);else juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates","Update announcements are not configured in this build yet.","OK",owner.getComponent());}if(item==2)s.consent(!s.enabled());});
     }
-    void opened(juce::Component* owner = nullptr) {
-        if(!configured())return;
+    bool opened(juce::Component* owner = nullptr) {
+        if(!configured())return true;
         if(!decided()) {
-            if(prompting.exchange(true))return;
-            juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon,"KB-09 updates",kb09_gui::updateConsentMessage,"Allow","No thanks",owner,juce::ModalCallbackFunction::create([](int yes){auto& s=instance();s.consent(yes!=0);s.prompting=false;if(yes)s.check(false);}));
+            if(prompting.load())return true;
+            auto reservation=kb09_gui::StartupDialogReservation::tryAcquire();
+            if(!reservation)return false;
+            prompting=true;
+            juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon,"KB-09 updates",kb09_gui::updateConsentMessage,"Allow","No thanks",owner,juce::ModalCallbackFunction::create([reservation](int yes){auto& s=instance();s.consent(yes!=0);s.prompting=false;if(yes)s.check(false);}));
         } else check(false);
+        return true;
     }
     void deliver(juce::Component* owner = nullptr) {
+        if(!ready.load())return;
+        auto reservation=kb09_gui::StartupDialogReservation::tryAcquire();
+        if(!reservation)return;
         if(!ready.exchange(false))return;
         juce::String v,link,message;bool manual=false,ok=false;
         {juce::ScopedLock lock(resultLock);v=newVersion;link=download;message=error;manual=resultManual;ok=success;}
         if(ok&&!manual){settings->setValue("lastSuccess",double(juce::Time::currentTimeMillis()));settings->saveIfNeeded();}
-        if(link.isNotEmpty())juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::InfoIcon,"KB-09 update available",kb09_gui::updateAvailableMessage(v),"Show update instructions","Not now",owner,juce::ModalCallbackFunction::create([link, safe=juce::Component::SafePointer<juce::Component>(owner)](int yes){if(yes)UpdateInstructions::show(link,safe.getComponent());}));
-        else if(manual)juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates",ok?"You're up to date!":"Could not check for updates. Please try again later.","OK",owner);
+        if(link.isNotEmpty())juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::InfoIcon,"KB-09 update available",kb09_gui::updateAvailableMessage(v),"Show update instructions","Not now",owner,juce::ModalCallbackFunction::create([reservation,link, safe=juce::Component::SafePointer<juce::Component>(owner)](int yes){if(yes)UpdateInstructions::show(link,safe.getComponent());}));
+        else if(manual)juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates",ok?"You're up to date!":"Could not check for updates. Please try again later.","OK",owner,juce::ModalCallbackFunction::create([reservation](int){}));
     }
     static bool validVersion(const juce::String& v) {
         auto parts=juce::StringArray::fromTokens(v,".","");if(parts.size()!=3)return false;for(auto& p:parts)if(p.isEmpty()||p.length()>6||!p.containsOnly("0123456789"))return false;return true;

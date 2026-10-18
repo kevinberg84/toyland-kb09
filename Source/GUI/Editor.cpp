@@ -4399,7 +4399,7 @@ private:
             }
         }
         advanceBenderReturn();
-        if(processor.wrapperType!=juce::AudioProcessor::wrapperType_Undefined&&isShowing()&&getPeer()){if(!updateOpened){updateOpened=true;kb09::Updates::instance().opened(this);}kb09::Updates::instance().deliver(this);}
+        if(processor.wrapperType!=juce::AudioProcessor::wrapperType_Undefined&&isShowing()&&getPeer()){if(!updateOpened)updateOpened=kb09::Updates::instance().opened(this);kb09::Updates::instance().deliver(this);}
         if(!computerReady())releaseComputerNotes();
         else for(size_t i=0;i<computerHeld.size();++i)if(computerHeld[i]&&!juce::KeyPress::isKeyCurrentlyDown(computerKeys[i])) {
             computerHeld[i]=false;keyboard.setComputerNote((computerOctave+1)*12+int(i),false);

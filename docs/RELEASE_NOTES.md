@@ -4,6 +4,7 @@
 - Keep the underlying LED renderer current so a covered or temporarily detached native surface cannot expose an old frozen frame.
 - The visual RATE now reads current control values even when a host pauses audio processing. RATE and sync division edits no longer depend on another audio callback before the light responds.
 - Added hosted VST3 window-restacking regression coverage, shared wrapper lifecycle and idle-audio checks, and native Mac hosted AU/VST3 view checks.
+- Serialize automatic update and desktop-shortcut prompts, including their asynchronous creation, so startup questions cannot open on top of one another.
 
 The sound-engine equations, presets, parameter ranges, POWER mechanics and approved LED artwork are unchanged from 1.8.2. Linux physical audio/MIDI playback remains UNVERIFIED. Mac signing remains ad-hoc rather than Apple notarization.
 

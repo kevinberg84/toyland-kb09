@@ -156,6 +156,12 @@ target_sources(KB09UpdateTests PRIVATE Tests/UpdateTests.cpp)
 target_link_libraries(KB09UpdateTests PRIVATE SH09 juce::juce_audio_utils juce::juce_recommended_config_flags)
 add_test(NAME KB09Updates COMMAND KB09UpdateTests)
 
+juce_add_console_app(KB09StartupDialogTests PRODUCT_NAME "KB09 Startup Dialog Tests")
+target_sources(KB09StartupDialogTests PRIVATE Tests/StartupDialogTests.cpp)
+target_compile_definitions(KB09StartupDialogTests PRIVATE JUCE_MODAL_LOOPS_PERMITTED=1 JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(KB09StartupDialogTests PRIVATE juce::juce_gui_basics juce::juce_recommended_config_flags)
+add_test(NAME KB09StartupDialogs COMMAND KB09StartupDialogTests)
+
 juce_add_console_app(KB09DialogPreview PRODUCT_NAME "KB09 Dialog Preview")
 target_sources(KB09DialogPreview PRIVATE Tests/DialogPreview.cpp Source/GUI/DialogTheme.cpp)
 target_compile_definitions(KB09DialogPreview PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=1)

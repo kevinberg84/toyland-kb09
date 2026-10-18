@@ -4,6 +4,7 @@
 #include "ChoiceSnapProbe.h"
 #include "ResourceProbe.h"
 #include "../GUI/DesktopShortcutPrompt.h"
+#include "../GUI/StartupDialogReservation.h"
 #include "../GUI/PresetFiles.h"
 #include "../GUI/Editor.h"
 #include "../GUI/ClosePrompt.h"
@@ -269,12 +270,13 @@ private:
     }
     void timerCallback() override {
         if(!window||closing){stopTimer();return;}
-        if(juce::Component::getNumCurrentlyModalComponents()>0)return;
+        auto reservation=kb09_gui::StartupDialogReservation::tryAcquire();
+        if(!reservation)return;
         stopTimer();
         shortcutQuestion=std::make_unique<kb09_gui::DesktopShortcutPrompt>(window.get());
-        shortcutQuestion->enterModalState(true,juce::ModalCallbackFunction::create([this](int answer) {
+        shortcutQuestion->enterModalState(true,juce::ModalCallbackFunction::create([this,reservation](int answer) {
             const bool suppress=shortcutQuestion&&shortcutQuestion->shouldStopAsking();
-            juce::MessageManager::callAsync([this,answer,suppress] {
+            juce::MessageManager::callAsync([this,answer,suppress,reservation] {
                 shortcutQuestion.reset();if(!window)return;
                 auto* settings=properties.getUserSettings();
                 if(suppress)settings->setValue("desktopShortcutDoNotAsk",true);
