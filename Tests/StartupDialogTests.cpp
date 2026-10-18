@@ -1,10 +1,24 @@
 #include "../Source/GUI/StartupDialogReservation.h"
+#include "../Source/GUI/DialogTheme.h"
 #include <iostream>
 
 int main() {
     juce::ScopedJuceInitialiser_GUI gui;int checks=0,failures=0;
+    struct Theme {
+        kb09_gui::DialogTheme theme;
+        Theme(){juce::LookAndFeel::setDefaultLookAndFeel(&theme);}
+        ~Theme(){juce::LookAndFeel::setDefaultLookAndFeel(nullptr);}
+    } theme;
     const auto expect=[&](bool ok,const char* text){++checks;if(!ok)++failures;std::cout<<(ok?"PASS ":"FAIL ")<<text<<std::endl;};
     const auto pump=[] {juce::MessageManager::getInstance()->runDispatchLoopUntil(80);};
+    // Control: reproduce the previous independent asynchronous requests using
+    // real JUCE windows. The race is two concurrent modals, not a mock flag.
+    for(const auto* title:{"KB-09 updates","Create a desktop shortcut?"})
+        juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::QuestionIcon,title,"Unguarded startup control","Not now",nullptr,juce::ModalCallbackFunction::create([](int){}));
+    pump();
+    expect(juce::Component::getNumCurrentlyModalComponents()==2,"unguarded startup requests reproduce two simultaneous modal windows");
+    while(auto* modal=juce::Component::getCurrentlyModalComponent()){modal->exitModalState(0);pump();}
+    expect(juce::Component::getNumCurrentlyModalComponents()==0,"unguarded control windows cleanly dismiss before guarded regression");
     for(const auto* first:{"KB-09 updates","Create a desktop shortcut?"}) {
         bool finished=false;
         auto reservation=kb09_gui::StartupDialogReservation::tryAcquire();

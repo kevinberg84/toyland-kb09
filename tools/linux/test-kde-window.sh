@@ -40,4 +40,4 @@ set -e
 cat /results/session.txt /results/startup-dialogs.log /results/probe.log 2>/dev/null || true
 if [ "$result" -ne 0 ]; then tail -60 /results/kwin.log; exit "$result"; fi
 grep -q 'RESULT failures=0 checks=6' /results/probe.log
-grep -q 'RESULT failures=0 checks=14' /results/startup-dialogs.log
+grep -q 'RESULT failures=0 checks=16' /results/startup-dialogs.log

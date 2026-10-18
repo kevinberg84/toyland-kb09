@@ -42,3 +42,31 @@ Arch Linux, KDE, XWayland and PipeWire; update and shortcut prompts appeared
 together, followed by a several-second desktop stall and recovery. A startup
 dialog-ordering race exists in the source. Do not describe the desktop freeze as
 fixed until the correction has been exercised in the relevant environment.
+
+## Startup-dialog correction, still pending native Linux verification
+
+Update consent previously opened without checking for an existing modal dialog.
+The shortcut request checked only the currently visible modal list, which cannot
+reserve an update dialog still awaiting asynchronous creation. Automatic update
+result dialogs could also interrupt another modal. The correction reserves a
+shared startup-dialog slot before either request creates a window, retains it
+through dismissal, and retries deferred requests without dropping update results.
+
+The regression reproduces two simultaneous real JUCE modal windows with the old
+independent request pattern, then verifies one-at-a-time creation in both startup
+orders and while an unrelated modal is active. All 16 assertions pass on Windows.
+The fixture now uses the production DialogTheme. An initial test-only control
+omitted an asynchronous callback and left diagnostic windows open; those processes
+were closed, the fixture was corrected, and the failure logs were retained.
+
+The 14 existing Windows suites passed on the startup-corrected runtime. The added
+startup-dialog suite passed its targeted CTest rerun after correcting the fixture,
+for 15 distinct suites passing in aggregate. The actual hosted RATE regression
+passed again after the startup correction. Engine.cpp, PowerButtonTravel.h and
+InsetRedLamp.h retain their previous hashes.
+
+The Linux and Mac jobs for runtime commit 3ea710d were not started: GitHub reported,
+"The job was not started because an Actions budget is preventing further use."
+No local WSL distribution or Docker environment is installed. Arch/KDE/XWayland
+verification therefore remains blocked. The isolated KWin container script is
+prepared to rerun without changing host desktop settings once a runner is available.
