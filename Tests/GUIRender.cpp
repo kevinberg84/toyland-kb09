@@ -1261,7 +1261,9 @@ void checkOptionalDescriptions(SH09Processor& processor,juce::Component& editor,
     std::cout<<"AGE bender material full_ms="<<fullMs<<" live_preview_ms="<<previewMs<<"\n";
     auto* panel=age->getParentComponent();
     panel->getProperties().set("renderConditionPreviews",true);
-    const double deadline=juce::Time::getMillisecondCounterHiRes()+2500;
+    // A software-rendered CI runner can take longer to build five complete
+    // material frames. The responsive fallback is checked separately above.
+    const double deadline=juce::Time::getMillisecondCounterHiRes()+15000;
     while(!bool(panel->getProperties().getWithDefault("conditionPreviewReady",false))&&juce::Time::getMillisecondCounterHiRes()<deadline)
         juce::MessageManager::getInstance()->runDispatchLoopUntil(20);
     checks.expect(bool(panel->getProperties().getWithDefault("conditionPreviewReady",false)),"AGE complete material frames warm during idle");
@@ -1335,7 +1337,7 @@ void checkOptionalDescriptions(SH09Processor& processor,juce::Component& editor,
     age->onDragEnd();
     processMidi(processor,juce::MidiMessage::allNotesOff(1));
     cutoff->setValue(originalCutoff,juce::sendNotificationSync);age->setValue(original,juce::sendNotificationSync);
-    const auto refreshDeadline=juce::Time::getMillisecondCounterHiRes()+2500;
+    const auto refreshDeadline=juce::Time::getMillisecondCounterHiRes()+15000;
     while(!bool(panel->getProperties().getWithDefault("conditionPreviewReady",false))&&juce::Time::getMillisecondCounterHiRes()<refreshDeadline)
         juce::MessageManager::getInstance()->runDispatchLoopUntil(20);
     checks.expect(bool(panel->getProperties().getWithDefault("conditionPreviewReady",false)),"AGE replacement bank completes after automation settles");
