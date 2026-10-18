@@ -98,6 +98,7 @@ void midiMappings(Host& h){
         juce::MessageManager::getInstance()->runDispatchLoopUntil(35);
         audio.clear();midi.clear();h.process(audio,midi,finite);
     };
+    // CC1 is a physical position; the approved squared curve yields stored effect amount.
     // Deliberately begin above zero, as a physical wheel can skip its endpoint.
     for(int value:{4,18,42,64,83,108,127,111,87,62,38,13,0}){
         audio.clear();midi.clear();
@@ -105,14 +106,14 @@ void midiMappings(Host& h){
         midi.addEvent(juce::MidiMessage::noteOn(1,60,juce::uint8(100)),0);
         h.process(audio,midi,finite);settle();
         const auto actual=h.find("vcoMod")->getValue();
-        wheelOK=wheelOK&&std::abs(actual-value/127.f)<.0002f;
+        wheelOK=wheelOK&&std::abs(actual-(value/127.f)*(value/127.f))<.0002f;
     }
-    h.checks.expect(wheelOK&&finite,"actual VST3 CC1 follows an up/down sweep, including first movement above zero");
+    h.checks.expect(wheelOK&&finite,"actual VST3 CC1 follows the squared up/down sweep, including first movement above zero");
     h.set("vcoMod",.6f);settle();
     h.set("vcoMod",.3f);audio.clear();midi.clear();
     midi.addEvent(juce::MidiMessage::controllerEvent(16,1,117),0);
     h.process(audio,midi,finite);settle();
-    h.checks.expect(std::abs(h.find("vcoMod")->getValue()-117.f/127)<.0002f,
+    h.checks.expect(std::abs(h.find("vcoMod")->getValue()-(117.f/127)*(117.f/127))<.0002f,
                     "actual VST3 CC1 resumes immediately after host automation on channel 16");
     h.restore();h.prepare();
     std::vector<std::pair<juce::AudioProcessorParameter*,float>> before;
