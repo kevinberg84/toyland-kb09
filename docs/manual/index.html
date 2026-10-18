@@ -15,7 +15,7 @@
     <a class="brand" href="#top" aria-label="Toyland KB-09 home">
       <svg viewBox="85 308 722 158" role="img" aria-labelledby="toyland-title"><title id="toyland-title">Toyland</title><image href="assets/marks.png" width="2172" height="724" /></svg>
     </a>
-    <span class="edition">User Manual · Version 1.8.1 · October 18, 2026</span>
+    <span class="edition">User Manual · Version 1.8.2 · October 18, 2026</span>
     <button class="print-button" type="button" onclick="window.print()">Print / Save PDF</button>
   </div>
 </header>
@@ -47,7 +47,7 @@
   <div class="quick-links"><a href="#start">Play your first sound <span aria-hidden="true">↗</span></a><a href="#age">Explore AGE <span aria-hidden="true">↗</span></a><a href="#daws">Choose your DAW <span aria-hidden="true">↗</span></a></div>
   <p class="project-mark">UNOFFICIAL PERSONAL PROJECT — NOT AFFILIATED WITH ROLAND CORPORATION — NOT FOR SALE</p>
 </section>
-<aside class="notice"><strong>KB-09 1.8.1.</strong> Windows and Mac downloads include standalone and DAW versions. A separate Linux x86-64 download is standalone only; see <a href="#install">Which file do I need?</a>.</aside>
+<aside class="notice"><strong>KB-09 1.8.2.</strong> Windows and Mac downloads include standalone and DAW versions. A separate Linux x86-64 download is standalone only; see <a href="#install">Which file do I need?</a>.</aside>
 
 <section id="features">
   <p class="section-number">01 / DISCOVER KB-09</p><h2>Discover KB-09</h2>
@@ -115,7 +115,7 @@
   <p><strong>Script opens as text or says Permission denied:</strong> open a terminal in the extracted folder and run <code>bash './Start KB-09.sh'</code>. The launcher makes the synth executable. If execution is still denied, move the complete folder into your home folder; removable or network drives may prohibit execution. Run as your normal user, not root.</p>
   <p><strong>Missing shared library:</strong> on Arch, perform a normal full system update and install missing runtime dependencies. The runtime package list is <code>alsa-lib freetype2 fontconfig curl libx11 libxext libxinerama libxrandr libxcursor libxrender libxi libxcomposite</code>. For example: <code>sudo pacman -Syu --needed alsa-lib freetype2 fontconfig curl libx11 libxext libxinerama libxrandr libxcursor libxrender libxi libxcomposite</code>. Do not replace system libraries with downloaded individual files. A <code>GLIBC_2.35 not found</code> error means the system is older than this binary supports; use a supported, fully updated distribution.</p>
   <p><strong>No window on Wayland:</strong> KB-09 needs XWayland for its X11 interface. Confirm <code>xorg-xwayland</code> is installed and your desktop permits X11 applications. A remote/headless session without an X display cannot show the standalone window. <a href="https://archlinux.org/packages/extra/x86_64/xorg-xwayland/">Arch XWayland package</a>.</p>
-  <p><strong>No audio or device busy:</strong> choose the intended output in AUDIO / MIDI. On a desktop already using PipeWire, <code>pipewire-alsa</code> provides ALSA routing through it; select the default device if the hardware device is occupied by another audio server. Use JACK only with a working JACK-compatible server. Begin at 48 kHz and 256 or 512 samples, and try the built-in output to isolate an interface problem. <a href="https://archlinux.org/packages/extra/x86_64/pipewire-alsa/">Arch PipeWire ALSA package</a>.</p>
+  <p><strong>No audio or device busy:</strong> choose the intended output in AUDIO / MIDI. On a desktop already using PipeWire, <code>pipewire-alsa</code> provides ALSA routing through it; select the default device if the hardware device is occupied by another audio server. Choose JACK in AUDIO / MIDI when a JACK-compatible server and client libraries are installed. PipeWire users can use its JACK compatibility layer (pipewire-jack). ALSA remains available. Windows retains ASIO, WASAPI and DirectSound; macOS uses CoreAudio. Begin at 48 kHz and 256 or 512 samples, and try the built-in output to isolate an interface problem. <a href="https://archlinux.org/packages/extra/x86_64/pipewire-alsa/">Arch PipeWire ALSA package</a>.</p>
   <p><strong>MIDI is silent:</strong> enable the controller under Active MIDI inputs, and try KEYBOARD to distinguish MIDI setup from audio setup. If launch still fails, run the launcher in a terminal and send Kevin the exact <a href="#feedback">message</a>, distribution, desktop/session and audio device. Linux remains UNVERIFIED until real desktop playback and MIDI have been confirmed.</p>
   </details></aside><h4>Standalone: play immediately</h4>
 <ol><li>Connect your MIDI controller by USB, or connect its MIDI OUT to your audio interface’s MIDI IN.</li><li>Click <strong>AUDIO / MIDI</strong>. Select an audio output and enable your controller under <strong>Active MIDI inputs</strong>; scroll inside the settings if necessary. Close the settings and load <strong>01 / Calibrated Init</strong>.</li><li>Play your controller or click the onscreen keys. No DAW track needs arming. For the computer keyboard, enable <strong>KEYBOARD</strong> and play <strong>A W S E D F T G Y H U J K</strong> (C through the next C). <strong>Z / X</strong> shift octaves; keep the instrument focused. Typing in preset fields does not play notes.</li></ol>
@@ -161,6 +161,8 @@
   <tr><td>ENVELOPE</td><td>A = rise time; D = fall to sustain; S = held level; R = fade after release. Gate + Trigger re-attacks when the effective note changes; Gate supports legato; LFO provides cyclic triggering while a note is selected.</td><td>Increase A and R for a soft entrance and tail.</td></tr>
   <tr><td>PERFORMANCE BAY</td><td>VOLUME sets output level; PORTAMENTO glides between pitches. The bender returns to center; its VCO and VCF sliders set separate sensitivities. POWER mutes the instrument.</td><td>Add portamento and overlap two notes. Play a fresh note after turning power back on.</td></tr>
   </tbody></table>
+<p><strong>Finer control at low settings:</strong> PORTAMENTO, VCO MOD, VCF MOD and VCF ENV/FOL’R depth use a squared physical response. Half the slider travel gives one quarter of the effect amount, with the full range still available at the top. On-screen movement, MIDI Learn and the modulation wheel use the same response. Existing presets and DAW parameter automation retain their stored effect amounts; a recalled cap may sit higher under the new scale. Recorded MIDI CC performances use the new response and can sound different.</p>
+
   <h3 id="filter-self-oscillation">Play the filter itself</h3>
   <p>Lower VCO, SUB OSC and EXT to zero, set VCA to HOLD, lower VCF MOD and ENV, then raise RESONANCE until the filter sings. CUTOFF FREQ sets its pitch; the keyboard and VCF bender depth also move it. Start with a low listening level.</p>
   <p>For the model’s development and recording comparisons, see <a href="#filter-craft">How we built the sound engine</a>.</p>
@@ -292,7 +294,7 @@
     <input type="hidden" name="shotName" value=""><input type="hidden" name="shotType" value=""><input type="hidden" name="shotData" value="">
     <div class="report-trap" aria-hidden="true"><label>Leave this empty<input name="website" maxlength="80" tabindex="-1" autocomplete="off"></label></div>
     <div class="report-grid">
-      <label>KB-09 version <span>(required)</span><input name="version" value="1.8.1" maxlength="40" required autocomplete="off"></label>
+      <label>KB-09 version <span>(required)</span><input name="version" value="1.8.2" maxlength="40" required autocomplete="off"></label>
       <label>Operating system and version <span>(required)</span><input name="os" placeholder="e.g. macOS 15.7 / Windows 11" maxlength="120" required autocomplete="off"></label>
       <label>DAW / host and version <span>(required)</span><input name="host" placeholder="e.g. Standalone / Live 12.3" maxlength="160" required autocomplete="off"></label>
       <label>Issue category <span>(required)</span><select name="category" required><option value="">Choose a category</option><option>Sound / MIDI</option><option>Interface / display</option><option>Installation / updates</option><option>Crash / performance</option><option>Manual / documentation</option><option>Other</option></select></label>

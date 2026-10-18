@@ -15,7 +15,7 @@
     <a class="brand" href="#top" aria-label="Toyland KB-09 home">
       <svg viewBox="85 308 722 158" role="img" aria-labelledby="toyland-title"><title id="toyland-title">Toyland</title><image href="../../assets/marks.png" width="2172" height="724" /></svg>
     </a>
-    <span class="edition">Windows User Manual · Version 1.8.1 · October 18, 2026</span>
+    <span class="edition">Windows User Manual · Version 1.8.2 · October 18, 2026</span>
     <button class="print-button" type="button" onclick="window.print()">Print / Save PDF</button>
   </div>
 </header>
@@ -47,7 +47,7 @@
   <div class="quick-links"><a href="#start">Play your first sound <span aria-hidden="true">↗</span></a><a href="#age">Explore AGE <span aria-hidden="true">↗</span></a><a href="#daws">Choose your DAW <span aria-hidden="true">↗</span></a></div>
   <p class="project-mark">UNOFFICIAL PERSONAL PROJECT — NOT AFFILIATED WITH ROLAND CORPORATION — NOT FOR SALE</p>
 </section>
-<aside class="notice"><strong>KB-09 1.8.1 for Windows.</strong> This download includes the standalone app and VST3.</aside>
+<aside class="notice"><strong>KB-09 1.8.2 for Windows.</strong> This download includes the standalone app and VST3.</aside>
 
 <section id="features">
   <p class="section-number">01 / DISCOVER KB-09</p><h2>Discover KB-09</h2>
@@ -139,6 +139,8 @@
   <tr><td>ENVELOPE</td><td>A = rise time; D = fall to sustain; S = held level; R = fade after release. Gate + Trigger re-attacks when the effective note changes; Gate supports legato; LFO provides cyclic triggering while a note is selected.</td><td>Increase A and R for a soft entrance and tail.</td></tr>
   <tr><td>PERFORMANCE BAY</td><td>VOLUME sets output level; PORTAMENTO glides between pitches. The bender returns to center; its VCO and VCF sliders set separate sensitivities. POWER mutes the instrument.</td><td>Add portamento and overlap two notes. Play a fresh note after turning power back on.</td></tr>
   </tbody></table>
+<p><strong>Finer control at low settings:</strong> PORTAMENTO, VCO MOD, VCF MOD and VCF ENV/FOL’R depth use a squared physical response. Half the slider travel gives one quarter of the effect amount, with the full range still available at the top. On-screen movement, MIDI Learn and the modulation wheel use the same response. Existing presets and DAW parameter automation retain their stored effect amounts; a recalled cap may sit higher under the new scale. Recorded MIDI CC performances use the new response and can sound different.</p>
+
   <h3 id="filter-self-oscillation">Play the filter itself</h3>
   <p>Lower VCO, SUB OSC and EXT to zero, set VCA to HOLD, lower VCF MOD and ENV, then raise RESONANCE until the filter sings. CUTOFF FREQ sets its pitch; the keyboard and VCF bender depth also move it. Start with a low listening level.</p>
   <p>For the model’s development and recording comparisons, see <a href="#filter-craft">How we built the sound engine</a>.</p>
@@ -266,7 +268,7 @@
     <input type="hidden" name="shotName" value=""><input type="hidden" name="shotType" value=""><input type="hidden" name="shotData" value="">
     <div class="report-trap" aria-hidden="true"><label>Leave this empty<input name="website" maxlength="80" tabindex="-1" autocomplete="off"></label></div>
     <div class="report-grid">
-      <label>KB-09 version <span>(required)</span><input name="version" value="1.8.1" maxlength="40" required autocomplete="off"></label>
+      <label>KB-09 version <span>(required)</span><input name="version" value="1.8.2" maxlength="40" required autocomplete="off"></label>
       <label>Operating system and version <span>(required)</span><input name="os" placeholder="e.g. Windows 11" maxlength="120" required autocomplete="off"></label>
       <label>DAW / host and version <span>(required)</span><input name="host" placeholder="e.g. Standalone / Live 12.3" maxlength="160" required autocomplete="off"></label>
       <label>Issue category <span>(required)</span><select name="category" required><option value="">Choose a category</option><option>Sound / MIDI</option><option>Interface / display</option><option>Installation / updates</option><option>Crash / performance</option><option>Manual / documentation</option><option>Other</option></select></label>

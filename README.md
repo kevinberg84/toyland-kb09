@@ -1,8 +1,8 @@
 # Toyland KB-09 — Windows, Mac and Linux synthesizer
 
-**Current release: 1.8.1.** Revised photographic screws, cheek wear, knob markings and dust follow the approved SH-09 references. Only the main instrument ages; bottom-strip utilities and dialogs stay clean. Prepared cheek materials and lazy screw rendering reduce editor startup work. RANGE and WAVEFORM switch directly between their fixed positions. SAVE / DON'T SAVE requires a fresh deliberate click before dragging. AUTHENTIC bender return remains 35 ms with a small 20 ms visual recoil; POWER springs back immediately on release.
+**Current release: 1.8.2.** Revised photographic screws, cheek wear, knob markings and dust follow the approved SH-09 references. Only the main instrument ages; bottom-strip utilities and dialogs stay clean. Prepared cheek materials and lazy screw rendering reduce editor startup work. RANGE and WAVEFORM switch directly between their fixed positions. SAVE / DON'T SAVE requires a fresh deliberate click before dragging. AUTHENTIC bender return remains 35 ms with a small 20 ms visual recoil; POWER springs back immediately on release.
 
-Windows includes standalone/VST3; universal Mac includes standalone/AU/VST3; Linux x86-64 includes standalone only and remains UNVERIFIED pending real Arch audio and MIDI. Each download includes OS-specific installation instructions, an illustrated HTML manual and release notes. The sound engine, parameter identities, saved presets and 128-sample reported latency are retained. See [release validation](docs/VALIDATION_1.8.1.md).
+Windows includes standalone/VST3; universal Mac includes standalone/AU/VST3; Linux x86-64 includes standalone only and remains UNVERIFIED pending real Arch audio and MIDI. Each download includes OS-specific installation instructions, an illustrated HTML manual and release notes. The sound engine, parameter identities, saved presets and 128-sample reported latency are retained. See [release validation](docs/VALIDATION_1.8.2.md).
 
 ## Historical engineering record
 

@@ -1,3 +1,12 @@
+# 1.8.2 — Toyland KB-09
+
+- Integrated the approved centered top panel, evenly spaced border-facing values, consistent extended short ticks, aligned RATE LED and brighter black cap shoulders. All approved POWER motion and audio timing remain unchanged.
+- PORTAMENTO, VCO MOD, VCF MOD and VCF ENV/FOL’R depth now use squared physical response for finer low settings, preserving their maximum ranges. MIDI Learn, pickup and CC1 follow the same response. Saved presets and DAW parameter automation retain their effect amounts; recorded MIDI CC performances intentionally use the new curve.
+- Linux standalone adds JACK alongside ALSA, including use with PipeWire’s JACK compatibility layer. Windows retains ASIO, WASAPI and DirectSound; macOS retains CoreAudio.
+- Refreshed the manual and current GUI illustrations, including response-curve and Linux audio guidance.
+
+The DSP engine, parameter identities, 24 factory sounds and processing latency are unchanged from 1.8.1. Linux hardware playback remains UNVERIFIED. Mac builds are ad-hoc signed, not Apple-notarized. Release builds do not record audio or MIDI diagnostics.
+
 # 1.8.1 — Toyland KB-09
 
 - Corrected POWER timing: switching ON enables audio on press; switching OFF keeps audio on until release. The cap stays fully depressed while held and retains the released spring-back motion at release. The full release animation/repaint path is preserved and covered by regression checks.
