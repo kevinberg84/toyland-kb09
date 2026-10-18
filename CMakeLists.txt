@@ -166,3 +166,15 @@ if(WIN32)
     target_sources(SH09_Standalone PRIVATE Assets/windows-compat.manifest)
     target_sources(SH09GUIRender PRIVATE Assets/windows-compat.manifest)
 endif()
+
+# Linux standalone audio: retain ALSA and expose JACK, including PipeWire's
+# JACK-compatible server. JACK is a Linux backend, not a Windows driver.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_compile_definitions(SH09 PUBLIC JUCE_ALSA=1 JUCE_JACK=1)
+endif()
+
+juce_add_console_app(KB09ControlResponseTests PRODUCT_NAME "KB09 Control Response Tests")
+target_sources(KB09ControlResponseTests PRIVATE Tests/ControlResponseTests.cpp)
+target_compile_definitions(KB09ControlResponseTests PRIVATE JUCE_MODAL_LOOPS_PERMITTED=1)
+target_link_libraries(KB09ControlResponseTests PRIVATE SH09 juce::juce_audio_utils juce::juce_recommended_config_flags)
+add_test(NAME KB09ControlResponse COMMAND KB09ControlResponseTests)

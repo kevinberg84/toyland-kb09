@@ -1,5 +1,6 @@
 #pragma once
 #include "../Parameters/Parameters.h"
+#include "../Parameters/ControlResponse.h"
 #include <atomic>
 #include <cmath>
 #include <functional>
@@ -126,6 +127,7 @@ public:
             if(s.seenBinding!=binding){s.seenBinding=binding;s.lastButtonValue=s.initialButtonValue.load();}
             const float position=float(juce::jlimit(0,127,amount))/127;
             const float current=parameters[i]->getValue();
+            const float pickupPosition=float(controlResponse::position(specs[i].id,current));
             const auto mode=Behavior(s.behavior.load());
             if(mode!=Behavior::direct) {
                 const int v=juce::jlimit(0,127,amount);
@@ -141,11 +143,11 @@ public:
                 writeValue(s,source,revision,actual);return true;
             }
             const bool discrete=specs[i].choices[0]!=0||i==size_t(indexAge);
-            if(discrete||std::abs(position-current)<=1.f/127
-                ||(s.previous>=0&&(s.previous-current)*(position-current)<=0))s.pickedUp=true;
+            if(discrete||std::abs(position-pickupPosition)<=1.f/127
+                ||(s.previous>=0&&(s.previous-pickupPosition)*(position-pickupPosition)<=0))s.pickedUp=true;
             s.previous=position;
             if(!s.pickedUp)return true;
-            float actual=parameters[i]->convertFrom0to1(position);
+            float actual=parameters[i]->convertFrom0to1(float(controlResponse::effect(specs[i].id,position)));
             if(i==size_t(indexAge))actual=std::round(actual*4)/4;
             writeValue(s,source,revision,actual);
             return true;

@@ -46,7 +46,7 @@ jobs:
         run: cmake -S . -B build-mac -G Xcode -DJUCE_DIR="$RUNNER_TEMP/JUCE" -DKB09_BUILD_AU=ON -DKB09_BUILD_AAX=OFF '-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64' -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
       - name: Build plug-ins and tests
         if: inputs.validated_run == ''
-        run: cmake --build build-mac --config Release --target SH09_AU SH09_VST3 SH09_Standalone SH09DSPTests SH09ResonanceIntegrationTests SH09FilterNonlinearTests SH09ProcessorTests KB09MidiMappingTests KB09StandaloneMidiTests SH09PresetFilesTests SH09FactoryAudition KB09UpdateTests KB09MidiInputMemoryTests SH09GUIRender KB09DialogPreview --parallel 3
+        run: cmake --build build-mac --config Release --target SH09_AU SH09_VST3 SH09_Standalone SH09DSPTests SH09ResonanceIntegrationTests SH09FilterNonlinearTests SH09ProcessorTests KB09MidiMappingTests KB09StandaloneMidiTests KB09ControlResponseTests SH09PresetFilesTests SH09FactoryAudition KB09UpdateTests KB09MidiInputMemoryTests SH09GUIRender KB09DialogPreview --parallel 3
       - name: Rebuild validated production formats for package transfer
         if: inputs.validated_run != ''
         run: |

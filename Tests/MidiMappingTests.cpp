@@ -52,6 +52,7 @@ int main() {
         midi.addEvent(juce::MidiMessage::controllerEvent(1, 1, value), 0);
         audio.clear(); processor.processBlock(audio, midi);
     };
+    const auto wheelAmount=[](int v){const float p=v/127.f;return p*p;};
     send(0); send(64);
     GestureInterleave interleave;
     interleave.onBegin = [&] { send(100); };
@@ -62,19 +63,19 @@ int main() {
     for (int retry = 0; interleave.onBegin && retry < 20; ++retry) pump();
     expect(!interleave.onBegin && interleave.invocations == 1,
            "delayed publication interleave was exercised exactly once");
-    send(110); waitForValue(110.f/127);
-    expect(std::abs(parameter->getValue() - 110.f / 127) < 1e-6f,
+    send(110); waitForValue(wheelAmount(110));
+    expect(std::abs(parameter->getValue() - wheelAmount(110)) < 1e-6f,
            "new wheel events during delayed GUI publication do not lose control");
     parameter->removeListener(&interleave);
 
     // Simulate the host sending an older notified value back at a later block.
     send(120); pump(); send(120);
     parameter->setValueNotifyingHost(64.f / 127);
-    send(125); waitForValue(125.f/127);
-    expect(std::abs(parameter->getValue() - 125.f / 127) < 1e-6f,
+    send(125); waitForValue(wheelAmount(125));
+    expect(std::abs(parameter->getValue() - wheelAmount(125)) < 1e-6f,
            "VST3 wheel retakes control immediately after delayed host parameter feedback");
-    processor.setCurrentProgram(0); send(4); waitForValue(4.f/127);
-    expect(std::abs(parameter->getValue() - 4.f / 127) < 1e-6f,
+    processor.setCurrentProgram(0); send(4); waitForValue(wheelAmount(4));
+    expect(std::abs(parameter->getValue() - wheelAmount(4)) < 1e-6f,
            "VST3 first wheel movement works when MIDI skips the zero value");
 
     send(120);
@@ -88,14 +89,14 @@ int main() {
     auto pending=juce::AudioProcessor::getXmlFromBinary(pendingState.getData(),int(pendingState.getSize()));
     bool audioValueReady=false;
     if(pending)for(auto* child:pending->getChildIterator())if(child->getStringAttribute("id")=="vcoMod")
-        audioValueReady=std::abs(float(child->getDoubleAttribute("value"))-117.f/127)<1e-6f;
+        audioValueReady=std::abs(float(child->getDoubleAttribute("value"))-wheelAmount(117))<1e-6f;
     // Audio takeover is immediate; GUI publication follows a platform timer.
     // Wait for that observable condition instead of assuming a loaded Mac CI
     // runner dispatches every timer inside one fixed 100 ms slice.
-    waitForValue(117.f/127);
-    if(!audioValueReady||std::abs(parameter->getValue()-117.f/127)>=1e-6f)
-        std::cout<<"takeover diagnostics: immediate="<<audioValueReady<<" published="<<parameter->getValue()<<" expected="<<117.f/127<<'\n';
-    expect(audioValueReady&&std::abs(parameter->getValue() - 117.f / 127) < 1e-6f,
+    waitForValue(wheelAmount(117));
+    if(!audioValueReady||std::abs(parameter->getValue()-wheelAmount(117))>=1e-6f)
+        std::cout<<"takeover diagnostics: immediate="<<audioValueReady<<" published="<<parameter->getValue()<<" expected="<<wheelAmount(117)<<'\n';
+    expect(audioValueReady&&std::abs(parameter->getValue() - wheelAmount(117)) < 1e-6f,
            "VST3 wheel works immediately after host automation and publishes through the platform timer");
     std::cout << "RESULT failures=" << failures << '\n';
     return failures ? 1 : 0;

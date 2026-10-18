@@ -1209,11 +1209,11 @@ void checkModWheel(SH09Processor& processor,juce::Component& editor,Checks& chec
         processMidi(processor,juce::MidiMessage::controllerEvent(1,1,0));
         checks.expect(std::abs(fader->getValue()-.5)<.001,"CC1 waits for pickup in mode "+juce::String(modern));
         processMidi(processor,juce::MidiMessage::controllerEvent(16,1,100));
-        checks.expect(std::abs(fader->getValue()-100./127)<.001,"CC1 moves the visible VCO MOD fader in mode "+juce::String(modern));
+        checks.expect(std::abs(fader->getValue()-(100./127)*(100./127))<.001,"CC1 moves the visible VCO MOD fader in mode "+juce::String(modern));
         setParameter(processor,"vcoMod",.25f);processMidi(processor,juce::MidiMessage::controllerEvent(1,1,110));
         checks.expect(std::abs(fader->getValue()-.25)<.001,"manual VCO MOD edit re-arms wheel pickup");
         processMidi(processor,juce::MidiMessage::controllerEvent(1,1,20));
-        checks.expect(std::abs(fader->getValue()-20./127)<.001,"crossing pickup resumes visible fader control");
+        checks.expect(std::abs(fader->getValue()-(20./127)*(20./127))<.001,"crossing pickup resumes visible fader control");
     }
     processor.setStateInformation(saved.getData(),int(saved.getSize()));processor.reset();settleEditor();
 }

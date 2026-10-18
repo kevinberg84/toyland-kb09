@@ -1,4 +1,5 @@
 #include "Editor.h"
+#include "../Parameters/ControlResponse.h"
 #include "KeyboardFeedback.h"
 #include "PresetFiles.h"
 #include "PowerDetails.h"
@@ -45,9 +46,17 @@ constexpr int topStripReduction=KB09_APPROVED_HARDWARE?kb09_gui::CompactPanelLay
 constexpr int canvasH=designH-topStripReduction;
 // Equal printed-outline margins between the bay face and first key.
 constexpr int performanceBayOffsetX=5;
+// One distance from each section rule to its border-facing fader axis;
+// uniform tick spans and numeral boxes give equal number-column margins.
+constexpr int topScaleBorderDistance=35;
+// Center the complete 1284-unit section group on the 1483-unit panel.
+constexpr float topPanelOffsetX=-7.5f;
+constexpr int topPanelBoundsOffsetX=-8;
+constexpr float topPanelFractionX=topPanelOffsetX-topPanelBoundsOffsetX;
 constexpr int pulseWidthCentre=538,pwmSwitchX=561;
 constexpr float pwmCaptionCentre=((pulseWidthCentre+.5f)+(pwmSwitchX+12.f))*.5f;
 constexpr int volumeOffsetY=-5, powerOffsetY=-12, modulatorOffsetX=4;
+constexpr int modulatorSwitchX=94+modulatorOffsetX,modulatorSwitchWidth=49;
 constexpr int volumeKnobLift=KB09_APPROVED_HARDWARE?6:0;
 constexpr int powerHardwareLift=5, powerLegendLift=0, powerLedDrop=6;
 // Reduce proposal 197 by ten percent about the pair's shared midpoint.
@@ -330,7 +339,7 @@ const juce::Image& panelDust() {
                 }
                 x+=performanceBayOffsetX;
             }
-            if(i%4!=3)x-=13;
+            if(i%4!=3)x+=topPanelOffsetX;
             // A fine powder, occasional lint, and sparse brighter grains.
             const float size=.27f+.45f*std::pow(surfaceNoise(seed+89),2.0f);
             const float tone=surfaceNoise(seed+101);
@@ -396,7 +405,7 @@ void paintExtraDust135(juce::Graphics& target,float age) {
             const float distance=.2f+8.f*std::pow(surfaceNoise(seed+31),2.5f);
             const float radius=collarDustRadius(a)*(87.f*.95f*mainKnobScale)+distance;
             const float fade=std::pow(juce::jmax(0.f,std::cos(local*1.5707963f/1.675f)),.7f)*(1-distance/9.f);
-            grain((left?rangeKnobCentre-12.75f:waveKnobCentre-12.75f)+std::cos(a)*radius,197.91f+std::sin(a)*radius,fade,seed);
+            grain((left?rangeKnobCentre+.25f+topPanelOffsetX:waveKnobCentre+.25f+topPanelOffsetX)+std::cos(a)*radius,197.91f+std::sin(a)*radius,fade,seed);
         }
         // Tight, complete powder at the VOLUME collar, fading radially outward.
         for(uint32_t i=0;i<10500;++i) {
@@ -435,7 +444,7 @@ void paintCloseKnobRings144(juce::Graphics& target,float age) {
             const float a=surfaceNoise(seed+17)*juce::MathConstants<float>::twoPi;
             const float distance=.25f+3.2f*std::pow(surfaceNoise(seed+31),2.6f);
             const float radius=collarDustRadius(a)*(87.f*.95f*mainKnobScale)+distance;
-            const float x=(i%2?rangeKnobCentre-12.75f:waveKnobCentre-12.75f)+std::cos(a)*radius,y=197.91f+std::sin(a)*radius;
+            const float x=(i%2?rangeKnobCentre+.25f+topPanelOffsetX:waveKnobCentre+.25f+topPanelOffsetX)+std::cos(a)*radius,y=197.91f+std::sin(a)*radius;
             const float fade=(1-distance/3.8f)*(.8f+.2f*surfaceNoise(seed+53));
             const float size=.24f+.36f*std::pow(surfaceNoise(seed+71),2.f);
             g.setColour(juce::Colour(0xffb8b8a9).interpolatedWith(juce::Colour(0xff81867d),surfaceNoise(seed+89))
@@ -1590,26 +1599,29 @@ public:
     // shared strokes are neither clipped by hit areas nor redrawn with caps.
     void drawFaderScale(juce::Graphics& g,juce::Slider& slider) {
         const auto bounds=getSliderLayout(slider).sliderBounds.translated(slider.getX(),slider.getY());
-        const float cx=float(bounds.getCentreX());
+        // Printing is compacted separately in Y; retain the component's
+        // fractional X translation so ticks and values follow the cap axis.
+        const float cx=float(bounds.getCentreX())+slider.getTransform().mat02;
         const int y=bounds.getY(),h=bounds.getHeight();
-        const bool compact=bool(slider.getProperties().getWithDefault("compact",false));
+        // Every unshared outer tick uses the same span and numeral gap,
+        // including ADSR and the performance-bay faders.
+        constexpr float shortSpan=18.f,numberShift=3.5f;
         const auto ink=agedInk(age);
             for(int t=0;t<=10;++t) {
                 const float yy=float(y)+float(h)*float(t)/10;
                 const bool major=t%5==0;
-                const float arm=compact?(major?7.0f:5.5f):(major?9.5f:7.5f);
-                const float left=float(slider.getProperties().getWithDefault("tickLeftSpan",arm+5));
-                const float right=float(slider.getProperties().getWithDefault("tickRightSpan",arm+5));
+                const float left=float(slider.getProperties().getWithDefault("tickLeftSpan",shortSpan))+(major&&bool(slider.getProperties().getWithDefault("numbersLeft",true))?2.f:0.f);
+                const float right=float(slider.getProperties().getWithDefault("tickRightSpan",shortSpan))+(major&&bool(slider.getProperties().getWithDefault("numbersRight",true))?2.f:0.f);
                 g.setColour(ink.withAlpha(major?.90f:.73f));
-                g.drawLine(cx-left,yy,cx-(major?5.5f:7.f),yy,major?1.25f:.80f);
-                g.drawLine(cx+(major?5.5f:7.f),yy,cx+right,yy,major?1.25f:.80f);
+                g.drawLine(cx-left,yy,cx-4.8f,yy,major?1.25f:.80f);
+                g.drawLine(cx+4.8f,yy,cx+right,yy,major?1.25f:.80f);
             }
             for(int i=0;i<3;++i) {
                 const float yy=float(y)+float(h)*float(i)*.5f;
                 if(bool(slider.getProperties().getWithDefault("numbersLeft",true)))
-                    caption(g,juce::String(10-i*5),{cx-29.0f,yy-4,11,8},6.6f,juce::Justification::centredRight,false,ink);
+                    caption(g,juce::String(10-i*5),{cx-29.0f-numberShift,yy-4,11,8},6.6f,juce::Justification::centredRight,false,ink);
                 if(bool(slider.getProperties().getWithDefault("numbersRight",true)))
-                    caption(g,juce::String(10-i*5),{cx+18.0f,yy-4,11,8},6.6f,juce::Justification::centredLeft,false,ink);
+                    caption(g,juce::String(10-i*5),{cx+18.0f+numberShift,yy-4,11,8},6.6f,juce::Justification::centredLeft,false,ink);
             }
     }
     void drawLinearSlider(juce::Graphics& g,int x,int y,int w,int h,float pos,float,float,
@@ -2356,6 +2368,12 @@ class FineSlider final : public juce::Slider,public ChoiceKnobDisplay,private ju
 public:
  static constexpr double choiceSnapDurationMs=25.;
  FineSlider() {setSliderSnapsToMousePosition(false);}
+ double valueToProportionOfLength(double value) override {
+  return sh09::controlResponse::position(getComponentID().toRawUTF8(),juce::Slider::valueToProportionOfLength(value));
+ }
+ double proportionOfLengthToValue(double proportion) override {
+  return juce::Slider::proportionOfLengthToValue(sh09::controlResponse::effect(getComponentID().toRawUTF8(),proportion));
+ }
  void mouseEnter(const juce::MouseEvent& e) override {getProperties().set("hardwareHoverActive",true);juce::Slider::mouseEnter(e);}
  void mouseExit(const juce::MouseEvent& e) override {getProperties().set("hardwareHoverActive",false);juce::Slider::mouseExit(e);}
  double displayedChoiceProportion() override {
@@ -2520,7 +2538,8 @@ public:
             } else if(id=="vcfEnvMode"||id=="vcaMode") {
                 if(i==0)caption(g,labels[0],axialText,7.3f,juce::Justification::centred,true,ink);
                 else {
-                    const auto words=i==1?textBox:axialText;
+                    // Match VCA's approved middle ENV-to-slot spacing in VCF.
+                    const auto words=i==1?juce::Rectangle<float>(xx-28,labelY-13,19,26):axialText;
                     caption(g,id=="vcaMode"&&i==2?"GATE":"ENV",words.translated(0,-5),7.6f,juce::Justification::centred,true,ink);
                     const auto glyph=i==1?PanelGlyph::envelope:id=="vcaMode"?PanelGlyph::gate:PanelGlyph::invertedEnvelope;
                     panelGlyph(g,glyph,{words.getCentreX()-8,labelY,16,8},ink);
@@ -3643,34 +3662,34 @@ public:
         if(processor.wrapperType!=juce::AudioProcessor::wrapperType_Standalone)addAndMakeVisible(maximise);
         maximise.setBounds(1428,0,47,34);maximise.setComponentID("maximise");
         sizing.onChange=[this]{header.repaint();maximise.repaint();};
-        addSwitch("lfoWave",106+modulatorOffsetX,104,49,121,{0,1,2},{"SINE","SQUARE","RANDOM\n(S/H)"},"Modulator: sine, square or random sample-and-hold.");
-        addFader("lfoRate","RATE",178,96,33,129);controls.back()->label->setVisible(false);addFader("lfoDelay","DELAY",214,96,33,129);
+        addSwitch("lfoWave",modulatorSwitchX,104,modulatorSwitchWidth,121,{0,1,2},{"SINE","SQUARE","RANDOM\n(S/H)"},"Modulator: sine, square or random sample-and-hold.");
+        addFader("lfoRate","RATE",240-topScaleBorderDistance-36,96,33,129);controls.back()->label->setVisible(false);addFader("lfoDelay","DELAY",240-topScaleBorderDistance,96,33,129);
         controls.back()->label->setVisible(false); // Sine + DELAY TIME is printed by the panel.
-        addAndMakeVisible(rateLamp);rateLamp.setComponentID("rateLamp");if constexpr(KB09_APPROVED_HARDWARE)rateLamp.setBounds(125+modulatorOffsetX,headerH+100,11,10);
-        else rateLamp.setBounds(126+modulatorOffsetX,headerH+101,9,8);rateLamp.setInterceptsMouseClicks(false,false);
-        addFader("vcoMod","MOD",284,96,45,129);
+        addAndMakeVisible(rateLamp);rateLamp.setComponentID("rateLamp");if constexpr(KB09_APPROVED_HARDWARE)rateLamp.setBounds(modulatorSwitchX+(modulatorSwitchWidth-11)/2,headerH+100,11,10);
+        else rateLamp.setBounds(modulatorSwitchX+(modulatorSwitchWidth-9)/2,headerH+101,9,8);rateLamp.setInterceptsMouseClicks(false,false);
+        addFader("vcoMod","MOD",244+topScaleBorderDistance,96,45,129);
         controls.back()->slider->getProperties().set("scaleLeft",true);
         addKnob("range",rangeKnobCentre,163,87);addKnob("wave",waveKnobCentre,163,87);addKnob("tune",rangeKnobCentre,86,22);
-        addFader("pulseWidth","PULSE\nWIDTH",pulseWidthCentre,96,37,129);
+        addFader("pulseWidth","PULSE\nWIDTH",pulseWidthCentre-2,96,37,129);
         controls.back()->label->setVisible(false); // Shared PULSE WIDTH MOD bracket replaces this caption.
-        addSwitch("pwmMode",pwmSwitchX,104,51,121,{1,0,2},{"LFO","MANUAL","ENV"},"Pulse width: LFO, manual or envelope. LFO uses the undelayed sine.");
+        addSwitch("pwmMode",pwmSwitchX+2,104,51,121,{1,0,2},{"LFO","MANUAL","ENV"},"Pulse width: LFO, manual or envelope. LFO uses the undelayed sine.");
         addSwitch("subMode",633,104,60,121,{0,1,2},{"1 OCT\nDOWN","2 OCT\nDOWN","2 OCT\nDOWN"},"Sub oscillator: one octave down square, two octaves down square, or two octaves down pulse.");
-        addFader("vcoLevel","VCO",732,96,37,129);addFader("subLevel","SUB\nOSC",770,96,37,129);addFader("extLevel","EXT",808,96,37,129);
+        addFader("vcoLevel","VCO",697+topScaleBorderDistance,96,37,129);addFader("subLevel","SUB\nOSC",770,96,37,129);addFader("extLevel","EXT",843-topScaleBorderDistance,96,37,129);
         addFader("cutoff","CUTOFF\nFREQ",KB09_APPROVED_HARDWARE?882:884,96,33,129);
         controls.back()->label->setBounds(866,headerH+89,36,20);
         controls.back()->label->setFont(font(8.8f,true));
         addFader("resonance","RESONANCE",KB09_APPROVED_HARDWARE?921:919,96,33,129);
         controls.back()->label->setBounds(903,headerH+95,52,20);
         controls.back()->label->setFont(font(9.2f,true));
-        addSwitch("vcfEnvMode",950,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"ENV + and ENV - use the synth's envelope. ENV FOL'R uses external input level for an auto-wah effect.",true);
-        addFader("vcfEnv","ENV",1035,96,35,129);controls.back()->label->setVisible(false);addFader("vcfMod","MOD",1071,96,35,129);
+        addSwitch("vcfEnvMode",938,104,61,121,{2,0,1},{"ENV\nFOL'R","ENV +","ENV -"},"ENV + and ENV - use the synth's envelope. ENV FOL'R uses external input level for an auto-wah effect.",true);
+        addFader("vcfEnv","ENV",1098-topScaleBorderDistance-36,96,35,129);controls.back()->label->setVisible(false);addFader("vcfMod","MOD",1098-topScaleBorderDistance,96,35,129);
         addSwitch("vcaMode",1110,104,56,121,{0,1,2},{"HOLD","ENV","GATE"},"HOLD passes audio without MIDI; ENV uses ADSR; GATE follows held keys.");
         // Balance hardware margins: left edge of switch track to divider,
         // right edge of RELEASE track to divider. Move labels/hit areas too.
         constexpr int envContentOffset=-7;
-        addSwitch("envMode",1175+envContentOffset,104,55,121,{0,1,2},{"GATE +\nTRIG","GATE","LFO"},"Gate+Trigger re-attacks on low-note changes. Gate preserves legato. LFO repeats while held.",true);
-        addFader("attack","A",(KB09_APPROVED_HARDWARE?1256:1260)+envContentOffset,96,31,129,true);addFader("decay","D",(KB09_APPROVED_HARDWARE?1294:1292)+envContentOffset,96,31,129,true);
-        addFader("sustain","S",(KB09_APPROVED_HARDWARE?1332:1324)+envContentOffset,96,31,129,true);addFader("release","R",(KB09_APPROVED_HARDWARE?1370:1356)+envContentOffset,96,31,129,true);
+        addSwitch("envMode",1170+envContentOffset,104,55,121,{0,1,2},{"GATE +\nTRIG","GATE","LFO"},"Gate+Trigger re-attacks on low-note changes. Gate preserves legato. LFO repeats while held.",true);
+        addFader("attack","A",1403-topScaleBorderDistance-114,96,31,129,true);addFader("decay","D",1403-topScaleBorderDistance-76,96,31,129,true);
+        addFader("sustain","S",1403-topScaleBorderDistance-38,96,31,129,true);addFader("release","R",1403-topScaleBorderDistance,96,31,129,true);
         // One native printed row keeps single- and two-line control names on
         // the same baseline without Label fitting shrinking longer captions.
         for(auto& c:controls)if(c->label&&c->slider) {
@@ -3785,7 +3804,10 @@ public:
         for(auto& c:controls)for(auto* child:{static_cast<juce::Component*>(c->slider.get()),
                 static_cast<juce::Component*>(c->selector.get()),static_cast<juce::Component*>(c->label.get())}) {
             if(child==nullptr)continue;
-            if(child->getY()>=headerH&&child->getBottom()<headerH+360)child->setTopLeftPosition(child->getX()-13,child->getY());
+            if(child->getY()>=headerH&&child->getBottom()<headerH+360) {
+                child->setTopLeftPosition(child->getX()+topPanelBoundsOffsetX,child->getY());
+                child->setTransform(juce::AffineTransform::translation(topPanelFractionX,0));
+            }
             else if(child->getY()>=headerH+360&&child->getBottom()<headerH+708)child->setTopLeftPosition(child->getX()+performanceBayOffsetX,child->getY());
         }
         // SH-09 reference: bring each main-panel fader assembly closer to
@@ -3805,7 +3827,8 @@ public:
                 if(c->label)c->label->setTopLeftPosition(c->label->getX()-4,c->label->getY());
             }
         }
-        rateLamp.setTopLeftPosition(rateLamp.getX()-13,rateLamp.getY());
+        rateLamp.setTopLeftPosition(rateLamp.getX()+topPanelBoundsOffsetX,rateLamp.getY());
+        rateLamp.setTransform(juce::AffineTransform::translation(topPanelFractionX,0));
         power.setTopLeftPosition(power.getX()+performanceBayOffsetX,power.getY());
         bender.setTopLeftPosition(bender.getX()+performanceBayOffsetX,bender.getY());
         for(auto* child:{static_cast<juce::Component*>(&small),static_cast<juce::Component*>(&medium),
@@ -3814,7 +3837,7 @@ public:
         layoutFooterArtwork();
         if constexpr(topStripReduction>0)
             for(auto* child:getChildren())if(child->getY()>=kb09_gui::CompactPanelLayout::secondEnd)
-                child->setTransform(juce::AffineTransform::translation(0,-float(topStripReduction)));
+                child->setTransform(child->getTransform().translated(0,-float(topStripReduction)));
         updateModern();
         // Have one complete fallback before the editor can be displayed or
         // dragged. Until idle work builds all five ages, share this snapshot
@@ -4001,9 +4024,9 @@ public:
         const auto ink=agedInk(age);const auto& art=artwork();
         {
             juce::Graphics::ScopedSaveState save(g);g.addTransform(juce::AffineTransform::translation(0,float(headerH)));
-            {juce::Graphics::ScopedSaveState topPrint(g);g.addTransform(juce::AffineTransform::translation(-13,0));
-            module(g,107,141,"MODULATOR",age);module(g,252,365,"VCO",age);module(g,621,72,"SUB OSC",age);
-            module(g,697,146,"AUDIO MIXER",age);module(g,847,251,"VCF",age);module(g,1102,64,"VCA",age);module(g,1170,221,"ENV",age);
+            {juce::Graphics::ScopedSaveState topPrint(g);g.addTransform(juce::AffineTransform::translation(topPanelOffsetX,0));
+            module(g,95,145,"MODULATOR",age);module(g,244,373,"VCO",age);module(g,621,72,"SUB OSC",age);
+            module(g,697,146,"AUDIO MIXER",age);module(g,847,251,"VCF",age);module(g,1102,64,"VCA",age);module(g,1170,233,"ENV",age);
             caption(g,juce::String::fromUTF8("UNOFFICIAL PERSONAL PROJECT \xe2\x80\x94 NOT AFFILIATED WITH ROLAND CORPORATION \xe2\x80\x94 NOT FOR SALE"),
                     {107,24,1284,15},10.0f,juce::Justification::centred,true,ink);
             constexpr float controlCaptionSize=8.4f;
@@ -4011,24 +4034,24 @@ public:
                 caption(g,text,{centre-width*.5f,y,width,12},controlCaptionSize,juce::Justification::centred,true,ink);
             };
             // Preserve the existing component label centers, including the
-            // panel's -13 horizontal translation and odd-width half pixels.
+            // integer component bounds offset and odd-width half pixels.
             const auto labelCentre=[&](const char* id) {
                 for(const auto& c:controls)if(c->label&&c->slider&&c->slider->getComponentID()==id)
-                    return float(c->label->getX())+float(c->label->getWidth())*.5f+13.f;
+                    return float(c->label->getX())+float(c->label->getWidth())*.5f-float(topPanelBoundsOffsetX);
                 jassertfalse;return 0.f;
             };
-            rowCaption("RATE",178,29);
+            rowCaption("RATE",169,29);
             juce::GlyphArrangement rateInk;
-            const auto rateBox=juce::Rectangle<float>(163.5f,99,29,12).toNearestInt();
+            const auto rateBox=juce::Rectangle<float>(154.5f,99,29,12).toNearestInt();
             rateInk.addFittedText(font(controlCaptionSize,true),"RATE",float(rateBox.getX()),float(rateBox.getY()),
                                  float(rateBox.getWidth()),float(rateBox.getHeight()),juce::Justification::centred,1,.8f);
             // The lamp's painted ellipse is six units across, inside its hit box.
-            const float lampRight=float(rateLamp.getX())+float(rateLamp.getWidth())*.5f+(KB09_APPROVED_HARDWARE?4.5f:3.f)+13.f;
+            const float lampRight=float(rateLamp.getX())+float(rateLamp.getWidth())*.5f+(KB09_APPROVED_HARDWARE?4.5f:3.f)-float(topPanelBoundsOffsetX);
             const float linkCentre=(lampRight+rateInk.getBoundingBox(0,-1,true).getX())*.5f;
             g.setColour(ink);g.drawLine(linkCentre-10.5f,105,linkCentre+10.5f,105,.85f);
-            caption(g,"DELAY",{206,87,29,12},controlCaptionSize,juce::Justification::centred,true,ink);
-            rowCaption("TIME",220.5f,29);
-            panelGlyph(g,PanelGlyph::sine,{193,95.5f,12,7},ink,.85f);
+            caption(g,"DELAY",{197,87,29,12},controlCaptionSize,juce::Justification::centred,true,ink);
+            rowCaption("TIME",211.5f,29);
+            panelGlyph(g,PanelGlyph::sine,{184,95.5f,12,7},ink,.85f);
             rowCaption("MOD",labelCentre("vcoMod"));
             rowCaption("RANGE",rangeKnobCentre,74);
             rowCaption("WAVEFORM",waveKnobCentre,84);
@@ -4041,7 +4064,7 @@ public:
                 // older manually positioned label box (1.5 units to its right).
                 float centre=labelCentre("cutoff");
                 for(const auto& c:controls)if(c->slider&&c->slider->getComponentID()=="cutoff")
-                    centre=c->slider->getX()+c->slider->getWidth()*.5f+13.f;
+                    centre=c->slider->getX()+c->slider->getWidth()*.5f-float(topPanelBoundsOffsetX);
                 const auto printCutoffLine=[&](const char* text,float y) {
                     juce::GlyphArrangement glyphs;
                     glyphs.addFittedText(font(controlCaptionSize,true),text,0,0,36,12,juce::Justification::centred,1,.8f);
@@ -4065,7 +4088,7 @@ public:
             auto printedSliderAxis=[&](const char* id,float fallback) {
                 for(const auto& c:controls)if(c->slider&&c->slider->getComponentID()==id) {
                     const auto r=look.getSliderLayout(*c->slider).sliderBounds;
-                    return float(c->slider->getX()+r.getX())+float(r.getWidth())*.5f+13.f;
+                    return float(c->slider->getX()+r.getX())+float(r.getWidth())*.5f-float(topPanelBoundsOffsetX);
                 }
                 return fallback;
             };
@@ -4090,7 +4113,7 @@ public:
             juce::Path pwmLink;pwmLink.startNewSubPath(linkX,linkBottom);pwmLink.lineTo(linkX,pwmRuleY+4);pwmLink.quadraticTo(linkX,pwmRuleY,linkX+4,pwmRuleY);pwmLink.lineTo(pwmCaptionLeft-.8f,pwmRuleY);
             g.setColour(ink);g.strokePath(pwmLink,juce::PathStrokeType(.9f));
             const float vcfSliderAxis=alignedPrint?printedSliderAxis("vcfEnv",1035.5f):1030.f;
-            juce::Path vcfLink;vcfLink.startNewSubPath(999,116);vcfLink.lineTo(999,106);vcfLink.quadraticTo(999,103,1002,103);vcfLink.lineTo(vcfSliderAxis-3,103);vcfLink.quadraticTo(vcfSliderAxis,103,vcfSliderAxis,106);vcfLink.lineTo(vcfSliderAxis,115);
+            juce::Path vcfLink;vcfLink.startNewSubPath(987,116);vcfLink.lineTo(987,106);vcfLink.quadraticTo(987,103,990,103);vcfLink.lineTo(vcfSliderAxis-3,103);vcfLink.quadraticTo(vcfSliderAxis,103,vcfSliderAxis,106);vcfLink.lineTo(vcfSliderAxis,115);
             g.strokePath(vcfLink,juce::PathStrokeType(.85f));
             
             }
@@ -4099,7 +4122,7 @@ public:
             for(int i=0;i<2;++i) {
                 g.setColour(ink.withAlpha(i==0?1-printWear:printWear));
                 const auto& printed=i==0?art.marks:art.marksAged;
-                g.drawImage(printed,94,270.4f,328,41.6f,846,308,1253,158,true);
+                g.drawImage(printed,95+topPanelOffsetX,270.4f,328,41.6f,846,308,1253,158,true);
                 g.drawImage(printed,1143,258,222,51,85,308,722,158,true);
             }
             g.setColour(ink.withAlpha(.94f));g.fillRect(60.0f,313.0f,1364.0f,3.6f);
@@ -4552,6 +4575,10 @@ slider.setDoubleClickReturnValue(true,spec.initial);}
                 return processor.state.getRawParameterValue("modern")->load()>.5f&&processor.state.getRawParameterValue("lfoSync")->load()>.5f
                     ?juce::String(sh09::rateDivision(v).label):juce::String(v*10,2);
             };
+            else if(sh09::controlResponse::squared(id)) {
+                slider.textFromValueFunction=[name=std::string(id)](double v){return juce::String(sh09::controlResponse::position(name,v)*10,2);};
+                slider.valueFromTextFunction=[name=std::string(id)](const juce::String& text){return sh09::controlResponse::effect(name,text.getDoubleValue()/10);};
+            }
             else slider.textFromValueFunction=[](double v){return juce::String(v*10,2);};
         }
         controls.push_back(std::move(c));

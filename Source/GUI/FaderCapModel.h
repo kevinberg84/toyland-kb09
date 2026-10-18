@@ -121,8 +121,14 @@ private:
         // corner normals. Preserve proposal 208 Minty gloss at Fire Hazard.
         const float fold=std::exp(-std::pow((p.y+capDepth*.218f)/.13f,2.f))
             *juce::jlimit(0.f,1.f,(p.z/capRise-.97f)/.02f)*.65f*(1-age);
+        // A slim source reflection follows the black left shoulder and
+        // rounded edge. It stays in cap-local coordinates while sliding;
+        // modest gloss loss retains 78 percent of this glimmer at full age.
+        const float leftEdge=std::exp(-std::pow((p.x+capWidth*.48f)/(capWidth*.035f),2.f));
+        const float leftFacing=juce::jlimit(0.f,1.f,-normal.x);
+        const float leftGlimmer=.26f*(1.f-.22f*age)*leftEdge*leftFacing*(.88f+.12f*grain);
         const float black=juce::jlimit(0.f,1.f,(.028f+.068f*diffuse)*(.91f+.18f*grain)
-            +(reflection+fold)*(.78f+.3f*grain)+(grain-.5f)*.009f);
+            +(reflection+fold)*(.78f+.3f*grain)+(grain-.5f)*.009f+leftGlimmer);
         const float metalCoverage=juce::jlimit(0.f,1.f,(metalHalf+.035f-std::abs(p.y))/.07f);
         if(metalCoverage<=0)return juce::Colour::fromFloatRGBA(black,black*.99f,black*.98f,1);
         // Reflect the upper-left source across the band from left to right.

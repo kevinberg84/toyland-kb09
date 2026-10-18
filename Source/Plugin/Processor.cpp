@@ -1,3 +1,4 @@
+#include "../Parameters/ControlResponse.h"
 #include "Processor.h"
 #include "../GUI/Editor.h"
 #include "../Presets/Factory.h"
@@ -56,7 +57,7 @@ void SH09Processor::resetModWheel() noexcept {
 }
 void SH09Processor::applyModWheel(int controllerValue) noexcept {
  const float wheel=float(controllerValue)/127;
- const float current=renderControls.vcoMod;
+ const float current=float(sh09::controlResponse::position("vcoMod",renderControls.vcoMod));
  // In a VST3 host, CC1 is already a timed performance stream. Host echoes and
  // automation must not impose a second pickup gate on the next wheel event.
  // Keep the standalone's established soft takeover for manually edited patches.
@@ -68,9 +69,10 @@ void SH09Processor::applyModWheel(int controllerValue) noexcept {
  }
  previousModWheel=wheel;
  if(!modWheelPickedUp)return;
- modWheelOverride=true;modWheelTarget=wheel;renderControls.vcoMod=wheel;engine.setControls(renderControls);
+ const float amount=float(sh09::controlResponse::effect("vcoMod",wheel));
+ modWheelOverride=true;modWheelTarget=amount;renderControls.vcoMod=amount;engine.setControls(renderControls);
  modSerial.fetch_add(1,std::memory_order_acq_rel);
- modFeedbackValue.store(wheel,std::memory_order_relaxed);
+ modFeedbackValue.store(amount,std::memory_order_relaxed);
  modFeedbackRevision.store(modProgramRevision,std::memory_order_relaxed);
  modFeedbackParameterRevision.store(modParameterRevision,std::memory_order_relaxed);
  modFeedbackValid.store(true,std::memory_order_release);modSerial.fetch_add(1,std::memory_order_release);
