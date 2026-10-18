@@ -65,13 +65,25 @@ private:
         if(message==WM_ERASEBKGND)return 1;
         return DefWindowProcW(window,message,w,l);
     }
+    static void keepAboveOwner(HWND window) {
+        const auto owner=GetWindow(window,GW_OWNER);
+        if(!owner||!IsWindow(owner))return;
+        // Hosts can restack floating editors independently of owned popups.
+        // Repair only this owner's relative order; never promote the lamp over
+        // another application's window or make it globally always-on-top.
+        for(auto below=GetWindow(window,GW_HWNDNEXT);below;below=GetWindow(below,GW_HWNDNEXT))
+            if(below==owner)return;
+        const auto preceding=GetWindow(owner,GW_HWNDPREV);
+        if(preceding!=window)SetWindowPos(window,preceding?preceding:HWND_TOP,0,0,0,0,
+            SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE|SWP_NOOWNERZORDER);
+    }
     void run() {
         static std::once_flag registered;
         std::call_once(registered,[]{WNDCLASSW c{};c.lpfnWndProc=procedure;c.hInstance=GetModuleHandleW(nullptr);
             c.lpszClassName=L"KB09IndependentRate245";RegisterClassW(&c);});
         HWND window=nullptr,parent=nullptr;juce::Rectangle<int> bounds;POINT lastScreen{LONG_MIN,LONG_MIN};bool shown=false;
         std::array<std::unique_ptr<Bitmap>,33> bitmaps;
-        RateLampClock clock;double previousTime=0;int previousFrame=-1;
+        RateLampClock clock;double previousTime=0,lastOrderCheck=0;int previousFrame=-1;
         while(!quit.load()) {
             MSG message;while(PeekMessageW(&message,nullptr,0,0,PM_REMOVE)){TranslateMessage(&message);DispatchMessageW(&message);}
             Geometry requested;{std::lock_guard<std::mutex> lock(geometryMutex);requested=geometry;}
@@ -108,6 +120,7 @@ private:
                         if(previousTime>0)maxGap.store(juce::jmax(maxGap.load(),now-previousTime));previousTime=now;
                     }else {errorCode.store(GetLastError());++failed;}
                     if(!shown){ShowWindowAsync(window,SW_SHOWNOACTIVATE);shown=true;}
+                    if(now-lastOrderCheck>=16){keepAboveOwner(window);lastOrderCheck=now;}
                 }
             }else if(window){if(shown){ShowWindowAsync(window,SW_HIDE);shown=false;}previousTime=0;}
             std::this_thread::sleep_for(std::chrono::milliseconds(4));

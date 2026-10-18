@@ -3127,7 +3127,7 @@ private:
         if(peer&&isShowing()) {
             if(!independent)independent=std::make_unique<kb09_gui::WindowsRateLamp>([this] {
                 return kb09_gui::WindowsRateLamp::Input{processor.isPowerEnabled(),
-                    processor.displayedModulatorFrequency.load(std::memory_order_relaxed),
+                    processor.rateLampFrequency(),
                     processor.displayedModulatorPhase.load(std::memory_order_relaxed),
                     processor.displayedModulatorTime.load(std::memory_order_acquire)};
             });
@@ -3156,15 +3156,13 @@ private:
 #endif
         const double now=juce::Time::getMillisecondCounterHiRes();
         const double stamp=processor.displayedModulatorTime.load(std::memory_order_acquire);
-        const float hz=processor.displayedModulatorFrequency.load(std::memory_order_relaxed);
+        const double hz=processor.rateLampFrequency();
         const double phase=processor.displayedModulatorPhase.load(std::memory_order_relaxed)+juce::jmax(0.0,(now-stamp)*.001)*hz;
         const float value=clock.level(processor.isPowerEnabled(),hz,now,phase);
         if(std::abs(on-value)>.005f){on=value;
-#if JUCE_WINDOWS
-            if(!independent||independent->handle()==0)repaint();
-#else
+            // Keep the underlying renderer current too. A host may temporarily
+            // cover or detach the native overlay; it must not expose a stale LED.
             repaint();
-#endif
         }
         if(auto* parent=getParentComponent();parent&&bool(parent->getProperties().getWithDefault("rateTimingProbe186",false)))
             parent->getProperties().set("rateUpdateTime186",now);

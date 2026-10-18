@@ -2064,7 +2064,7 @@ int main(int argc, char** argv) {
             checks.expect(changedPixels(reference,lamp->createComponentSnapshot(lamp->getLocalBounds(),true,12.f))==0,"normal LED material stays fixed at age "+juce::String(stage));
         }
         lamp->getProperties().remove("previewLedLevel");
-        processor.displayedModulatorFrequency.store(5.f);processor.setPowerEnabled(true);
+        setParameter(processor,"lfoRate",2.f/3.f);processor.setPowerEnabled(true);
         auto last=lamp->createComponentSnapshot(lamp->getLocalBounds());int changes=0;
         for(int i=0;i<30;++i) {
             juce::MessageManager::getInstance()->runDispatchLoopUntil(20);
@@ -2198,7 +2198,7 @@ int main(int argc, char** argv) {
         const auto scale=juce::SystemStats::getEnvironmentVariable("KB09_AGE_SCALE","2.55").getDoubleValue();
         if(juce::SystemStats::getEnvironmentVariable("KB09_BACKGROUND_BANK","")=="1") {
             panel->getProperties().set("backgroundMaterialWarmup186",true);panel->getProperties().set("rateTimingProbe186",true);
-            processor.displayedModulatorFrequency.store(2.f);
+            setParameter(processor,"lfoRate",float(std::log(10.0)/std::log(125.0)));
             // Let the initial resize placeholder expire before starting the
             // actual native-resolution bank (offscreen editors do not repaint).
             juce::MessageManager::getInstance()->runDispatchLoopUntil(350);

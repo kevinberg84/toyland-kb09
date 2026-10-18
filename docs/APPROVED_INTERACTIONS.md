@@ -37,3 +37,11 @@ Slider-response review is requested before the next public release. Appearance a
 User authorized a squared physical-position curve for PORTAMENTO, VCO MOD, VCF MOD and VCF ENV/FOL'R depth, plus Linux JACK support. Retain stored effect amounts, parameter IDs/ranges and DAW parameter automation. GUI caps/readouts use inverse mapping; typed values and learned MIDI use forward mapping. CC1 uses the same curve with inverse-position pickup. Keep the current endpoints, other control responses, and the approved power-button/independent LED behavior.
 
 Linux builds enable JUCE_ALSA=1 and JUCE_JACK=1. Windows retains ASIO/WASAPI/DirectSound, and macOS retains Core Audio. JACK is not a Windows TS backend. Physical Linux audio validation remains separate from native build/backend-factory checks.
+
+## RATE host robustness correction (October 18, 2026)
+The independent RATE window must remain above its own editor after host restacking,
+without rising above unrelated applications or taking focus. Keep the fallback
+renderer current. The visual clock follows live RATE/mode/sync controls even while
+a host suspends audio callbacks; AGE, notes, reset and editor reopening must not
+leave a frozen LED. Preserve the approved circular material and independent
+Windows presenter. These corrections address the reported Live failure.

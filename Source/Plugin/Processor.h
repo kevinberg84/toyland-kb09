@@ -37,6 +37,8 @@ public:
  void setStateInformation(const void*,int) override;
  juce::VST3ClientExtensions* getVST3ClientExtensions() override {return this;}
  bool getPluginHasMainInput() const override {return false;}
+ // Visual RATE reads live control values even when a host suspends audio.
+ double rateLampFrequency() const noexcept;
  bool isPowerEnabled() const noexcept {return powerEnabled.load(std::memory_order_acquire);}
  void setPowerEnabled(bool enabled) noexcept;
  void queueKeyboard(int,bool,bool mouse=true) noexcept;
@@ -86,6 +88,7 @@ private:
  // One hold per MIDI channel and pitch; GUI holds remain independent.
  std::array<std::array<bool,128>,16> midiHeld{};
  sh09::Engine engine;
+ std::atomic<double> rateLampTempo{120};
  std::array<std::atomic<float>*,sh09::specs.size()> raw{};
  std::atomic<float>* rawVcoMod=nullptr;
  std::atomic<int> currentProgram{0};

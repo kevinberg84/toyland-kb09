@@ -104,6 +104,10 @@ sh09::Controls SH09Processor::readControls() const noexcept {
  #undef LOAD
  return c;
 }
+double SH09Processor::rateLampFrequency() const noexcept {
+ const auto c=readControls();const bool modern=c.modern>=.5f;
+ return sh09::lfoFrequency(c.lfoRate,modern&&c.lfoSync>=.5f,rateLampTempo.load(std::memory_order_relaxed),modern);
+}
 void SH09Processor::clearKeyDisplay() noexcept {
  for(auto& channel:midiHeld)channel.fill(false);
  for(auto& k:keyDisplay)k.store(0,std::memory_order_relaxed);
@@ -219,7 +223,10 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
      displayedPitchBendReturning.store(true,std::memory_order_relaxed);
    } else applyPitchBend(guiBend.load(std::memory_order_relaxed));
  }
- if(auto* playhead=getPlayHead())if(auto position=playhead->getPosition())if(auto bpm=position->getBpm())engine.setTempo(*bpm);
+ if(auto* playhead=getPlayHead())if(auto position=playhead->getPosition())if(auto bpm=position->getBpm()) {
+   engine.setTempo(*bpm);
+   if(std::isfinite(*bpm))rateLampTempo.store(std::clamp(*bpm,20.0,400.0),std::memory_order_relaxed);
+ }
  auto r=queueRead.load(std::memory_order_relaxed);
  if(queueDidOverflow){engine.allSoundOff();applyPitchBend(0);clearKeyDisplay();r=w;}
  while(r!=w){const auto event=keyboardQueue[r];

@@ -7,6 +7,19 @@
 #include <memory>
 #include <vector>
 
+#if JUCE_WINDOWS
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#undef small
+#undef DrawText
+#endif
+
+#if JUCE_MAC
+int kb09RateHostRedPixels(void* handle);
+#endif
+
 // Loads the actual VST3 module; deliberately does not link instrument DSP.
 namespace {
 struct Checks {
@@ -30,6 +43,9 @@ struct Host {
         for(auto* param:p.getParameters())if(auto* hp=dynamic_cast<juce::HostedAudioProcessorParameter*>(param)){
             const auto actual=hp->getParameterID();if(actual==id||actual==hash||actual==hash2)return param;
         }
+        // AU hosts may expose numeric parameter IDs rather than VST3 hashes.
+        const juce::String name=id=="lfoRate"?"LFO Rate":id=="modern"?"Modern Mode":"";
+        if(name.isNotEmpty())for(auto* param:p.getParameters())if(param->getName(128)==name)return param;
         return nullptr;
     }
     void set(const juce::String& id,float normalized){
@@ -245,6 +261,77 @@ void editors(Host& h){
     }
     h.checks.expect(valid,"10 native editor create/process/resize/destroy cycles (no mouse/visual assertion)");h.stop();
 }
+void rateHostProbe(Host& h) {
+#if JUCE_WINDOWS
+    h.restore();h.set("lfoRate",1);h.set("modern",0);h.prepare(48000,128);
+    auto audio=h.buffer(128);juce::MidiBuffer midi;bool finite=true;
+    for(int i=0;i<300;++i){audio.clear();h.process(audio,midi,finite);}
+    std::unique_ptr<juce::AudioProcessorEditor> editor(h.p.createEditorIfNeeded());
+    h.checks.expect(editor!=nullptr,"hosted RATE editor exists");if(!editor)return;
+    struct Window:juce::DocumentWindow {Window():DocumentWindow("KB-09 hosted RATE regression",juce::Colours::darkgrey,DocumentWindow::closeButton){setUsingNativeTitleBar(true);}void closeButtonPressed() override {}} window;
+    window.setContentNonOwned(editor.get(),true);window.setAlwaysOnTop(true);window.setTopLeftPosition(20,20);window.setVisible(true);window.toFront(false);
+    juce::MessageManager::getInstance()->runDispatchLoopUntil(750);
+    HWND lamp=nullptr;
+    EnumWindows([](HWND w,LPARAM arg)->BOOL {DWORD pid=0;GetWindowThreadProcessId(w,&pid);wchar_t name[128]{};GetClassNameW(w,name,128);
+        if(pid==GetCurrentProcessId()&&wcscmp(name,L"KB09IndependentRate245")==0&&IsWindowVisible(w))*reinterpret_cast<HWND*>(arg)=w;return TRUE;},reinterpret_cast<LPARAM>(&lamp));
+    h.checks.expect(lamp!=nullptr,"actual VST3 creates its independent RATE window");
+    if(lamp) {
+        const auto owner=GetWindow(lamp,GW_OWNER);
+        const auto above=[&] {for(HWND w=GetTopWindow(nullptr);w;w=GetWindow(w,GW_HWNDNEXT)){if(w==lamp)return true;if(w==owner)return false;}return false;};
+        std::cout<<"RATE_HOST owner="<<reinterpret_cast<uintptr_t>(owner)<<" above="<<above()<<'\n';
+        const auto observe=[&](int ms) {
+            int edges=0,lit=0,dark=0;bool previous=false,hasPrevious=false;
+            const auto end=juce::Time::getMillisecondCounterHiRes()+ms;HDC screen=GetDC(nullptr);
+            while(juce::Time::getMillisecondCounterHiRes()<end){juce::MessageManager::getInstance()->runDispatchLoopUntil(8);
+                const auto oldDpi=SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+                RECT rect{};GetWindowRect(lamp,&rect);auto c=GetPixel(screen,(rect.left+rect.right)/2,(rect.top+rect.bottom)/2);
+                SetThreadDpiAwarenessContext(oldDpi);
+                const bool on=GetRValue(c)>140&&GetRValue(c)>GetGValue(c)*2;
+                if(on)++lit;else ++dark;if(hasPrevious&&on!=previous)++edges;hasPrevious=true;previous=on;}
+            ReleaseDC(nullptr,screen);std::cout<<"RATE_HOST lit="<<lit<<" dark="<<dark<<" visible_edges="<<edges<<'\n';return edges;
+        };
+        h.set("lfoRate",2.f/3.f); // No further audio calls: the engine snapshot is still 25 Hz.
+        h.checks.expect(observe(1000)>=5,"actual VST3 follows RATE changes with its audio callbacks suspended");
+        // Reproduce the Live host restacking failure deterministically.
+        SetWindowPos(lamp,owner,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_NOOWNERZORDER);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(350);
+        h.checks.expect(above(),"independent RATE surface repairs host restacking and stays above its editor");
+        h.checks.expect(observe(1500)>=8,"actual VST3 desktop pixels keep blinking after host restacking with audio idle");
+        // A higher unrelated host/tool window must keep its relative order.
+        struct Cover:juce::DocumentWindow {Cover():DocumentWindow("RATE host cover fixture",juce::Colours::darkgrey,0){setUsingNativeTitleBar(true);}void closeButtonPressed()override{}} cover;
+        cover.setAlwaysOnTop(true);cover.setBounds(800,400,200,120);cover.setVisible(true);cover.toFront(false);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(80);
+        auto* coverHandle=static_cast<HWND>(cover.getPeer()->getNativeHandle());
+        SetWindowPos(coverHandle,HWND_TOPMOST,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE);
+        SetWindowPos(lamp,owner,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_NOOWNERZORDER);
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(100);
+        bool coverAbove=false;for(auto w=GetTopWindow(nullptr);w;w=GetWindow(w,GW_HWNDNEXT)){if(w==coverHandle){coverAbove=true;break;}if(w==lamp)break;}
+        h.checks.expect(coverAbove,"RATE repair does not rise above a covering host/tool window");cover.setVisible(false);
+
+    }
+    window.clearContentComponent();window.setVisible(false);h.p.editorBeingDeleted(editor.get());editor.reset();h.stop();
+#elif JUCE_MAC
+    h.restore();h.set("lfoRate",1);h.set("modern",0);h.prepare(48000,128);
+    auto audio=h.buffer(128);juce::MidiBuffer midi;bool finite=true;
+    for(int i=0;i<300;++i){audio.clear();h.process(audio,midi,finite);}
+    std::unique_ptr<juce::AudioProcessorEditor> editor(h.p.createEditorIfNeeded());
+    h.checks.expect(editor!=nullptr,"actual hosted Mac editor exists");if(!editor)return;
+    struct Window:juce::DocumentWindow {Window():DocumentWindow("KB-09 Mac RATE regression",juce::Colours::darkgrey,DocumentWindow::closeButton){setUsingNativeTitleBar(true);}void closeButtonPressed() override {}} window;
+    window.setContentNonOwned(editor.get(),true);window.setTopLeftPosition(20,20);window.setVisible(true);window.toFront(false);
+    juce::MessageManager::getInstance()->runDispatchLoopUntil(350);
+    h.set("lfoRate",2.f/3.f); // Deliberately no more audio callbacks.
+    const auto blink=[&] {int low=1000000,high=-1;const auto end=juce::Time::getMillisecondCounterHiRes()+1600;
+        while(juce::Time::getMillisecondCounterHiRes()<end){juce::MessageManager::getInstance()->runDispatchLoopUntil(30);
+            const int red=kb09RateHostRedPixels(window.getPeer()->getNativeHandle());if(red>=0){low=std::min(low,red);high=std::max(high,red);}}
+        std::cout<<"RATE_MAC red_min="<<low<<" red_max="<<high<<'\n';return high-low>=3;};
+    h.checks.expect(blink(),"actual Mac hosted view blinks after changing RATE with audio idle");
+    window.setVisible(false);juce::MessageManager::getInstance()->runDispatchLoopUntil(80);window.setVisible(true);window.toFront(false);
+    h.checks.expect(blink(),"actual Mac hosted view resumes after hide/show while audio idle");
+    window.clearContentComponent();window.setVisible(false);h.p.editorBeingDeleted(editor.get());editor.reset();h.stop();
+#else
+    h.checks.expect(true,"native host probe is covered by shared Linux renderer tests");
+#endif
+}
 void exportPresets(Host& h,const juce::File& directory){
     if(!h.find("extLevel"))return;
     h.checks.expect(directory.createDirectory().wasOk(),"preset export directory available");
@@ -268,15 +355,21 @@ int main(int argc,char** argv){
     std::cout<<std::unitbuf;std::cerr<<std::unitbuf;
     juce::ScopedJuceInitialiser_GUI init;if(argc<2){std::cerr<<"Usage: SH09Host plugin.vst3 [render-seconds, default 12] [--export-presets absolute-directory]\n";return 2;}
     double seconds=argc>2?juce::jlimit(1.0,600.0,juce::String(argv[2]).getDoubleValue()):12;
-    juce::VST3PluginFormat format;juce::OwnedArray<juce::PluginDescription> descriptions;
-    format.findAllTypesForFile(descriptions,juce::String::fromUTF8(argv[1]));Checks checks;checks.expect(!descriptions.isEmpty(),"VST3 scan discovers component");
-    for(auto* d:descriptions){juce::String error;auto plugin=format.createInstanceFromDescription(*d,48000,256,error);checks.expect(plugin!=nullptr,"instantiate actual VST3: "+error);if(!plugin)continue;
+    std::unique_ptr<juce::AudioPluginFormat> format;
+#if JUCE_MAC
+    if(juce::String::fromUTF8(argv[1]).startsWith("AudioUnit:"))format=std::make_unique<juce::AudioUnitPluginFormat>();else
+#endif
+    format=std::make_unique<juce::VST3PluginFormat>();
+    juce::OwnedArray<juce::PluginDescription> descriptions;
+    format->findAllTypesForFile(descriptions,juce::String::fromUTF8(argv[1]));Checks checks;checks.expect(!descriptions.isEmpty(),"VST3 scan discovers component");
+    for(auto* d:descriptions){juce::String error;auto plugin=format->createInstanceFromDescription(*d,48000,256,error);checks.expect(plugin!=nullptr,"instantiate actual VST3: "+error);if(!plugin)continue;
         std::cout<<"Loaded "<<d->name<<" using "<<juce::SystemStats::getJUCEVersion()<<'\n';Host h(*plugin,checks);
+        if(argc>2&&juce::String(argv[2])=="--rate-host284") {rateHostProbe(h);continue;}
         matrix(h);midiMappings(h);timingAndBlocks(h);stateAndPrograms(h);if(h.find("extLevel"))externalTests(h);else std::cout<<"SKIP SH-09-specific external checks for lab component\n";
         stress(h,seconds);editors(h);
         if(argc>4&&juce::String(argv[3])=="--export-presets")exportPresets(h,juce::File(juce::String::fromUTF8(argv[4])));
         h.stop();bool repeatedOK=true;
-        for(int i=0;i<8;++i){auto repeated=format.createInstanceFromDescription(*d,48000,64,error);if(!repeated){repeatedOK=false;break;}
+        for(int i=0;i<8;++i){auto repeated=format->createInstanceFromDescription(*d,48000,64,error);if(!repeated){repeatedOK=false;break;}
             repeated->prepareToPlay(48000,64);juce::AudioBuffer<float> audio(juce::jmax(1,repeated->getTotalNumInputChannels(),repeated->getTotalNumOutputChannels()),64);
             audio.clear();juce::MidiBuffer midi;repeated->processBlock(audio,midi);repeated->releaseResources();
         }

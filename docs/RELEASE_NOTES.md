@@ -1,3 +1,12 @@
+# 1.8.3 — Toyland KB-09
+
+- Fixed the Windows RATE LED being covered after a DAW restacks its floating plug-in editor. The independent surface now repairs its order relative to the editor without becoming globally always-on-top or taking focus.
+- Keep the underlying LED renderer current so a covered or temporarily detached native surface cannot expose an old frozen frame.
+- The visual RATE now reads current control values even when a host pauses audio processing. RATE and sync division edits no longer depend on another audio callback before the light responds.
+- Added hosted VST3 window-restacking regression coverage, shared wrapper lifecycle and idle-audio checks, and native Mac hosted AU/VST3 view checks.
+
+The sound-engine equations, presets, parameter ranges, POWER mechanics and approved LED artwork are unchanged from 1.8.2. Linux physical audio/MIDI playback remains UNVERIFIED. Mac signing remains ad-hoc rather than Apple notarization.
+
 # 1.8.2 — Toyland KB-09
 
 - Integrated the approved centered top panel, evenly spaced border-facing values, consistent extended short ticks, aligned RATE LED and brighter black cap shoulders. All approved POWER motion and audio timing remain unchanged.
