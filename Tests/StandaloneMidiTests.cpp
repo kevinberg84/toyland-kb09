@@ -180,7 +180,7 @@ int main(int argc,char** argv) {
         }
         // Inspect final composited pixels, not the invisible interaction boxes.
         auto* panel=find(root,"externalAudioHelp")->getParentComponent();
-        const auto image=panel->createComponentSnapshot({0,773,1483,42},true,4.f,juce::SoftwareImageType());
+        const auto image=panel->createComponentSnapshot({0,747,1483,42},true,4.f,juce::SoftwareImageType());
         const juce::Image::BitmapData pixels(image,juce::Image::BitmapData::readOnly);
         std::vector<juce::Range<int>> runs;
         for(int x=0;x<image.getWidth();++x) {
