@@ -643,15 +643,22 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
         const auto at75=renderLinearControl(*slider,75,juce::Colour(0xff232927));
         const auto at100=renderLinearControl(*slider,100,juce::Colour(0xff232927));
         const auto thinBlade=[](const PixelChanges& pixels) {
-            return pixels.count>=60&&pixels.bounds.getHeight()>=10*controlRenderScale
-                &&pixels.bounds.getHeight()<=23*controlRenderScale
-                &&pixels.bounds.getWidth()>0&&pixels.bounds.getWidth()<6*controlRenderScale
-                &&pixels.bounds.getWidth()*5<pixels.bounds.getHeight()*2;
+            // Approved post height is 60% of the 1.8.0 post, at the same
+            // width. Keep testing a visible longitudinal blade, not the
+            // superseded tall silhouette; a blank slot must still fail.
+            return pixels.count>=60&&pixels.bounds.getHeight()>=6*controlRenderScale
+                &&pixels.bounds.getHeight()<=14*controlRenderScale
+                &&pixels.bounds.getWidth()>0&&pixels.bounds.getWidth()<=6*controlRenderScale
+                // Allow one design unit for the individual lean/contact shadow
+                // and raster edge coverage at the shorter approved height.
+                &&pixels.bounds.getWidth()*3<=pixels.bounds.getHeight()*2+controlRenderScale;
         };
         bool visibleAtBoth=true;
         for(const auto y:{64,89}) {
             const auto roi=controlPixels({47,y,11,23});
-            visibleAtBoth=visibleAtBoth&&thinBlade(visibleChanges(at75.getClippedImage(roi),at100.getClippedImage(roi)));
+            const auto pixels=visibleChanges(at75.getClippedImage(roi),at100.getClippedImage(roi));
+            std::cout<<"BLADE "<<id<<" position="<<y<<" pixels="<<pixels.count<<" bounds="<<pixels.bounds.toString()<<'\n';
+            visibleAtBoth=visibleAtBoth&&thinBlade(pixels);
         }
         checks.expect(visibleAtBoth,juce::String(id)+" has a visible thin longitudinal blade at two actual 4x-rendered positions");
         const auto roi=controlPixels({47,64,11,23});
@@ -3582,6 +3589,13 @@ int main(int argc, char** argv) {
             checks.expect(writePNG(cover,directory.getChildFile(juce::String(id)+".png")),"native full-length dust texture export");
             covers.push_back(cover);
         }
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';
+        return checks.failures?1:0;
+    }
+    if(juce::String(argv[1])=="--cap-loss-regression") {
+        SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);
+        auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
+        checkCapLoss(processor,*editor,checks);
         std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';
         return checks.failures?1:0;
     }
