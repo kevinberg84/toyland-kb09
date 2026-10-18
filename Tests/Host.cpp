@@ -272,8 +272,15 @@ void rateHostProbe(Host& h) {
     window.setContentNonOwned(editor.get(),true);window.setAlwaysOnTop(true);window.setTopLeftPosition(20,20);window.setVisible(true);window.toFront(false);
     juce::MessageManager::getInstance()->runDispatchLoopUntil(750);
     HWND lamp=nullptr;
+    const auto readyUntil=juce::Time::getMillisecondCounterHiRes()+5000;
+    do {
     EnumWindows([](HWND w,LPARAM arg)->BOOL {DWORD pid=0;GetWindowThreadProcessId(w,&pid);wchar_t name[128]{};GetClassNameW(w,name,128);
         if(pid==GetCurrentProcessId()&&wcscmp(name,L"KB09IndependentRate245")==0&&IsWindowVisible(w))*reinterpret_cast<HWND*>(arg)=w;return TRUE;},reinterpret_cast<LPARAM>(&lamp));
+        if(!lamp)juce::MessageManager::getInstance()->runDispatchLoopUntil(50);
+    } while(!lamp&&juce::Time::getMillisecondCounterHiRes()<readyUntil);
+    if(!lamp)EnumWindows([](HWND w,LPARAM)->BOOL {DWORD pid=0;GetWindowThreadProcessId(w,&pid);if(pid==GetCurrentProcessId()){
+        wchar_t name[128]{};GetClassNameW(w,name,128);std::cout<<"RATE_HOST missing_surface_window class="<<juce::String(name)<<" visible="<<IsWindowVisible(w)<<'\n';}return TRUE;},0);
+
     h.checks.expect(lamp!=nullptr,"actual VST3 creates its independent RATE window");
     if(lamp) {
         const auto owner=GetWindow(lamp,GW_OWNER);

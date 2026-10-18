@@ -1,6 +1,11 @@
 name: Build Linux standalone release
 on:
   workflow_dispatch:
+    inputs:
+      kde_diagnostic:
+        description: 'Exercise native fullscreen and shortcut prompt on Arch KDE/XWayland'
+        type: boolean
+        default: false
   push:
     branches: [codex/sh09-emulation]
     paths:
@@ -85,6 +90,21 @@ jobs:
           file 'build-linux/SH09_artefacts/Release/Standalone/Toyland KB-09'
           ldd 'build-linux/SH09_artefacts/Release/Standalone/Toyland KB-09' | tee linux-dependencies.txt
           if grep -q 'not found' linux-dependencies.txt; then exit 1; fi
+      - name: Diagnose Arch KDE XWayland native window transitions
+        if: inputs.kde_diagnostic
+        run: |
+          mkdir -p kde-window-validation
+          docker run --rm \
+            -v "$PWD/build-linux:/validation:ro" \
+            -v "$PWD/tools/linux/test-kde-window.sh:/test-kde-window.sh:ro" \
+            -v "$PWD/kde-window-validation:/results" \
+            archlinux:base bash /test-kde-window.sh
+      - uses: actions/upload-artifact@v4
+        if: always() && inputs.kde_diagnostic
+        with:
+          name: KB-09-Arch-KDE-window-diagnostic
+          path: kde-window-validation
+          retention-days: 14
       - name: Package standalone, manual and launchers
         run: python3 tools/package_linux.py --build build-linux --output linux-release
       - uses: actions/upload-artifact@v4

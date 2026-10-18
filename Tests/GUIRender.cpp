@@ -19,6 +19,7 @@
 #include "../Source/GUI/FaderCapModel.h"
 #include "../Source/GUI/WindowsRateLamp.h"
 #include "../Source/GUI/InsetRedLamp.h"
+#include "../Source/GUI/Editor.h"
 #include "../Source/GUI/BenderBreakGeometry.h"
 #include "../Source/GUI/MidiMapOverlay.h"
 #include <BinaryData.h>
@@ -1749,6 +1750,65 @@ int main(int argc, char** argv) {
     }
     juce::ScopedJuceInitialiser_GUI initialiseGUI;
     Checks checks;
+    if(juce::String(argv[1]).startsWith("--native-window285=")) {
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
+        // Own native window and real shortcut prompt; no audio device, user
+        // settings, shortcut file, or external application is touched.
+        juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Standalone);
+        std::cout<<"NATIVE_WINDOW create_processor"<<std::endl;
+        auto nativeProcessor=std::make_unique<SH09Processor>();auto& processor=*nativeProcessor;
+        juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Undefined);
+        processor.prepareToPlay(sampleRate,blockSize);
+        std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditor());
+        std::cout<<"NATIVE_WINDOW editor_created"<<std::endl;
+        // Match StandaloneFilterWindow's intermediate content component and
+        // resize guard. Directly parenting an AudioProcessorEditor to a
+        // DocumentWindow creates a different, recursive sizing arrangement.
+        struct Content:juce::Component,juce::ComponentListener {
+            juce::AudioProcessorEditor& editor;bool adjusting=false;
+            explicit Content(juce::AudioProcessorEditor& e):editor(e){setSize(e.getWidth(),e.getHeight());addAndMakeVisible(e);e.addComponentListener(this);}
+            ~Content() override {editor.removeComponentListener(this);}
+            void resized() override {if(!adjusting)editor.setBoundsConstrained(getLocalBounds());}
+            void componentMovedOrResized(juce::Component&,bool,bool) override {const juce::ScopedValueSetter<bool> guard(adjusting,true);setSize(editor.getWidth(),editor.getHeight());}
+        } content(*editor);
+        struct Window:juce::DocumentWindow {
+            Window():DocumentWindow("KB-09 native fullscreen diagnostic",juce::Colours::darkgrey,allButtons){setUsingNativeTitleBar(true);}
+            void closeButtonPressed() override {}
+        } window;
+        std::cout<<"NATIVE_WINDOW window_created"<<std::endl;
+        window.setContentNonOwned(&content,true);
+        std::cout<<"NATIVE_WINDOW content_attached"<<std::endl;
+        if(auto* actual=dynamic_cast<SH09Editor*>(editor.get()))actual->prepareStandaloneWindow();
+        std::cout<<"NATIVE_WINDOW prepared"<<std::endl;
+        window.setVisible(true);
+        struct Heartbeat:juce::Timer {
+            double previous=juce::Time::getMillisecondCounterHiRes(),largest=0;int ticks=0;
+            void timerCallback() override {const auto now=juce::Time::getMillisecondCounterHiRes();largest=std::max(largest,now-previous);previous=now;++ticks;}
+        } heartbeat;
+        heartbeat.startTimer(10);
+        const auto pump=[](int ms){juce::MessageManager::getInstance()->runDispatchLoopUntil(ms);};
+        const auto timed=[&](const char* label,auto action){const auto start=juce::Time::getMillisecondCounterHiRes();action();pump(200);
+            std::cout<<"NATIVE_WINDOW "<<label<<" elapsed_ms="<<juce::Time::getMillisecondCounterHiRes()-start<<std::endl;};
+        pump(350);
+        for(bool promptFirst:{true,false}) {
+            if(!promptFirst)timed("fullscreen_before_prompt",[&]{window.setFullScreen(true);});
+            bool dismissed=false;
+            auto prompt=std::make_unique<kb09_gui::DesktopShortcutPrompt>(&window);
+            timed("show_shortcut_prompt",[&]{prompt->enterModalState(true,juce::ModalCallbackFunction::create([&dismissed](int){dismissed=true;}),false);});
+            if(promptFirst)timed("fullscreen_with_prompt",[&]{window.setFullScreen(true);});
+            checks.expect(prompt->isCurrentlyModal(),"shortcut prompt remains modal across native fullscreen transition");
+            timed("dismiss_shortcut_prompt",[&]{prompt->exitModalState(0);});
+            checks.expect(dismissed,"shortcut prompt can be dismissed after native fullscreen transition");
+            prompt.reset();
+            timed("restore_native_window",[&]{window.setFullScreen(false);});
+        }
+        heartbeat.stopTimer();
+        std::cout<<"NATIVE_WINDOW heartbeat_ticks="<<heartbeat.ticks<<" largest_gap_ms="<<heartbeat.largest<<std::endl;
+        checks.expect(heartbeat.ticks>10,"message-thread heartbeat continues through fullscreen and modal transitions");
+        checks.expect(writePNG(editor->createComponentSnapshot(editor->getLocalBounds(),true,1.f),directory.getChildFile("native-restored.png")),"restored native editor snapshot");
+        window.clearContentComponent();window.setVisible(false);
+        std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
+    }
     if(juce::String(argv[1]).startsWith("--inner143-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));directory.createDirectory();
         SH09Processor processor;processor.prepareToPlay(sampleRate,blockSize);processor.setCurrentProgram(1);
