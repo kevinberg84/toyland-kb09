@@ -2476,20 +2476,35 @@ int main(int argc, char** argv) {
         auto editor=std::unique_ptr<juce::AudioProcessorEditor>(processor.createEditor());settleEditor();
         auto* button=dynamic_cast<juce::Button*>(findComponent(*editor,"power"));
         checks.expect(button!=nullptr,"power button exists");
+        for(const float from:{1.f,2.f}) {
+            kb09_gui::PowerButtonTravel releasedMotion;
+            releasedMotion.press(0,from);
+            checks.expect(releasedMotion.sample(6,from)==from*.5f,"released spring: original 12 ms press curve");
+            checks.expect(releasedMotion.sample(12,from)==0&&releasedMotion.sample(300,from)==0,"released spring: stays fully depressed throughout a long hold");
+            releasedMotion.release(300);
+            const float destination=3.f-from;
+            checks.expect(releasedMotion.sample(300,destination)==0,"released spring: return starts fully depressed at mouse-up");
+            checks.expect(std::abs(releasedMotion.sample(310,destination)-destination*.75f)<.0001f,"released spring: original eased return at 10 ms");
+            checks.expect(releasedMotion.sample(320,destination)==destination&&!releasedMotion.hasCycle(),"released spring: original 20 ms return completes at latched height");
+        }
         if(button)for(int cycle=0;cycle<3;++cycle)for(bool startOn:{false,true}) {
             processor.setPowerEnabled(startOn);button->setState(juce::Button::buttonNormal);
             const auto now=juce::Time::getCurrentTime();const auto point=button->getLocalBounds().toFloat().getCentre();
             const juce::MouseEvent event(juce::Desktop::getInstance().getMainMouseSource(),point,
                 juce::ModifierKeys(juce::ModifierKeys::leftButtonModifier),1,0,0,0,0,button,button,now,point,now,1,false);
             static_cast<juce::Component*>(button)->mouseDown(event);button->setState(juce::Button::buttonDown);
-            checks.expect(processor.isPowerEnabled()==startOn,"released behavior: power state unchanged on press");
-            juce::MessageManager::getInstance()->runDispatchLoopUntil(150);
+            checks.expect(processor.isPowerEnabled(),"approved POWER: OFF turns ON on mouse-down; ON stays ON on mouse-down");
+            if(cycle>0)juce::MessageManager::getInstance()->runDispatchLoopUntil(cycle==1?35:150);
+            if(cycle==0)juce::MessageManager::getInstance()->runDispatchLoopUntil(15);
             button->createComponentSnapshot(button->getLocalBounds(),true,2.f);
             checks.expect(float(button->getProperties()["powerTravelUnits"])==0,"released behavior: both directions reach full depression while held");
-            checks.expect(processor.isPowerEnabled()==startOn,"released behavior: power state unchanged while held");
+            checks.expect(processor.isPowerEnabled(),"approved POWER: engine stays ON throughout the hold in both directions");
             static_cast<juce::Component*>(button)->mouseUp(event);
+            checks.expect(processor.isPowerEnabled()!=startOn,"approved POWER: correct state immediately on release before spring-back");
             juce::MessageManager::getInstance()->runDispatchLoopUntil(150);
-            checks.expect(processor.isPowerEnabled()!=startOn,"released behavior: release toggles exactly once");
+            checks.expect(processor.isPowerEnabled()!=startOn,"approved POWER: release leaves ON after switch-on and turns OFF after switch-off");
+            button->createComponentSnapshot(button->getLocalBounds(),true,2.f);
+            checks.expect(float(button->getProperties()["powerTravelUnits"])==(startOn?2.f:1.f),"released spring: real mouse-up returns to the correct cap height without re-depression");
         }
         std::cout<<"RESULT failures="<<checks.failures<<" checks="<<checks.total<<'\n';return checks.failures?1:0;
     }

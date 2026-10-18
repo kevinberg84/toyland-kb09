@@ -15,7 +15,7 @@
     <a class="brand" href="#top" aria-label="Toyland KB-09 home">
       <svg viewBox="85 308 722 158" role="img" aria-labelledby="toyland-title"><title id="toyland-title">Toyland</title><image href="../../assets/marks.png" width="2172" height="724" /></svg>
     </a>
-    <span class="edition">Windows User Manual · Version 1.8.0 · October 15, 2026</span>
+    <span class="edition">Windows User Manual · Version 1.8.1 · October 18, 2026</span>
     <button class="print-button" type="button" onclick="window.print()">Print / Save PDF</button>
   </div>
 </header>
@@ -23,7 +23,7 @@
 <nav class="contents" aria-label="Guide contents">
   <p class="nav-title">YOUR KB-09</p>
   <a href="#features">01 · Discover KB-09</a>
-  <a href="#filter-craft">02 · Inside the filter</a>
+  <a href="#filter-craft">02 · How we built the sound engine</a>
   <a href="#install">03 · Install &amp; open</a>
   <a href="#start">04 · Start playing</a>
   <a href="#age">05 · Meet AGE</a>
@@ -42,30 +42,46 @@
   <p class="eyebrow">A PERSONAL SYNTHESIZER PROJECT</p>
   <svg class="instrument-mark" viewBox="846 308 1253 158" role="img" aria-labelledby="instrument-title"><title id="instrument-title">KEVINBERG 09 · KB-09</title><image href="../../assets/marks.png" width="2172" height="724" /></svg>
   <h1 id="title">Toyland KB-09</h1>
-  <p class="subtitle">A recreation of Kevin's Roland SH-09, with a few cool extras.</p>
+  <p class="subtitle">A recreation of Kevin's Roland SH-09, with a few cool extras. Free for everyone, forever.</p>
   <p class="intro">Fresh from the box or rescued from 1983? AGE takes the panel and circuit model on the same journey, from clean and calibrated to worn and full of character. Play basses and leads, or turn external guitar, drums and synths into a <strong>envelope filter</strong>: louder playing opens the filter further.</p>
   <div class="quick-links"><a href="#start">Play your first sound <span aria-hidden="true">↗</span></a><a href="#age">Explore AGE <span aria-hidden="true">↗</span></a><a href="#daws">Choose your DAW <span aria-hidden="true">↗</span></a></div>
   <p class="project-mark">UNOFFICIAL PERSONAL PROJECT — NOT AFFILIATED WITH ROLAND CORPORATION — NOT FOR SALE</p>
 </section>
-<aside class="notice"><strong>KB-09 1.8.0 for Windows.</strong> This download includes the standalone app and VST3.</aside>
+<aside class="notice"><strong>KB-09 1.8.1 for Windows.</strong> This download includes the standalone app and VST3.</aside>
 
 <section id="features">
   <p class="section-number">01 / DISCOVER KB-09</p><h2>Discover KB-09</h2>
   <p>KB-09 recreates the character of Kevin’s Roland SH-09 in a hands-on software instrument. A main oscillator, sub oscillator, resonant low-pass filter and envelope shape everything from deep bass to singing leads and noise percussion. Its signal path follows the SH-09 circuit design; the digital model reproduces how those stages shape and interact with the sound.</p>
-  <p>Start with one of 24 factory sounds, then make it your own. AGE changes the instrument’s appearance and calibration, while External Input and its envelope follower let incoming guitar, drums or another synth control the filter. Play in your DAW or use the standalone with a MIDI keyboard. <a href="#filter-self-oscillation">Explore the filter model.</a></p>
+  <p>Start with one of 24 factory sounds, then make it your own. AGE changes the instrument’s appearance and calibration, while External Input and its envelope follower let incoming guitar, drums or another synth control the filter. Play in your DAW or use the standalone with a MIDI keyboard.</p>
 </section>
 
 <section id="filter-craft">
-  <p class="section-number">02 / INSIDE THE SOUND</p><h2>Inside the filter</h2>
+  <p class="section-number">02 / INSIDE THE SOUND</p><h2>How we built the sound engine</h2>
+  <h3>From a schematic to a playable instrument</h3>
+  <p>We started with the SH-09’s circuit design and the way its controls connect. The main oscillator, divided sub oscillator and external input meet at the mixer; the resonant low-pass filter shapes that mixture, and the VCA controls its level. The envelope and LFO move those stages over time. Preserving those relationships gave KB-09 its starting structure.</p>
+  <p>Turning that structure into software meant choosing mathematical approximations for the oscillator waveforms, envelope curves, gain stages and filter. We did not simulate every transistor and component. The schematic told us how the stages connect; our equations and their calibration still had to reproduce how those stages respond and interact.</p>
+  <p>The sound engine processes at four times the host sample rate, with band-limited oscillator edges and filtered downsampling.</p>
+  <h3>Inside the filter</h3>
   <p>The resonant filter was KB-09's biggest sound-design challenge. At high RESONANCE, the SH-09's filter becomes an oscillator in its own right. Add a steady VCO and sweep the filter slowly, and two sources of energy interact inside the circuit. Recreating that balance meant capturing a singing, stable resonance while retaining the movement and character of the hardware.</p>
+  <h3>Our first approximation</h3>
+  <p>Our earlier filter already had four nonlinear stages and a resonance feedback loop, so it could self-oscillate without a separate oscillator. But it gave all four stages the same saturation scale and used a generic soft limiter in the feedback path. Those choices made a working filter; they did not establish the right balance of internal levels and limiting for the SH-09.</p>
+  <h3>What the oscillator-and-filter test revealed</h3>
+  <p>The difficult case was a steady VCO feeding a self-oscillating filter while the filter swept slowly across the VCO’s harmonics. The model could be pulled too strongly toward the incoming oscillator’s pitch, producing plateaus that sounded like steps. With the VCO turned down, the filter swept smoothly. That distinction pointed us toward the interaction between input drive and resonance, rather than simply a stepped cutoff control. Increasing the processing rate alone did not remove the interaction.</p>
+  <p><em>Is anybody actually reading this?</em></p>
+  <h3>Refining the approximation</h3>
+  <p>We then gave the stages different nonlinear headroom scales, informed by the schematic’s interstage gain relationships. Headroom determines how much signal a stage can handle before its response bends into saturation. We also replaced the generic feedback limiter with a diode-like equation, reflecting the circuit’s resonance-limiting path. The important change was the balance between incoming oscillator energy and the filter’s own oscillation, rather than simply turning the input down or adding a cleaner tone alongside it.</p>
+  <p>The original Roland service schematic guides the four-stage filter and its resonance routing. KB-09 uses four nonlinear low-pass stages with instantaneous feedback, giving each stage an appropriate amount of internal signal headroom and controlling resonance with a separate nonlinear feedback limiter. The stages and limiter are solved together at each internal processing step. This helps the filter sustain its own tone as the incoming VCO changes, while preserving their interaction. Self-oscillation comes from the filter's feedback loop, with no separate sine generator or automatic volume correction.</p>
+  <p>Some corrections are explicitly software calibration. For example, the model applies a resonance-dependent pitch correction to compensate for the oscillation-frequency shift introduced by its nonlinear equations. That correction is not an extra component copied from the schematic. Likewise, the chosen headroom and limiter scales are engineering calibration parameters, not measurements of every BA662 and diode in Kevin’s instrument.</p>
   <details class="filter-story"><summary>How we matched the SH-09 — recordings and waveform comparisons</summary><div class="disclosure-body">
   <p>The crucial test put a steady VCO into a self-oscillating filter while its pitch swept slowly past the VCO’s harmonics. The two signals interacted inside the filter, revealing whether its tone stayed steady, changed level or was pulled toward the incoming oscillator. We compared a collection of SH-09 and KB-09 recordings at different VCO mixer levels, alongside filter-only and oscillator-only recordings, captured at 96 kHz in 32-bit floating point. Listening, waveforms and frequency analysis guided the model toward the hardware’s balance of stable resonance and musical interaction. Matching pitch and relative signal levels made those comparisons more useful than copying slider positions alone.</p>
   <figure><img src="../../assets/vcf-sweep-comparison.png" alt="Two waveforms of an eighteen-second resonant sweep: Kevin's SH-09 above and the KB-09 model below, shown at the same time and amplitude scales."><figcaption>A slow self-oscillating filter sweep with steady VCO input. Both displays use the same scales. KB-09 uses fixed level calibration; no automatic leveling or peak normalization is applied.</figcaption></figure>
-  <p>The model gives each filter stage an appropriate amount of internal signal headroom and controls the resonance with a separate nonlinear feedback limiter. The stages and limiter are solved together at each internal processing step. This helps the filter sustain its own tone as the incoming VCO changes, while preserving their interaction. Self-oscillation comes from the filter's feedback loop, with no separate sine generator or automatic volume correction.</p>
   <p>Listening checks were paired with tests of tuning, ordinary patch levels, stability and processing cost across sample rates. The aim was a faithful, playable instrument: steady where the hardware is steady, expressive where its signals interact, and responsive under the fingers.</p>
   <figure><img src="../../assets/vcf-waveform-detail.png" alt="A twelve-millisecond waveform detail comparing the SH-09 and KB-09, with matching time and amplitude scales."><figcaption>A closer look at the same recordings. Each excerpt starts at an upward zero crossing for easier viewing; the recordings are not phase locked. Fine differences in waveform shape remain.</figcaption></figure>
+  </div></details>
+  <h3>What the comparisons can tell us</h3>
   <p>These comparisons show one resonant setting, not every possible patch. Individual SH-09s vary with calibration and condition, and Kevin's instrument has decades of wear. His recordings provide a real musical reference; they are not assumed to define factory specifications. Natural beating and harmonic interaction remain part of the sound.</p>
-</div></details>
+  <p>This is a circuit-informed approximation, not a component-calibrated recreation of the BA662 stages or their limiting diodes. AGE is a creative condition model, not measured decades of wear. See the <a href="https://synthfool.com/docs/Roland/SH_Series/Roland%20SH09%20Service%20Manual.pdf">original Roland service notes</a>.</p>
+  <p>The schematic supplied the structure; testing and recordings exposed where our first approximation needed refinement. The result aims to follow the hardware’s behavior more closely without claiming that the software is a literal simulation of every component. KB-09’s optional velocity, aftertouch and tempo-sync controls, along with its creative AGE model, are additions to that foundation.</p>
 </section>
 
 <section id="install">
@@ -125,10 +141,7 @@
   </tbody></table>
   <h3 id="filter-self-oscillation">Play the filter itself</h3>
   <p>Lower VCO, SUB OSC and EXT to zero, set VCA to HOLD, lower VCF MOD and ENV, then raise RESONANCE until the filter sings. CUTOFF FREQ sets its pitch; the keyboard and VCF bender depth also move it. Start with a low listening level.</p>
-  <details><summary>About the SH-09-inspired filter model</summary>
-  <p>The original Roland service schematic guides the four-stage filter and its resonance routing. KB-09 uses four nonlinear low-pass stages with instantaneous feedback and a separate nonlinear resonance limiter. Self-oscillation grows in that feedback loop, rather than a separate sine generator. The sound engine processes at four times the host sample rate, with band-limited oscillator edges and filtered downsampling.</p>
-  <p>This is a circuit-informed approximation, not a component-calibrated recreation of the BA662 stages or their limiting diodes. AGE is a creative condition model, not measured decades of wear. See the <a href="https://synthfool.com/docs/Roland/SH_Series/Roland%20SH09%20Service%20Manual.pdf">original Roland service notes</a>.</p>
-  </details>
+  <p>For the model’s development and recording comparisons, see <a href="#filter-craft">How we built the sound engine</a>.</p>
 </div>
   <h3>Authentic &amp; Modern</h3>
   <p><strong>Authentic</strong> keeps the original-style routing and ignores the optional velocity, aftertouch, LFO tempo-sync and input-trim settings. Those controls dim. <strong>Modern</strong> enables them: velocity controls level, channel aftertouch opens the filter (up to three octaves at full pressure and AFTERTOUCH amount), FREE extends RATE down to one cycle every 20 seconds; SYNC locks RATE to musical grid divisions, and INPUT TRIM adjusts external input by ±24 dB. Return to Modern to use their retained settings.</p>
@@ -217,7 +230,7 @@
 
 <section id="modern-tuning"><h2>Modern TUNE range</h2><p>In MODERN mode, TUNE spans one octave down to one octave up (−12 to +12 semitones). Double-click for concert pitch at center. AUTHENTIC keeps the original ±65-cent fine-tuning range. Your DAW may display the stored tuning value rather than semitones; the knob’s value bubble shows the effective pitch change. </p></section>
 <section id="mod-wheel"><h2>Play VCO MOD from your mod wheel</h2><p>Your controller’s modulation wheel (MIDI CC1) controls the VCO MOD fader in both AUTHENTIC and MODERN modes. The fader follows the wheel, changing the amount of LFO pitch modulation; RATE and the selected LFO waveform determine the movement. Each mode keeps its existing depth range.</p><p>In a VST3 host, the wheel controls VCO MOD on its next movement, including after loading a sound or changing the fader. Mouse edits and host automation remain available; the next wheel message takes control again. The standalone uses pickup to prevent jumps: move the wheel to or through the fader’s position after a manual edit or preset change. The resulting fader setting is saved with the patch. Record wheel gestures as MIDI CC1, or use the VCO Modulation parameter for DAW automation. In a DAW, other MIDI knobs and faders use the host’s mapping system. The standalone offers MIDI MAP for custom assignments; assigning CC1 elsewhere replaces its normal VCO MOD function until that assignment is cleared.</p></section>
-<section id="midi-map"><h2>Map your controller in standalone</h2><figure><img src="../../assets/midi-map.png" alt="MIDI MAP highlights assignable controls and centers its compact window on the synth while leaving assignable controls exposed." width="2224" height="1224" loading="lazy"><figcaption>Assign a control, then click DONE. Your mappings are remembered separately from sound presets. Use the arrow keys to select CLEAR SELECTED, CLEAR ALL or DONE, then press Enter.</figcaption></figure>
+<section id="midi-map"><h2>Map your controller in standalone</h2><figure><img src="../../assets/midi-map.png" alt="MIDI MAP highlights assignable controls and centers its compact window on the synth while leaving assignable controls exposed." width="2100" height="1150" loading="lazy"><figcaption>Assign a control, then click DONE. Your mappings are remembered separately from sound presets. Use the arrow keys to select CLEAR SELECTED, CLEAR ALL or DONE, then press Enter.</figcaption></figure>
 <p>Click <strong>MIDI MAP</strong>, select a highlighted KB-09 control, tap a physical button or move a knob/fader, then click <strong>DONE</strong>. For a momentary button, release it before DONE; a toggle button needs only one press. When assigning a knob/fader to a switch, move through its middle so KB-09 recognizes direct positioning.</p>
 <p>Buttons assigned to controls with three or more positions cycle one position per press. Knobs and faders select positions directly. Continuous controls use pickup: cross the onscreen position to take control without a jump. <strong>OPTIONS</strong> provides a correction for unusual button behavior.</p>
 <p><strong>CLEAR SELECTED</strong> removes one assignment; <strong>CLEAR ALL</strong> asks for confirmation before resetting them all. Mappings remember the MIDI channel and are saved between launches, separately from sound presets. They support absolute CC 0–119 on channels 1–16; set relative encoders to absolute mode. Pitch bend, notes and channel aftertouch keep their normal functions.</p>
@@ -253,7 +266,7 @@
     <input type="hidden" name="shotName" value=""><input type="hidden" name="shotType" value=""><input type="hidden" name="shotData" value="">
     <div class="report-trap" aria-hidden="true"><label>Leave this empty<input name="website" maxlength="80" tabindex="-1" autocomplete="off"></label></div>
     <div class="report-grid">
-      <label>KB-09 version <span>(required)</span><input name="version" value="1.8.0" maxlength="40" required autocomplete="off"></label>
+      <label>KB-09 version <span>(required)</span><input name="version" value="1.8.1" maxlength="40" required autocomplete="off"></label>
       <label>Operating system and version <span>(required)</span><input name="os" placeholder="e.g. Windows 11" maxlength="120" required autocomplete="off"></label>
       <label>DAW / host and version <span>(required)</span><input name="host" placeholder="e.g. Standalone / Live 12.3" maxlength="160" required autocomplete="off"></label>
       <label>Issue category <span>(required)</span><select name="category" required><option value="">Choose a category</option><option>Sound / MIDI</option><option>Interface / display</option><option>Installation / updates</option><option>Crash / performance</option><option>Manual / documentation</option><option>Other</option></select></label>

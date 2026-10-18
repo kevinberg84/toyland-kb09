@@ -1,3 +1,14 @@
+# 1.8.1 — Toyland KB-09
+
+- Corrected POWER timing: switching ON enables audio on press; switching OFF keeps audio on until release. The cap stays fully depressed while held and retains the released spring-back motion at release. The full release animation/repaint path is preserved and covered by regression checks.
+- Updated the approved upper and lower panel screw positions, with level pairs and clean surrounding paint.
+- Key crack ends have longer, softer feathering. The rightmost crack has the approved off-center position.
+- Exposed fader posts are shorter, retaining the approved width, material and value positions.
+- Expanded manual section 02 into "How we built the sound engine," preserving the existing filter explanation and waveform illustrations and explaining the model's development and calibration limits.
+- The opening states "Free for everyone, forever." Removed the redundant introductory filter link, consolidated technical filter details and refreshed all five AGE illustrations plus the MIDI-mapping illustration to the approved GUI.
+
+The sound engine, parameter identities, preset compatibility, 24 factory sounds and 128-sample processing latency are unchanged from 1.8.0. Windows retains native ASIO, WASAPI and DirectSound. Linux standalone remains UNVERIFIED pending physical Arch audio/MIDI testing. Release builds do not record audio or MIDI diagnostics.
+
 # 1.8.0 — Toyland KB-09
 
 - Windows standalone now offers native ASIO drivers in AUDIO / MIDI, including the installed Audient driver. Existing device choices are retained until changed by the user.

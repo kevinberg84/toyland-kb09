@@ -661,8 +661,8 @@ void sliderPost(juce::Graphics& g,juce::Rectangle<float> capBounds,float age,boo
     const float cx=capBounds.getCentreX();
     if constexpr(KB09_APPROVED_HARDWARE) {
         // Reference blades are stockier: preserve their position and material,
-        // widening the exposed post 20% and shortening it 15% in this view.
-        g.addTransform(juce::AffineTransform::scale(1.20f,.85f,cx,capBounds.getCentreY()));
+        // Keep the approved width; use 75% of proposal 265's exposed height.
+        g.addTransform(juce::AffineTransform::scale(1.20f,.51f,cx,capBounds.getCentreY()));
     }
     const float edgeLength=capBounds.getHeight()*.62f*panelViewCos;
     const float lift=7.0f*panelViewSin;
@@ -1528,8 +1528,11 @@ void screwOxidation(juce::Graphics& g,juce::Point<float> c,float age,uint32_t se
         // Move/resize only the new head, so neither its old rim nor a scaled
         // circle of surrounding paint can survive at the original position.
         const float moveX=index==4?5.f*float(designW)/1770.f:index==5?-6.f*float(designW)/1770.f:0.f;
+        // Keep the upper pair wholly inside the surviving 54..77 strip.
+        // Its former centre left the heads touching the compacted top edge.
+        const float moveY=reposition131?(index<2?8.f:index<4?-24.f:6.f):0.f;
         g.addTransform(juce::AffineTransform::translation(-c.x,-c.y)
-            .scaled(.8f,.8f*panelViewCos).translated(c.x+moveX,c.y+(reposition131?(index==2||index==3?-24.f:index==4||index==5?12.f:0.f):0.f)));
+            .scaled(.8f,.8f*panelViewCos).translated(c.x+moveX,c.y+moveY));
     }
     if(previewRotation&&!socketPreview) {
         constexpr std::array<float,6> rotations{{-16.f,0.f,-16.f,-4.f,-28.f,-2.f}};
@@ -2878,7 +2881,7 @@ public:
             if(age>=crackOnset) {
                 const float progress=juce::jlimit(0.0f,1.0f,(age-crackOnset)/(.90f-crackOnset));
                 const float width=r.getWidth()*.20f,height=r.getHeight()*(n==65?.18f:whiteKeyProposal&&n==74?.26f:.36f);
-                const auto trace=juce::Rectangle<float>(r.getX()+r.getWidth()*.32f,r.getBottom()-height-17,width,height);
+                const auto trace=juce::Rectangle<float>(r.getX()+r.getWidth()*(n==74?.18f:.32f),r.getBottom()-height-17,width,height);
                 juce::Graphics::ScopedSaveState save(g);
                 // Vintage begins at 40% of the Sold As-Is crack length.
                 // Preserve the reviewed Sold As-Is and fully aged endpoints.
@@ -2910,15 +2913,19 @@ public:
                 // the full hidden path: age clipping must not leave a blunt tip.
                 const float visibleTop=trace.getBottom()-revealed;
                 const auto feather=[&](juce::Colour colour,float top,float bottom,bool fadeStart=true) {
-                    const float fraction=juce::jmin(.30f,7.f/juce::jmax(1.f,bottom-top));
+                    const float fraction=juce::jmin(.45f,juce::jmax(.32f,16.f/juce::jmax(1.f,bottom-top)));
                     juce::ColourGradient ink(fadeStart?colour.withAlpha(0.f):colour,0,top,
                         colour.withAlpha(0.f),0,bottom,false);
                     if(fadeStart) {
-                        ink.addColour(fraction*.35f,colour.withMultipliedAlpha(.20f));
+                        ink.addColour(fraction*.20f,colour.withMultipliedAlpha(.025f));
+                        ink.addColour(fraction*.50f,colour.withMultipliedAlpha(.18f));
+                        ink.addColour(fraction*.80f,colour.withMultipliedAlpha(.60f));
                         ink.addColour(fraction,colour);
                     }
                     ink.addColour(1-fraction,colour);
-                    ink.addColour(1-fraction*.35f,colour.withMultipliedAlpha(.20f));
+                    ink.addColour(1-fraction*.80f,colour.withMultipliedAlpha(.60f));
+                    ink.addColour(1-fraction*.50f,colour.withMultipliedAlpha(.18f));
+                    ink.addColour(1-fraction*.20f,colour.withMultipliedAlpha(.025f));
                     g.setGradientFill(ink);
                 };
                 if(whiteKeyProposal) {
@@ -3151,7 +3158,9 @@ public:
         onClick=[this]{
             const auto now=juce::Time::getMillisecondCounterHiRes();
             if(!travel.hasCycle()){travel.press(now,restHeight());travel.release(now);}
-            processor.setPowerEnabled(!processor.isPowerEnabled());
+            // Preserve the released button's entire spring/repaint path.
+            // Only skip the audio toggle when mouse-down already turned ON.
+            if(!(mouseGesture&&poweredOnPress))processor.setPowerEnabled(!processor.isPowerEnabled());
             startTimer(4);repaint();if(onPowerChanged)onPowerChanged();
         };
     }
@@ -3161,6 +3170,11 @@ public:
         if(!isEnabled())return;
         mouseGesture=true;mouseHeld=true;
         travel.press(juce::Time::getMillisecondCounterHiRes(),restHeight());startTimer(4);
+        poweredOnPress=!processor.isPowerEnabled();
+        if(poweredOnPress) {
+            processor.setPowerEnabled(true);
+            if(onPowerChanged)onPowerChanged();
+        }
         juce::Button::mouseDown(e);repaint();
     }
     void mouseUp(const juce::MouseEvent& e) override {
@@ -3277,7 +3291,7 @@ private:
         if(!travel.animating())stopTimer();
     }
     kb09_gui::PowerButtonTravel travel;
-    bool mouseGesture=false,mouseHeld=false;
+    bool mouseGesture=false,mouseHeld=false,poweredOnPress=false;
     const juce::Image& capSurface(float width,float height,float age,bool over) {
         // A rounded moulded bevel, rather than a thin outlined inset. Surface
         // normals blend into the flat centre and give the front corner a soft
