@@ -6,6 +6,10 @@ on:
         description: 'Exercise native fullscreen and shortcut prompt on Arch KDE/XWayland'
         type: boolean
         default: false
+      diagnostic_run:
+        description: 'Optional prior run whose preserved Linux binaries should be tested on KDE without recompiling'
+        type: string
+        default: ''
   push:
     branches: [codex/sh09-emulation]
     paths:
@@ -19,8 +23,10 @@ on:
       - 'tools/linux/**'
 permissions:
   contents: read
+  actions: read
 jobs:
   build:
+    if: inputs.diagnostic_run == ''
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
@@ -122,3 +128,29 @@ jobs:
             linux-gui-validation/GUIRender.log
             linux-dialog-validation/*.log
           retention-days: 30
+  kde_replay:
+    if: inputs.diagnostic_run != ''
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: KB-09-Linux-validation-binaries
+          run-id: ${{ inputs.diagnostic_run }}
+          github-token: ${{ github.token }}
+          path: native-validation
+      - name: Diagnose existing binaries on Arch KDE XWayland
+        run: |
+          mkdir -p kde-window-validation
+          docker run --rm \
+            -v "$PWD/native-validation:/validation:ro" \
+            -v "$PWD/tools/linux/test-kde-window.sh:/test-kde-window.sh:ro" \
+            -v "$PWD/kde-window-validation:/results" \
+            archlinux:base bash /test-kde-window.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: KB-09-Arch-KDE-window-diagnostic
+          path: kde-window-validation
+          retention-days: 14

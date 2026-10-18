@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Isolated CI container only. No user's desktop, preferences or audio hardware.
 set -euo pipefail
-pacman -Syu --noconfirm --needed kwin xorg-xwayland mesa alsa-lib freetype2 fontconfig curl dbus pipewire wireplumber
+pacman -Syu --noconfirm --needed kwin xorg-xwayland mesa alsa-lib freetype2 fontconfig curl dbus pipewire wireplumber gdb libx11 libxext libxinerama libxrandr libxcursor libxrender libxi libxcomposite
 # Arch gives KWin a scheduling capability. Docker cannot execute that capped
 # binary with its default capability ceiling. Remove the file capability only
 # inside this disposable container; no host or real desktop settings change.
@@ -23,7 +23,11 @@ wireplumber >/results/wireplumber.log 2>&1 &
 printf 'DISPLAY=%s\nWAYLAND_DISPLAY=%s\n' "${DISPLAY:-}" "${WAYLAND_DISPLAY:-}" >/results/session.txt
 pacman -Q kwin xorg-xwayland pipewire >>/results/session.txt
 cd /results
-timeout 30 /tmp/kb09-startup-dialog-test > /results/startup-dialogs.log 2>&1
+ldd /tmp/kb09-startup-dialog-test > /results/libraries.txt
+if ! timeout 30 /tmp/kb09-startup-dialog-test > /results/startup-dialogs.log 2>&1; then
+  timeout 45 gdb --batch -ex run -ex 'thread apply all bt' -ex 'info sharedlibrary' --args /tmp/kb09-startup-dialog-test > /results/startup-stack.log 2>&1 || true
+  exit 1
+fi
 # The fullscreen fixture has its own prompt. Suppress the real update service
 # only in this disposable test account, so it cannot alter that fixture.
 mkdir -p "$HOME/Toyland"
