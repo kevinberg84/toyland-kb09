@@ -3,6 +3,9 @@
 #include "../DSP/Engine.h"
 #include "../Parameters/Parameters.h"
 #include "StandaloneMidiMap.h"
+#if KB09_LOCAL_MIDI_TEST
+#include "NoteClickCapture.h"
+#endif
 #include "../../Assets/Branding.h"
 #include <array>
 #include <atomic>
@@ -42,6 +45,11 @@ public:
  static constexpr double proposedBenderReturnSeconds=.035;
  void queuePitchBend(float value) noexcept { guiBendReturn.store(false,std::memory_order_relaxed);guiBend.store(juce::jlimit(-1.0f,1.0f,value),std::memory_order_relaxed);guiBendDirty.store(true,std::memory_order_release); }
  void queuePitchBendReturn() noexcept {guiBend.store(0,std::memory_order_relaxed);guiBendReturn.store(true,std::memory_order_relaxed);guiBendDirty.store(true,std::memory_order_release);}
+#if KB09_LOCAL_MIDI_TEST
+ // Set only while audio is stopped, for an explicitly launched diagnostic.
+ std::unique_ptr<NoteClickCapture> noteClickCapture;
+ int diagnosticMidiOffset=0;
+#endif
  juce::AudioProcessorValueTreeState state;
  // Present only in the standalone; custom mappings never enter sound presets.
  std::unique_ptr<sh09::StandaloneMidiMap> midiMap;

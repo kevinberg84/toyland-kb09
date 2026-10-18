@@ -10,7 +10,7 @@ namespace kb09_gui {
 // the metal face nor the camera perspective rotates with the grip texture.
 class KnobGripMotion {
 public:
-    explicit KnobGripMotion(const juce::Image& photograph):photo(photograph),pixels(photo,juce::Image::BitmapData::readOnly) {
+    explicit KnobGripMotion(const juce::Image& photograph,bool largerFace=false):photo(photograph),pixels(photo,juce::Image::BitmapData::readOnly) {
         for(int y=0;y<rows;++y) {
             const float t=(y+.5f)/rows;
             auto mean=average(0,t);
@@ -23,8 +23,10 @@ public:
         for(int y=0;y<size;++y)for(int x=0;x<size;++x) {
             const float u=(x+.5f)/size,v=(y+.5f)/size,s=(u-.497f)/.326f;
             const float ry=(v-.410f)/.315f,ring=std::sqrt(s*s+ry*ry);
-            if(ring>.785f&&ring<1.f) {
-                const float alpha=juce::jlimit(0.f,1.f,(ring-.785f)/.035f)*juce::jlimit(0.f,1.f,(1.f-ring)/.035f);
+            const float silverFace=std::hypot((u-.497f)/.267f,(v-.407f)/.277f);
+            if(ring>.785f&&ring<1.f&&(!largerFace||silverFace>1.012f)) {
+                const float alpha=juce::jlimit(0.f,1.f,(ring-.785f)/.035f)*juce::jlimit(0.f,1.f,(1.f-ring)/.035f)
+                    *(largerFace?juce::jlimit(0.f,1.f,(silverFace-1.012f)/.015f):1.f);
                 rimPoints.push_back({x,y,alpha,at(u,v)});
             }
             if(std::abs(s)>=.998f)continue;

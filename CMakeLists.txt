@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(SH09 VERSION 1.7.2 LANGUAGES C CXX)
+project(SH09 VERSION 1.8.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(JUCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../JUCE" CACHE PATH "JUCE source directory")
@@ -90,12 +90,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_custom_command(OUTPUT "${kb09_generated_sources}/SH09_resources.rc" APPEND
         DEPENDS "${kb09_info_file}")
 endif()
-juce_add_binary_data(KB09Artwork SOURCES Assets/Photoreal/chassis-black.png Assets/Photoreal/chassis-personal-aged.png Assets/Photoreal/chassis-stains.png Assets/Photoreal/knob-personal-overhead-v5.png Assets/Photoreal/knob-grip-photo-v6.png Assets/Photoreal/fader-smooth-overhead-v1.png Assets/Photoreal/front-rail-grain.png Assets/Photoreal/cheeks-personal-independent-v1.png Assets/Photoreal/cheeks-prepared-v83.png Assets/Photoreal/panel-screws-photo-v65.png Assets/Photoreal/keys.png Assets/Photoreal/marks.png Assets/Photoreal/marks-aged.png Assets/Fonts/Jost-Regular.ttf Assets/Fonts/Jost-Semibold.ttf)
+juce_add_binary_data(KB09Artwork SOURCES Assets/Photoreal/chassis-black.png Assets/Photoreal/chassis-personal-aged.png Assets/Photoreal/chassis-stains.png Assets/Photoreal/knob-personal-overhead-v5.png Assets/Photoreal/knob-grip-photo-v6.png Assets/Photoreal/knob-top-right-square-rim-v95.png Assets/Photoreal/fader-smooth-overhead-v1.png Assets/Photoreal/front-rail-grain.png Assets/Photoreal/cheeks-personal-independent-v1.png Assets/Photoreal/cheeks-prepared-v83.png Assets/Photoreal/panel-screws-photo-v65.png Assets/Photoreal/keys.png Assets/Photoreal/marks.png Assets/Photoreal/marks-aged.png Assets/Fonts/Jost-Regular.ttf Assets/Fonts/Jost-Semibold.ttf)
 target_sources(SH09 PRIVATE Source/Plugin/Processor.cpp Source/GUI/Editor.cpp Source/GUI/DialogTheme.cpp Source/GUI/WindowSizing.cpp Source/GUI/PresetFiles.cpp Source/DSP/Engine.cpp)
 target_sources(SH09_Standalone PRIVATE Source/Plugin/Standalone.cpp)
 target_compile_definitions(SH09_Standalone PRIVATE JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1)
 
-target_compile_definitions(SH09 PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=$<PLATFORM_ID:Linux> JUCE_VST3_CAN_REPLACE_VST2=0)
+target_compile_definitions(SH09 PUBLIC KB09_APPROVED_HARDWARE=1 JUCE_WEB_BROWSER=0 JUCE_USE_CURL=$<PLATFORM_ID:Linux> JUCE_VST3_CAN_REPLACE_VST2=0)
 target_compile_definitions(SH09 PUBLIC KB09_LOCAL_DSP_TEST=$<BOOL:${KB09_LOCAL_DSP_TEST}>)
 target_compile_definitions(SH09 PUBLIC KB09_LOCAL_MIDI_TEST=$<BOOL:${KB09_LOCAL_MIDI_TEST}>)
 target_link_libraries(SH09 PRIVATE KB09Artwork juce::juce_audio_utils juce::juce_recommended_config_flags)
@@ -155,3 +155,13 @@ juce_add_console_app(KB09DialogPreview PRODUCT_NAME "KB09 Dialog Preview")
 target_sources(KB09DialogPreview PRIVATE Tests/DialogPreview.cpp Source/GUI/DialogTheme.cpp)
 target_compile_definitions(KB09DialogPreview PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=1)
 target_link_libraries(KB09DialogPreview PRIVATE KB09Artwork juce::juce_audio_utils juce::juce_recommended_config_flags)
+
+# Declare modern Windows compatibility for the per-monitor-DPI
+# compositor surface and its real-window regression fixture.
+if(WIN32)
+    # JUCE's device module is compiled into the shared code target. Enable
+    # native ASIO for Windows audio devices, including the standalone.
+    target_compile_definitions(SH09 PUBLIC JUCE_ASIO=1)
+    target_sources(SH09_Standalone PRIVATE Assets/windows-compat.manifest)
+    target_sources(SH09GUIRender PRIVATE Assets/windows-compat.manifest)
+endif()

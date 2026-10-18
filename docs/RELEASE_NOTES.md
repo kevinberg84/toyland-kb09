@@ -1,3 +1,16 @@
+# 1.8.0 — Toyland KB-09
+
+- Windows standalone now offers native ASIO drivers in AUDIO / MIDI, including the installed Audient driver. Existing device choices are retained until changed by the user.
+- Includes the approved panel proportions, knob tops/collars and reflections, compact radial scales and printing alignment, inset slider ticks with correct cap positions, and centered VOLUME hardware.
+- Revised slider caps have silver bands with a left-side glimmer that narrows with AGE, retained aged shine and progressive tarnish. Highlights stay stable while sliding. Exposed posts are thicker and shorter.
+- Refined POWER shape, screws and aging; restored cheek bottom chamfers; added hardware shadows, including white keys and the performance bay onto the textured strip.
+- Black keys have longer rounded chamfers, narrower raised tops, material wear and edge glimmer through Fire Hazard. Hairline crack ends fade naturally. White-key active amber markers have a dark backing for clearer contrast.
+- Matching LED lenses and single recessed wells reflect red illumination within the ring, with a bottom-right edge highlight. On Windows the RATE light renders independently of the main editor during AGE changes and keyboard activity.
+- EXT and IN indicators ignore levels at or below −80 dBFS, so inaudible input noise no longer holds the first display segment on. Audio and envelope-follower processing are unchanged.
+- The manual links to Live 12 sidechain routing and explains that KB-09 is free for everyone forever: share it with friends and enjoy.
+
+The sound engine, parameter identities, saved presets, 24 factory sounds and 128-sample processing latency are retained. Native ASIO is a driver option; a universal fix for intermittent clicking has not been established. The release does not record audio or MIDI diagnostics. Linux standalone remains UNVERIFIED pending real Arch audio and MIDI confirmation.
+
 # 1.7.2 — Toyland KB-09
 
 - Refined photographic screw heads, smaller profiles, restrained Minty shine and gradual dark tarnish. Worn heads stay matte without excessive pitting; selected heads become stripped.

@@ -76,3 +76,11 @@ validation records and update feed all identify the same release. Rebuild all
 platforms when the binary version changes. Keep the illustrated manual current.
 
 Do not generate or bundle a PDF manual. Users can print or save PDF from the HTML manual.
+
+Before the next release, review the manual's suggested system requirements
+against the final build's resource measurements. Current recommendations are
+8 GB RAM for standalone and 16 GB or more for DAW sessions; the October 2026
+Windows test does not justify raising them. Repeat the check if the final build
+changes materially, and update and regenerate every OS edition together if
+needed. Windows measurements are not certified Mac/Linux or minimum-hardware
+results. Keep this release checklist out of the user manual itself.

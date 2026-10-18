@@ -1,4 +1,5 @@
 #include "DialogTheme.h"
+#include "AgeAppearance.h"
 #include <BinaryData.h>
 
 namespace kb09_gui {
@@ -20,7 +21,10 @@ DialogFonts::DialogFonts()
     : regular(juce::Typeface::createSystemTypefaceFor(BinaryData::JostRegular_ttf, BinaryData::JostRegular_ttfSize)),
       semibold(juce::Typeface::createSystemTypefaceFor(BinaryData::JostSemibold_ttf, BinaryData::JostSemibold_ttfSize)) {}
 DialogTheme::DialogTheme(float condition):age(juce::jlimit(0.f,1.f,condition)){setUsingNativeAlertWindows(false);refreshColours();}
-juce::Colour DialogTheme::paper() const { return juce::Colours::white; }
+juce::Colour DialogTheme::paper() const {
+    const float condition=appearanceAge(conditionProvider?conditionProvider():age);
+    return juce::Colour(0xffe9e7dd).interpolatedWith(juce::Colour(0xffd1bd86),condition*.73f);
+}
 juce::Font DialogTheme::lettering(float height,bool bold) {
     // Keep native font ownership scoped to active windows, avoiding
     // typeface ownership in DLL-static destructors.
@@ -28,7 +32,7 @@ juce::Font DialogTheme::lettering(float height,bool bold) {
     return juce::Font(juce::FontOptions(bold?resources->semibold:resources->regular).withHeight(height)).withExtraKerningFactor(.015f);
 }
 float DialogTheme::conditionOf(juce::Component* owner) {
-    if(owner) if(auto* look=dynamic_cast<DialogTheme*>(&owner->getLookAndFeel())) return look->age;
+    if(owner) if(auto* look=dynamic_cast<DialogTheme*>(&owner->getLookAndFeel())) return appearanceAge(look->conditionProvider?look->conditionProvider():look->age);
     return 0;
 }
 void DialogTheme::refreshColours() {
@@ -51,8 +55,20 @@ void DialogTheme::refreshColours() {
     setColour(juce::ScrollBar::thumbColourId,paper().withAlpha(.5f));
 }
 void DialogTheme::wear(juce::Graphics& g,juce::Rectangle<int> bounds,int seed) const {
-    // Application chrome and dialogs are outside the physical instrument.
-    juce::ignoreUnused(g,bounds,seed);
+    const float condition=appearanceAge(conditionProvider?conditionProvider():age);
+    if(condition<=0||!printWearEnabled())return;
+    juce::Graphics::ScopedSaveState clip(g);g.reduceClipRegion(bounds);
+    const auto noise=[](uint32_t value){value^=value>>16;value*=0x7feb352du;value^=value>>15;value*=0x846ca68bu;value^=value>>16;return float(value&65535u)/65535.f;};
+    const int count=juce::jlimit(40,16000,bounds.getWidth()*bounds.getHeight()/22);
+    for(int i=0;i<count;++i) {
+        const uint32_t key=uint32_t(seed)*7919u+uint32_t(i)*104729u;
+        const float x=bounds.getX()+noise(key+11)*bounds.getWidth(),y=bounds.getY()+noise(key+29)*bounds.getHeight();
+        const float size=.22f+.95f*noise(key+47);
+        // Black only interrupts the printed ink; the black box stays clean.
+        g.setColour(black.withAlpha(condition*(.20f+.40f*noise(key+61))));
+        g.fillEllipse(x,y,size,size*(.35f+.65f*noise(key+73)));
+        if(i%19==0)g.drawLine(x,y,x+.6f+2.4f*noise(key+89),y+(.5f-noise(key+97))*.6f,.24f);
+    }
 }
 void DialogTheme::brand(juce::Graphics& g,juce::Rectangle<float> area) const {
     static auto mask=logoMask();g.setColour(paper());g.drawImage(mask,area,juce::RectanglePlacement::centred,true);wear(g,area.toNearestInt(),83);
@@ -70,7 +86,7 @@ void DialogTheme::drawAlertBox(juce::Graphics& g,juce::AlertWindow& alert,const 
     if(alert.getAlertType()!=juce::MessageBoxIconType::NoIcon){inset=80;g.setColour(paper().withAlpha(.7f));g.drawEllipse(24,32,32,32,1);
         g.setFont(lettering(24));g.drawText(alert.getAlertType()==juce::MessageBoxIconType::WarningIcon?"!":alert.getAlertType()==juce::MessageBoxIconType::QuestionIcon?"?":"i",24,31,32,32,juce::Justification::centred);}
     layout.draw(g,{float(inset+1),30.f,float(alert.getWidth()-inset-20),float(alert.getHeight()-getAlertWindowButtonHeight()-20)});
-    wear(g,alert.getLocalBounds().reduced(3));
+    wear(g,alert.getLocalBounds());
 }
 void DialogTheme::drawButtonBackground(juce::Graphics& g,juce::Button& b,const juce::Colour&,bool over,bool down){
     const bool selected=b.getToggleState()||b.hasKeyboardFocus(true)||down;
@@ -91,7 +107,7 @@ void DialogTheme::drawLabel(juce::Graphics& g,juce::Label& label){juce::LookAndF
 void DialogTheme::drawComboBox(juce::Graphics& g,int w,int h,bool down,int x,int y,int bw,int bh,juce::ComboBox& box){
     juce::LookAndFeel_V4::drawComboBox(g,w,h,down,x,y,bw,bh,box);wear(g,box.getLocalBounds());
 }
-void DialogTheme::drawPopupMenuBackground(juce::Graphics& g,int w,int h){g.fillAll(black);g.setColour(paper().withAlpha(.65f));g.drawRect(0,0,w,h);}
+void DialogTheme::drawPopupMenuBackground(juce::Graphics& g,int w,int h){g.fillAll(black);g.setColour(paper().withAlpha(.65f));g.drawRect(0,0,w,h);wear(g,{0,0,w,h},83);}
 void DialogTheme::getIdealPopupMenuSectionHeaderSizeWithOptions(const juce::String& text,int,int& width,int& height,const juce::PopupMenu::Options&){
     width=text.startsWithIgnoreCase("Toyland")?380:juce::GlyphArrangement::getStringWidthInt(lettering(18,true),text)+28;
     height=text.startsWithIgnoreCase("Toyland")?44:44;
@@ -120,8 +136,15 @@ ThemedAlert::ThemedAlert(const juce::String& title,const juce::String& message,j
     // AlertWindow derives its desktop scale from the associated component.
     // A control in the scaled instrument canvas must use the same top-level
     // window as Save / Don't Save, rather than inheriting the canvas zoom.
-    : AlertWindow(title,message,icon,owner?owner->getTopLevelComponent():nullptr),theme(condition<0?DialogTheme::conditionOf(owner):condition){
+    : AlertWindow(title,message,icon,owner?owner->getTopLevelComponent():nullptr),theme(condition<0?DialogTheme::conditionOf(owner):condition),conditionOwner(owner){
     setLookAndFeel(&theme);
+    if(condition<0&&owner)startTimer(100);
+}
+void ThemedAlert::timerCallback() {
+    if(!conditionOwner){stopTimer();return;}
+    const float condition=DialogTheme::conditionOf(conditionOwner.getComponent());
+    if(condition==theme.age)return;
+    theme.age=condition;theme.refreshColours();lookAndFeelChanged();repaint();
 }
 juce::AlertWindow* DialogTheme::createAlertWindow(const juce::String& title,const juce::String& msg,const juce::String& b1,const juce::String& b2,const juce::String& b3,juce::MessageBoxIconType icon,int n,juce::Component* owner){
     auto* a=new ThemedAlert(title,msg,icon,owner,conditionProvider?conditionProvider():age);

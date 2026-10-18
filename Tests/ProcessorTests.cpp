@@ -265,5 +265,29 @@ int main(){
           "CC1 changes actual rendered sound immediately without an editor or message-thread parameter delivery");
    expect(allocations==0,"audible CC1 changes remain allocation-free on the audio thread");
  }
+#if KB09_LOCAL_MIDI_TEST
+ {
+   SH09Processor reference,captured;reference.prepareToPlay(48000,127);captured.prepareToPlay(48000,127);
+   captured.noteClickCapture=std::make_unique<NoteClickCapture>(48000,1);
+   juce::AudioBuffer<float> a(2,127),b(2,127);juce::MidiBuffer ma,mb;ma.ensureSize(512);mb.ensureSize(512);
+   std::vector<float> expected;expected.reserve(48000);bool identical=true;
+   for(int block=0;block<400;++block) {
+     if(block==0){ma.addEvent(juce::MidiMessage::noteOn(1,60,juce::uint8(100)),17);mb.addEvent(juce::MidiMessage::noteOn(1,60,juce::uint8(100)),17);}
+     if(block==100){ma.addEvent(juce::MidiMessage::noteOff(1,60),63);mb.addEvent(juce::MidiMessage::noteOff(1,60),63);}
+     a.clear();b.clear();track=true;reference.processBlock(a,ma);captured.processBlock(b,mb);track=false;
+     for(int sample=0;sample<127;++sample){identical&=a.getSample(0,sample)==b.getSample(0,sample);if(expected.size()<48000)expected.push_back(a.getSample(0,sample));}
+   }
+   expect(identical,"diagnostic capture leaves every generated audio sample unchanged");
+   expect(captured.noteClickCapture->ready(),"bounded diagnostic finishes after its exact sample budget");
+   expect(allocations==0,"diagnostic recording allocates no memory in the audio callback");
+   const auto folder=juce::File::getCurrentWorkingDirectory().getChildFile("artifacts/NoteClicks255/capture-selftest");
+   expect(captured.noteClickCapture->save(folder),"diagnostic output and MIDI report save after recording completes");
+   juce::MemoryBlock bytes;folder.getChildFile("synth-output.wav").loadFileAsData(bytes);
+   expect(bytes.getSize()==44+expected.size()*sizeof(float)&&std::memcmp(static_cast<const char*>(bytes.getData())+44,expected.data(),expected.size()*sizeof(float))==0,
+          "recorded WAV contains the exact processor output without resampling or gain changes");
+   const auto report=juce::JSON::parse(folder.getChildFile("midi-and-timing.json"));const auto events=report["midi"];
+   expect(events.size()==2&&int(events[0][0])==17&&int(events[1][0])==12763,"capture retains exact MIDI sample positions");
+ }
+#endif
  p.releaseResources();std::cout<<"RESULT failures="<<failed<<" allocations="<<allocations<<'\n';return failed?1:0;
 }

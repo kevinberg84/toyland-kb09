@@ -1,4 +1,5 @@
 #pragma once
+#include <mutex>
 #include "PowerDetails.h"
 #include "BinaryData.h"
 #include "AgeAppearance.h"
@@ -357,7 +358,7 @@ public:
         target.deleteFile();auto stream=target.createOutputStream();
         return stream&&juce::PNGImageFormat().writeImageToStream(atlas,*stream);
     }
-    void paint(juce::Graphics& g,int side,float age,float y,float totalWidth,bool revised=false,bool contrastWear=false) const {
+    void paint(juce::Graphics& g,int side,float age,float y,float totalWidth,bool revised=false,bool contrastWear=false,float lowerFoldLift=0.f) const {
         juce::Graphics::ScopedSaveState save(g);
         const float x=side?totalWidth-width:0.f;
         const juce::Rectangle<float> bounds(x,y,float(width),float(height));
@@ -367,6 +368,7 @@ public:
         const auto& source=(revised?revisedImages:images)[size_t(side)];
         const juce::Image* surface=&source[size_t(stage)];
         if(contrastWear&&revised&&stage>0) {
+            std::lock_guard<std::mutex> guard(contrastMutex);
             auto& enhanced=contrastImages[size_t(side)][size_t(stage)];
             if(!enhanced.isValid()) {
                 enhanced=surface->createCopy();
@@ -382,6 +384,19 @@ public:
             surface=&enhanced;
         }
         g.setOpacity(1);g.drawImage(*surface,bounds);
+        if(lowerFoldLift>0.f) {
+            // Raise only the lower moulding's shading transition. Preserve the
+            // photographed grain, damage placement and rounded silhouette.
+            const float start=height-12.f-lowerFoldLift;
+            for(int row=int(start*scale);row<height*scale;++row) {
+                const float py=(row+.5f)/scale;
+                const float oldFold=power_detail::smoothRange(height-12.f,height-1.f,py);
+                const float newFold=power_detail::smoothRange(start,height-1.f,py);
+                const float opacity=1.f-(1.f-.36f*newFold)/(1.f-.36f*oldFold);
+                g.setColour(juce::Colours::black.withAlpha(juce::jlimit(0.f,1.f,opacity)));
+                g.fillRect(x,y+float(row)/scale,float(width),1.f/scale);
+            }
+        }
         if(side) {g.setColour(juce::Colours::black.withAlpha(.12f));g.fillPath(outline);}
         // The independently generated photo-informed endpoint already holds
         // each cheek's cuts, scuffs and larger corner damage. Do not stamp a
@@ -392,6 +407,7 @@ private:
     static uint32_t seedForSide(int side) {return side?0x7e21a53bu:0x18b64cd9u;}
     std::array<std::array<juce::Image,5>,2> images;
     std::array<std::array<juce::Image,5>,2> revisedImages;
+    mutable std::mutex contrastMutex;
     mutable std::array<std::array<juce::Image,5>,2> contrastImages;
 };
 inline const CheekMaterial& cheekMaterial(bool corners=false) {
@@ -404,6 +420,32 @@ inline const CheekMaterial& cheekEdgeProposal() {
 
 // A separate recessed joint leaves the moulded cheek above the sheet-metal
 // panel. Dust is confined to the top-panel section, not the lower bay/keybed.
+inline void paintLowerBayJointDust(juce::Graphics& g,float age,float top,float synthWidth) {
+    if(age<=0)return;
+    static const auto powder=[] {
+        std::array<juce::Image,2> images;
+        for(int side=0;side<2;++side) {
+            auto& image=images[size_t(side)];image=juce::Image(juce::Image::ARGB,20,370*4,true,juce::SoftwareImageType());
+            juce::Image::BitmapData pixels(image,juce::Image::BitmapData::writeOnly);
+            const uint32_t seed=side?29417u:13759u;
+            for(int y=0;y<image.getHeight();++y)for(int x=0;x<20;++x) {
+                const float px=(x+.5f)/4,py=(y+.5f)/4;
+                const float trough=std::exp(-std::pow((px-2.f)/1.f,4.f));
+                const float coarse=power_detail::smoothNoise(px*1.8f,py*.085f,seed);
+                const float grain=power_detail::smoothNoise(px*13,py*13,seed+917u);
+                const float fade=1-power_detail::smoothRange(side?362.f:340.f,side?370.f:348.f,py);
+                const float alpha=trough*(.38f+.45f*coarse)*(.40f+.60f*grain)*fade;
+                const float value=.34f+.13f*grain;
+                pixels.setPixelColour(x,y,juce::Colour::fromFloatRGBA(value,value*.91f,value*.75f,alpha));
+            }
+        }
+        return images;
+    }();
+    juce::Graphics::ScopedSaveState save(g);g.setOpacity(std::pow(age,1.25f));
+    g.drawImage(powder[0],{54.25f,top+362.f,5.f,370.f});
+    g.addTransform(juce::AffineTransform::scale(-1.f,1.f).translated(synthWidth,0));
+    g.drawImage(powder[1],{54.25f,top+362.f,5.f,370.f});
+}
 inline void paintCheekJoint(juce::Graphics& g,float age,float top,float synthWidth) {
     static const auto joints=[] {
         std::array<std::array<juce::Image,5>,2> result;
@@ -417,8 +459,7 @@ inline void paintCheekJoint(juce::Graphics& g,float age,float top,float synthWid
             for(int y=0;y<image.getHeight();++y)for(int x=0;x<20;++x) {
                 const float px=(x+.5f)/scale,py=(y+.5f)/scale;
                 const float across=side?5.f-px:px;
-                const float endFade=power_detail::smoothRange(3.f,10.f,py)
-                    *(1.f-power_detail::smoothRange(722.f,730.f,py));
+                const float endFade=1.f-power_detail::smoothRange(722.f,730.f,py);
                 // Thin raised cheek lip, deep slot, then a soft panel contact edge.
                 const float lip=std::exp(-std::pow((across-.65f)/.23f,2.f));
                 const float trough=std::exp(-std::pow((across-2.0f)/1.0f,4.f));
@@ -441,6 +482,11 @@ inline void paintCheekJoint(juce::Graphics& g,float age,float top,float synthWid
         return result;
     }();
     const int stage=appearanceStage(age);
+    // The recessed slot reaches the top edge on both sides. Do not expose
+    // the photograph's pale panel bevel through a transparent upper fade.
+    g.setColour(juce::Colour(0xff050606));
+    g.fillRect(55.25f,top,2.6f,724.f);
+    g.fillRect(synthWidth-57.85f,top,2.6f,724.f);
     g.drawImage(joints[0][size_t(stage)],{54.25f,top,5.f,732.f});
     g.drawImage(joints[1][size_t(stage)],{synthWidth-59.25f,top,5.f,732.f});
 }

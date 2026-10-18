@@ -19,6 +19,7 @@ public:
     static constexpr float titleFontHeight=22, messageFontHeight=17, buttonFontHeight=16;
     std::function<float()> conditionProvider;
     juce::Colour paper() const;
+    virtual bool printWearEnabled() const {return true;}
     static juce::Font lettering(float height, bool bold = false);
     static float conditionOf(juce::Component*);
     void refreshColours();
@@ -46,7 +47,7 @@ public:
         const juce::String&, const juce::String&, juce::MessageBoxIconType, int, juce::Component*) override;
 };
 
-class ThemedAlert : public juce::AlertWindow {
+class ThemedAlert : public juce::AlertWindow,private juce::Timer {
 public:
     ThemedAlert(const juce::String& title, const juce::String& message, juce::MessageBoxIconType icon,
                 juce::Component* owner = nullptr, float condition = -1);
@@ -62,20 +63,16 @@ public:
     }
     DialogTheme theme;
     ButtonCycle navigation;
-    void mouseDown(const juce::MouseEvent& event) override {
-        dragStartedHere=event.originalComponent==this&&event.mods.isLeftButtonDown()
-            &&event.mouseDownTime>=createdAt;
-        if(dragStartedHere)juce::AlertWindow::mouseDown(event);
-    }
-    void mouseDrag(const juce::MouseEvent& event) override {
-        if(dragStartedHere&&event.mods.isLeftButtonDown())juce::AlertWindow::mouseDrag(event);
-    }
+    // Modal backgrounds are fixed. Native close-click capture can otherwise
+    // arrive as a fresh-looking press and latch AlertWindow's component dragger.
+    void mouseDown(const juce::MouseEvent&) override {}
+    void mouseDrag(const juce::MouseEvent&) override {}
     void mouseUp(const juce::MouseEvent& event) override {
-        dragStartedHere=false;juce::AlertWindow::mouseUp(event);
+        juce::AlertWindow::mouseUp(event);
     }
 private:
-    const juce::Time createdAt=juce::Time::getCurrentTime();
-    bool dragStartedHere=false;
+    void timerCallback() override;
+    juce::Component::SafePointer<juce::Component> conditionOwner;
 };
 
 class UpdateMenuTheme final : public DialogTheme {

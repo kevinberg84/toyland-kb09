@@ -90,7 +90,7 @@ inline float sampleBenderScuff(const juce::Image::BitmapData& pixels,float u,flo
 // The finger tab is one rounded moulding, including the two axial ends.
 // Shade its continuous surface instead of rounding each mesh facet separately.
 inline void paintRoundedBenderTab(juce::Graphics& g,float centre,float baseline,
-                                  float angle,float age,int samples,float depth=13.5f,bool proportional=false,bool keyScuffs=false,bool gentleAgeFinish=false) {
+                                  float angle,float age,int samples,float depth=13.5f,bool proportional=false,bool keyScuffs=false,bool gentleAgeFinish=false,bool castShadow=false) {
     constexpr float viewSin=.190809f,viewCos=.981627f;
     constexpr float lower=58.3f,upper=87.f;
     const float halfWidth=proportional?depth*.5f:7.f;
@@ -156,6 +156,11 @@ inline void paintRoundedBenderTab(juce::Graphics& g,float centre,float baseline,
             value=value*(1-.75f*scratch)+(.18f+.25f*diffuse)*scratch;
         }
         pixels.setPixelColour(x,y,juce::Colour::fromFloatRGBA(value,value*.99f,value*.96f,1.f));
+    }
+    if(castShadow) {
+        juce::Graphics::ScopedSaveState shadow(g);
+        g.addTransform(juce::AffineTransform::scale(1.f/samples).translated(bounds.getX(),bounds.getY()));
+        juce::DropShadow(juce::Colours::black.withAlpha(.25f),juce::jmax(1,juce::roundToInt(1.5f*samples)),{juce::roundToInt(1.2f*samples),juce::roundToInt(1.8f*samples)}).drawForImage(g,image);
     }
     g.setOpacity(1);g.drawImage(image,bounds);
 }

@@ -74,6 +74,7 @@ public:
                 :map.assignment(target.index)>=0?juce::Colour(0xff6bd5be):juce::Colour(0xffdbb572);
             g.setColour(color.withAlpha(chosen?.2f:.08f));g.fillRoundedRectangle(target.bounds.toFloat(),3.f);
             g.setColour(color);g.drawRoundedRectangle(target.bounds.toFloat(),3.f,chosen?2.f:1.f);
+            theme.wear(g,target.bounds,121+target.index);
         }
         g.setColour(juce::Colour(0xff090909));g.fillRoundedRectangle(messageBounds.toFloat(),6.f);
         g.setColour(theme.paper().withAlpha(.65f));g.drawRoundedRectangle(messageBounds.toFloat().reduced(1),6.f,1.f);
@@ -84,6 +85,7 @@ public:
         g.drawText(confirmClear?"Clear MIDI mappings?":"MIDI mapping",x+68,y+14,messageBounds.getWidth()-88,32,juce::Justification::centredLeft);
         g.setFont(theme.getAlertWindowMessageFont());
         g.drawFittedText(learnInstruction,x+20,y+84,messageBounds.getWidth()-40,40,juce::Justification::topLeft,2,1.f);
+        theme.wear(g,messageBounds,41);
     }
     void mouseDown(const juce::MouseEvent& event) override {
         if(messageBounds.contains(event.getPosition()))return;

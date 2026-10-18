@@ -15,7 +15,7 @@
     <a class="brand" href="#top" aria-label="Toyland KB-09 home">
       <svg viewBox="85 308 722 158" role="img" aria-labelledby="toyland-title"><title id="toyland-title">Toyland</title><image href="../../assets/marks.png" width="2172" height="724" /></svg>
     </a>
-    <span class="edition">Mac User Manual · Version 1.7.2 · October 15, 2026</span>
+    <span class="edition">Mac User Manual · Version 1.8.0 · October 15, 2026</span>
     <button class="print-button" type="button" onclick="window.print()">Print / Save PDF</button>
   </div>
 </header>
@@ -47,16 +47,16 @@
   <div class="quick-links"><a href="#start">Play your first sound <span aria-hidden="true">↗</span></a><a href="#age">Explore AGE <span aria-hidden="true">↗</span></a><a href="#daws">Choose your DAW <span aria-hidden="true">↗</span></a></div>
   <p class="project-mark">UNOFFICIAL PERSONAL PROJECT — NOT AFFILIATED WITH ROLAND CORPORATION — NOT FOR SALE</p>
 </section>
-<aside class="notice"><strong>KB-09 1.7.2 for Mac.</strong> This download includes the standalone app and AU and VST3.</aside>
+<aside class="notice"><strong>KB-09 1.8.0 for Mac.</strong> This download includes the standalone app and AU and VST3.</aside>
 
 <section id="features">
-  <p class="section-number">01 / DISCOVER KB-09</p><h2>A personal synth, ready to explore</h2>
+  <p class="section-number">01 / DISCOVER KB-09</p><h2>Discover KB-09</h2>
   <p>KB-09 recreates the character of Kevin’s Roland SH-09 in a hands-on software instrument. A main oscillator, sub oscillator, resonant low-pass filter and envelope shape everything from deep bass to singing leads and noise percussion. Its signal path follows the SH-09 circuit design; the digital model reproduces how those stages shape and interact with the sound.</p>
   <p>Start with one of 24 factory sounds, then make it your own. AGE changes the instrument’s appearance and calibration, while External Input and its envelope follower let incoming guitar, drums or another synth control the filter. Play in your DAW or use the standalone with a MIDI keyboard. <a href="#filter-self-oscillation">Explore the filter model.</a></p>
 </section>
 
 <section id="filter-craft">
-  <p class="section-number">02 / INSIDE THE SOUND</p><h2>The hardest sound to get right</h2>
+  <p class="section-number">02 / INSIDE THE SOUND</p><h2>Inside the filter</h2>
   <p>The resonant filter was KB-09's biggest sound-design challenge. At high RESONANCE, the SH-09's filter becomes an oscillator in its own right. Add a steady VCO and sweep the filter slowly, and two sources of energy interact inside the circuit. Recreating that balance meant capturing a singing, stable resonance while retaining the movement and character of the hardware.</p>
   <details class="filter-story"><summary>How we matched the SH-09 — recordings and waveform comparisons</summary><div class="disclosure-body">
   <p>The crucial test put a steady VCO into a self-oscillating filter while its pitch swept slowly past the VCO’s harmonics. The two signals interacted inside the filter, revealing whether its tone stayed steady, changed level or was pulled toward the incoming oscillator. We compared a collection of SH-09 and KB-09 recordings at different VCO mixer levels, alongside filter-only and oscillator-only recordings, captured at 96 kHz in 32-bit floating point. Listening, waveforms and frequency analysis guided the model toward the hardware’s balance of stable resonance and musical interaction. Matching pitch and relative signal levels made those comparisons more useful than copying slider positions alone.</p>
@@ -85,7 +85,7 @@
 </section>
 
 <section id="start">
-  <p class="section-number">04 / FIRST SOUND</p><h2>Start playing in a minute</h2>
+  <p class="section-number">04 / FIRST SOUND</p><h2>Start playing</h2>
   <details class="quick-start"><summary>Play your first sound</summary><div class="disclosure-body"><ol class="steps"><li><a href="#standalone">Open the standalone app</a>, or <a href="#install">install the version for your computer</a> and load <strong>Toyland KB-09</strong> on a DAW instrument/MIDI track.</li><li>Choose <strong>01 / Calibrated Init</strong> in the preset field along the top.</li><li>Turn down your listening level, play a MIDI keyboard (enable MIDI monitoring if using a DAW), or enable KEYBOARD in the standalone app. You can also click KB-09's keys.</li><li>Move <strong>CUTOFF FREQ</strong> to hear the sound darken or brighten. Add a little <strong>RESONANCE</strong> for a stronger filter peak.</li><li>Try <strong>02 / Fundamental Bass</strong> or <strong>04 / Singing Lead</strong>, then <a href="#presets">save a sound of your own</a>.</li></ol>
   <p>KB-09 is <strong>monophonic</strong>: it plays one note at a time, with the lowest held note taking priority. Overlapping notes and the envelope trigger switch shape its legato behavior. Click and hold an onscreen key, or hold a MIDI note, to see the key depress and darken. A small amber bar along the key's lower edge identifies the active note; other held keys remain shaded without a colored marker. The marks disappear when the keys are released.</p>
   <div class="callout"><strong>No DAW? Use the standalone app.</strong> <code>Toyland KB-09 Standalone</code> is a complete playable virtual synth. Choose your audio output and MIDI input in its audio/MIDI settings, then select a preset and play. It does not record a song or replace a DAW.</div></div></details>
@@ -174,14 +174,14 @@
 </section>
 
 <section id="external">
-  <p class="section-number">10 / BEYOND THE OSCILLATOR</p><h2>External audio: an envelope filter</h2>
+  <p class="section-number">10 / BEYOND THE OSCILLATOR</p><h2>Filter external audio</h2>
   <p><strong>Envelope filter is the precise term.</strong> ENV FOL'R follows the loudness of incoming audio and uses it to move the low-pass cutoff: harder playing opens the filter further. This level-responsive effect is often called auto-wah. It differs from an LFO-driven wah, whose movement follows the modulator rather than your playing.</p>
   <p>KB-09's VST3 instrument exposes an <strong>External Input</strong> auxiliary audio bus. A DAW may call this a sidechain. Here the incoming audio can become part of the sound, passing through the mixer, filter and amplifier.</p>
   <ol><li>Route an audio source to the instrument's External Input.</li><li>Choose <strong>12 / External Filter</strong>. It lowers the oscillators, raises EXT and uses VCA Hold, so no MIDI note is needed.</li><li>Adjust CUTOFF FREQ and RESONANCE.</li><li>Try <strong>13 / External Follower</strong>: louder input opens the filter for an envelope-filter effect that responds to the input’s loudness. Adjust the VCF ENV amount and the source level.</li></ol>
   <p>For envelope filtering, the follower listens before the EXT mixer slider. Lowering EXT can make the source quieter while its filter modulation remains active. The follower does not trigger ADSR or open the VCA; use Hold for continuous processing. Stereo input is averaged to mono, so opposite-polarity channels can cancel. Output is mono duplicated to stereo.</p>
   <p>The same envelope-follower idea appears in the original <a href="https://thismodernday.com/wp-content/uploads/2021/07/Roland-SH-09-Owners-Manual.pdf">SH-09 owner's manual (external-instrument examples)</a>. KB-09 brings that expressive idea into your software setup. Try short guitar chords or a drum loop, lower CUTOFF, add RESONANCE and raise ENV until each attack opens the filter.</p><h3 id="external-live">In Ableton Live</h3>
   <ol><li>Place KB-09 on a MIDI track; put the source audio on another track.</li><li>Expand the plug-in device's Sidechain panel. Enable Sidechain, choose the source under <strong>Audio From</strong> and select the intended tap, such as Post FX.</li><li>Set the sidechain mix to 100% for a known starting point, then choose External Filter in KB-09.</li><li>Monitor the processed path clearly. Prevent the source's direct output from masking the filtered result.</li><li>Save the Live Set to retain the track routing, then reopen it and verify the source and patch.</li></ol>
-  <p class="source-note">See the <a href="https://www.ableton.com/en/live-manual/11/routing-and-i-o/#feeding-sidechain-inputs">Live 11 sidechain routing guide</a>. Menu names may vary in later versions. In another DAW, use its auxiliary-input or sidechain routing to send audio into KB-09's External Input.</p>
+  <p class="source-note">See the <a href="https://www.ableton.com/en/live-manual/12/routing-and-i-o/#feeding-sidechain-inputs">Live 12 sidechain routing guide</a>. Menu names may vary in later versions. In another DAW, use its auxiliary-input or sidechain routing to send audio into KB-09's External Input.</p>
 </section>
 
 
@@ -231,7 +231,7 @@
     <input type="hidden" name="shotName" value=""><input type="hidden" name="shotType" value=""><input type="hidden" name="shotData" value="">
     <div class="report-trap" aria-hidden="true"><label>Leave this empty<input name="website" maxlength="80" tabindex="-1" autocomplete="off"></label></div>
     <div class="report-grid">
-      <label>KB-09 version <span>(required)</span><input name="version" value="1.7.2" maxlength="40" required autocomplete="off"></label>
+      <label>KB-09 version <span>(required)</span><input name="version" value="1.8.0" maxlength="40" required autocomplete="off"></label>
       <label>Operating system and version <span>(required)</span><input name="os" placeholder="e.g. macOS 15.7" maxlength="120" required autocomplete="off"></label>
       <label>DAW / host and version <span>(required)</span><input name="host" placeholder="e.g. Standalone / Live 12.3" maxlength="160" required autocomplete="off"></label>
       <label>Issue category <span>(required)</span><select name="category" required><option value="">Choose a category</option><option>Sound / MIDI</option><option>Interface / display</option><option>Installation / updates</option><option>Crash / performance</option><option>Manual / documentation</option><option>Other</option></select></label>
@@ -251,7 +251,7 @@
   <details id="report-copy-details"><summary>Copy or keep your completed report</summary><p>If a download or submission fails, copy this text and save it in a text editor. Use Save report locally again after editing answers to refresh it.</p><textarea id="report-copy" rows="12" readonly aria-label="Plain-text copy of your report"></textarea></details>
   <p>Confirmation opens in a new tab. If it does not appear, or shows an error, return here and use <strong>Save report locally</strong>. The form stays filled in. A network error can occur after a report has arrived, so check for confirmation before retrying.</p>
 </section>
-<section id="about"><p class="section-number">PROJECT NOTES</p><h2>Made for curiosity &amp; playing</h2><p>KB-09 is an unofficial personal recreation of Kevin's Roland SH-09, using a circuit-informed digital model and artwork modeled after his own aged instrument. “Authentic” names the original-style routing mode; individual hardware instruments can differ. This project is not affiliated with Roland Corporation and is not for sale.</p><p>The instrument has one voice, no onboard effects and no sequencer. The standalone includes MIDI mapping; plug-in mapping uses your DAW’s controls. It reports 128 samples of processing latency. Hardware Gate/CV sockets, alternate tunings and per-note expressive protocols are not provided. Use your DAW for recording, effects and arrangement.</p><p>Open <strong>User Manual.html</strong> in the main download folder. Use its Print / Save PDF button whenever you want a printable copy. Vendor documentation links need an internet connection.</p></section>
+<section id="about"><p class="section-number">PROJECT NOTES</p><h2>About this project</h2><p>KB-09 is an unofficial personal recreation of Kevin's Roland SH-09, using a circuit-informed digital model and artwork modeled after his own aged instrument. “Authentic” names the original-style routing mode; individual hardware instruments can differ. This project is not affiliated with Roland Corporation and is not for sale.</p><p>KB-09 is free for everyone, forever. Share it with your friends, make some music, and enjoy!</p><p>The instrument has one voice, no onboard effects and no sequencer. The standalone includes MIDI mapping; plug-in mapping uses your DAW’s controls. It reports 128 samples of processing latency. Hardware Gate/CV sockets, alternate tunings and per-note expressive protocols are not provided. Use your DAW for recording, effects and arrangement.</p><p>Open <strong>User Manual.html</strong> in the main download folder. Use its Print / Save PDF button whenever you want a printable copy. Vendor documentation links need an internet connection.</p></section>
 
 <div id="dedication" style="text-align:center;margin:3rem auto 2rem;font-size:.9rem;line-height:1.35">This project is dedicated to the memory of<br><strong style="font-size:1.5rem">Jaime Castillo</strong><br>(AKA Spliff Roland)<br>1982–2022</div>
 <footer class="guide-footer"><svg viewBox="85 308 722 158" aria-hidden="true"><image href="../../assets/marks.png" width="2172" height="724" /></svg><p>KEVINBERG 09 · KB-09<br>UNOFFICIAL PERSONAL PROJECT — NOT FOR SALE · October 2026</p><a href="#top">Back to top ↑</a></footer>

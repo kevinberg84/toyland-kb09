@@ -151,7 +151,11 @@ void SH09Processor::applyPitchBend(float value) noexcept {
  displayedPitchBendSerial.fetch_add(1,std::memory_order_release);
 }
 void SH09Processor::handleMidi(const juce::uint8* bytes,int n) noexcept {
- if(n<1)return; int status=bytes[0]&0xf0;
+ if(n<1)return;
+#if KB09_LOCAL_MIDI_TEST
+ if(noteClickCapture)noteClickCapture->midi(bytes,n,diagnosticMidiOffset);
+#endif
+ int status=bytes[0]&0xf0;
  if(bytes[0]>=0x80&&bytes[0]<0xf0)midiActivitySerial.fetch_add(1,std::memory_order_relaxed);
  if((status==0x90||status==0x80)&&n>=3){int note=bytes[1]&127;bool on=status==0x90&&bytes[2]!=0;
    auto& held=midiHeld[size_t(bytes[0]&15)][size_t(note)];
@@ -173,6 +177,10 @@ void SH09Processor::handleMidi(const juce::uint8* bytes,int n) noexcept {
 }
 void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuffer& midi){
  juce::ScopedNoDenormals guard;
+#if KB09_LOCAL_MIDI_TEST
+ const double diagnosticStart=noteClickCapture?juce::Time::getMillisecondCounterHiRes():0;
+ diagnosticMidiOffset=0;
+#endif
  // Snapshot before Power: an off callback must not drain keys queued by a
  // concurrent power-on later in this block. Those belong to the next callback.
  const bool queueDidOverflow=queueOverflow.exchange(false,std::memory_order_acq_rel);
@@ -231,6 +239,9 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
      soundingBendTarget=bendReturnFrom*remaining;
      engine.pitchBend(soundingBendTarget);springAdvanced=true;
    }
+#if KB09_LOCAL_MIDI_TEST
+   diagnosticMidiOffset=s;
+#endif
    while(event!=end&&(*event).samplePosition<=s){const auto meta=*event;handleMidi(meta.data,meta.numBytes);++event;}
    float external=0;
    for(int ch=0;ch<input.getNumChannels();++ch){float x=input.getSample(ch,s);x=std::isfinite(x)?juce::jlimit(-32.0f,32.0f,x):0;external+=x;inputPeak=juce::jmax(inputPeak,std::abs(x));}
@@ -239,6 +250,9 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
    for(int ch=0;ch<output.getNumChannels();++ch)output.setSample(ch,s,sample);
  }
  // Process end-of-block and zero-length flush events without losing note-offs.
+#if KB09_LOCAL_MIDI_TEST
+ diagnosticMidiOffset=buffer.getNumSamples();
+#endif
  while(event!=end){const auto meta=*event;handleMidi(meta.data,meta.numBytes);++event;}
  if(springAdvanced) {
    displayedPitchBend.store(soundingBendTarget,std::memory_order_relaxed);
@@ -253,6 +267,9 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  displayedModulatorPhase.store(float(engine.modulatorPhase()),std::memory_order_relaxed);
  displayedModulatorFrequency.store(float(engine.modulatorFrequency()),std::memory_order_relaxed);
  displayedModulatorTime.store(juce::Time::getMillisecondCounterHiRes(),std::memory_order_release);
+#if KB09_LOCAL_MIDI_TEST
+ if(noteClickCapture&&output.getNumChannels()>0)noteClickCapture->block(output.getReadPointer(0),buffer.getNumSamples(),juce::Time::getMillisecondCounterHiRes()-diagnosticStart,renderControls);
+#endif
 }
 juce::AudioProcessorEditor* SH09Processor::createEditor(){return new SH09Editor(*this);}
 void SH09Processor::getStateInformation(juce::MemoryBlock& destination){
