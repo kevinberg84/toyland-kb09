@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Isolated CI container only. No user's desktop, preferences or audio hardware.
 set -euo pipefail
-pacman -Syu --noconfirm --needed kwin xorg-xwayland mesa alsa-lib freetype2 fontconfig curl dbus pipewire wireplumber gdb libx11 libxext libxinerama libxrandr libxcursor libxrender libxi libxcomposite
+pacman -Syu --noconfirm --needed kwin xorg-xwayland xorg-xclock mesa alsa-lib freetype2 fontconfig curl dbus pipewire wireplumber gdb libx11 libxext libxinerama libxrandr libxcursor libxrender libxi libxcomposite
 # Arch gives KWin a scheduling capability. Docker cannot execute that capped
 # binary with its default capability ceiling. Remove the file capability only
 # inside this disposable container; no host or real desktop settings change.
@@ -23,6 +23,13 @@ wireplumber >/results/wireplumber.log 2>&1 &
 printf 'DISPLAY=%s\nWAYLAND_DISPLAY=%s\n' "${DISPLAY:-}" "${WAYLAND_DISPLAY:-}" >/results/session.txt
 pacman -Q kwin xorg-xwayland pipewire >>/results/session.txt
 cd /results
+printf 'Starting independent X11 clock control\n' >> /results/session.txt
+set +e
+timeout 2 xclock -geometry 64x64 > /results/xclock.log 2>&1
+control=$?
+set -e
+printf 'X11 clock control exit=%s (124 means successful timed observation)\n' "$control" >> /results/session.txt
+if [ "$control" -ne 124 ] && [ "$control" -ne 0 ]; then exit 1; fi
 ldd /tmp/kb09-startup-dialog-test > /results/libraries.txt
 if ! timeout 30 /tmp/kb09-startup-dialog-test > /results/startup-dialogs.log 2>&1; then
   timeout 45 gdb --batch -ex run -ex 'thread apply all bt' -ex 'info sharedlibrary' --args /tmp/kb09-startup-dialog-test > /results/startup-stack.log 2>&1 || true
@@ -37,7 +44,8 @@ SESSION
 chmod 755 /tmp/kb09-session
 set +e
 timeout 180 runuser -u kb09probe -- env XDG_RUNTIME_DIR=/tmp/kb09-runtime XDG_CURRENT_DESKTOP=KDE LIBGL_ALWAYS_SOFTWARE=1 \
-  dbus-run-session -- kwin_wayland --virtual --xwayland --no-lockscreen --width 1920 --height 1080 --exit-with-session /tmp/kb09-session \
+  dbus-run-session -- gdb --batch --return-child-result -ex 'set debuginfod enabled off' -ex 'set print thread-events off' -ex run -ex 'thread apply all bt' \
+  --args kwin_wayland --virtual --xwayland --no-lockscreen --width 1920 --height 1080 --exit-with-session /tmp/kb09-session \
   > /results/kwin.log 2>&1
 result=$?
 set -e
