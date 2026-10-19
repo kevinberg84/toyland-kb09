@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Toyland KB-09: a free Roland SH-09-inspired monophonic synthesizer with five ages of character. Windows and Mac plug-ins and standalone; Linux standalone only.">
+  <meta name="theme-color" content="#f8f6ef">
+  <meta property="og:title" content="Toyland KB-09 — Free for everyone, forever.">
+  <meta property="og:description" content="A free recreation of Kevin's Roland SH-09, with a few cool extras. Meet the synth, explore five ages, and download the latest release.">
+  <meta property="og:image" content="https://kevinberg84.github.io/toyland-kb09/assets/social-preview.jpg">
+  <meta property="og:url" content="https://kevinberg84.github.io/toyland-kb09/">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>Toyland KB-09 — Free Roland SH-09-inspired synthesizer</title>
+  <link rel="icon" href="assets/icon.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="masthead">
+    <a class="brand" href="#top" aria-label="Toyland KB-09 home"><img src="assets/icon.png" width="40" height="40" alt=""><span>TOYLAND <b>KB-09</b></span></a>
+    <nav aria-label="Main navigation"><a href="#sound">The sound</a><a href="manual/">Manual</a><a class="nav-download" href="#download">Download <span aria-hidden="true">↓</span></a></nav>
+  </header>
+  <main id="main">
+    <section class="hero shell" id="top" aria-labelledby="hero-title">
+      <p class="eyebrow"><span class="led" aria-hidden="true"></span> ONE VOICE. PLENTY OF CHARACTER.</p>
+      <div class="hero-heading"><h1 id="hero-title">Toyland <span>KB-09</span></h1><span class="free-stamp">FREE<br>FOREVER</span></div>
+      <p class="hero-description">A free recreation of Kevin's Roland SH-09,<br class="desktop-break"> with a few cool extras.</p>
+      <div class="hero-actions"><a class="button primary" href="#download">Download KB-09 <span aria-hidden="true">↓</span></a><a class="text-link" href="manual/">Explore the illustrated manual <span aria-hidden="true">↗</span></a></div>
+      <p class="platform-line">Windows · macOS · Linux standalone only</p>
+      <div class="instrument" id="preview">
+        <div class="preview-top"><span class="eyebrow">FIVE AGES. ONE INSTRUMENT.</span><button class="subtle" id="enlarge-panel" type="button">Enlarge panel <span aria-hidden="true">↗</span></button></div>
+        <div class="panel-frames" aria-label="KB-09 appearance preview">
+          <img class="panel-frame active" src="assets/age-1.webp" width="1920" height="1080" alt="KB-09 in Minty condition: a clean panel and intact keys." data-age="0" fetchpriority="high">
+          <img class="panel-frame" src="assets/age-2.webp" width="1920" height="1080" alt="KB-09 in Seen Some Shit condition." data-age="1" aria-hidden="true">
+          <img class="panel-frame" src="assets/age-3.webp" width="1920" height="1080" alt="KB-09 in Vintage, Baby! condition." data-age="2" aria-hidden="true">
+          <img class="panel-frame" src="assets/age-4.webp" width="1920" height="1080" alt="KB-09 in Sold As-Is condition." data-age="3" aria-hidden="true">
+          <img class="panel-frame" src="assets/age-5.webp" width="1920" height="1080" alt="KB-09 in Fire Hazard condition: worn panel, aged keys and damaged caps." data-age="4" aria-hidden="true">
+        </div>
+        <div class="age-console">
+          <div class="age-readout"><span class="eyebrow">CONDITION / AGE</span><output id="age-name">Minty</output></div>
+          <div class="age-buttons" role="radiogroup" aria-label="Select instrument age">
+            <button type="button" role="radio" aria-checked="true" data-select-age="0">Minty</button>
+            <button type="button" role="radio" aria-checked="false" tabindex="-1" data-select-age="1">Seen Some Shit</button>
+            <button type="button" role="radio" aria-checked="false" tabindex="-1" data-select-age="2">Vintage, Baby!</button>
+            <button type="button" role="radio" aria-checked="false" tabindex="-1" data-select-age="3">Sold As-Is</button>
+            <button type="button" role="radio" aria-checked="false" tabindex="-1" data-select-age="4">Fire Hazard</button>
+          </div>
+          <div class="playback"><button type="button" id="play-pause" aria-pressed="false">Play cycle</button><label class="speed-label">Speed <select id="speed"><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label></div>
+          <label class="scrubber"><span class="sr-only">Scrub through the five ages</span><input id="age-scrubber" type="range" min="0" max="4" value="0" step="1" aria-valuetext="Minty"></label>
+        </div>
+      </div>
+      <p class="preview-caption">Watch it age—or pause and choose a condition. In the synth, AGE changes the sound as well as the appearance. This is a visual preview, with no audio.</p>
+      <noscript><p>Enable JavaScript to cycle through all five appearances. Downloads and the manual work without it.</p></noscript>
+    </section>
+
+    <section class="intro-section shell" aria-labelledby="character-title">
+      <div class="section-heading"><p class="eyebrow">FAMILIAR FEEL. A FEW COOL EXTRAS.</p><h2 id="character-title">A little instrument.<br>A lot to explore.</h2></div>
+      <div class="intro-copy"><p>A single voice, a hands-on panel and a filter that sings. Start with the original-style routing, or switch to Modern for velocity, aftertouch and tempo sync.</p><dl class="feature-list"><div><dt>Build your sound</dt><dd>Saw, square, pulse and noise, a divided sub oscillator, envelope, LFO and resonant low-pass filter.</dd></div><div><dt>Make it your own</dt><dd>Twenty-four factory presets, MIDI control mapping in standalone, and an AGE setting saved with every patch.</dd></div><div><dt>Bring something else through it</dt><dd>Filter external audio or use its envelope to move the cutoff, where your host or standalone routing provides an input.</dd></div></dl></div>
+    </section>
+
+    <section class="sound-section" id="sound" aria-labelledby="sound-title">
+      <div class="shell">
+        <div class="sound-intro"><div><p class="eyebrow">INSIDE THE SOUND</p><h2 id="sound-title">The schematic was<br>the beginning.</h2></div><p>Getting the character meant going beyond the layout of a circuit. We used the SH-09's design as a starting point, then listened, compared recordings and refined the way the model's stages interact.</p></div>
+        <ol class="sound-story"><li><span class="story-number">01</span><h3>Follow the circuit</h3><p>The oscillator, divided sub and external input feed a mixer, then a resonant filter and amplifier. The envelope and LFO animate that familiar signal path.</p></li><li><span class="story-number">02</span><h3>Find the difficult bit</h3><p>A steady oscillator feeding a self-oscillating filter exposed the challenge: the model's resonance could get pulled too strongly toward the oscillator's pitch during a slow sweep.</p></li><li><span class="story-number">03</span><h3>Refine the balance</h3><p>Different stage headroom and a diode-like feedback limiter helped balance the incoming oscillator against the filter's own tone. The resonance comes from the feedback loop itself.</p></li></ol>
+        <figure class="comparison"><button class="figure-enlarge" type="button" data-enlarge="assets/vcf-sweep-comparison.png" aria-label="Enlarge the resonant filter sweep comparison"><img src="assets/vcf-sweep-comparison.png" width="2160" height="972" loading="lazy" alt="An eighteen-second resonant filter sweep: SH-09 hardware above, KB-09 model below, at common time and amplitude scales."></button><figcaption><span>THE LONG VIEW</span> A steady VCO and a slowly sweeping, self-oscillating filter. Common scales, fixed calibration gains, no automatic leveling or peak normalization. <button type="button" data-enlarge="assets/vcf-sweep-comparison.png">Enlarge ↗</button></figcaption></figure>
+        <figure class="comparison"><button class="figure-enlarge" type="button" data-enlarge="assets/vcf-waveform-detail.png" aria-label="Enlarge the waveform detail comparison"><img src="assets/vcf-waveform-detail.png" width="2160" height="702" loading="lazy" alt="A twelve-millisecond waveform detail, comparing the SH-09 hardware with the KB-09 model on matching scales."></button><figcaption><span>UP CLOSE</span> Short excerpts from the same recordings, each beginning at an upward zero crossing. The recordings are not phase locked; fine differences in waveform shape remain. <button type="button" data-enlarge="assets/vcf-waveform-detail.png">Enlarge ↗</button></figcaption></figure>
+        <div class="sound-footnote"><p>These are comparisons with one aged SH-09 at a particular resonant setting, not proof of identical behavior at every patch. KB-09 is a circuit-informed approximation; AGE is a creative condition model.</p><a class="text-link" href="manual/#filter-craft">Read how we built the sound engine <span aria-hidden="true">↗</span></a></div>
+      </div>
+    </section>
+
+    <section class="download-section shell" id="download" aria-labelledby="download-title">
+      <div class="section-heading"><p class="eyebrow">YOUR NEXT SOUND STARTS HERE</p><h2 id="download-title">Free for everyone,<br>forever.</h2><p>Make music, share it with your friends, and enjoy!</p></div>
+      <div class="downloads"><p class="release-label" id="release-label">Get the latest release</p>
+        <a class="platform-download" data-platform="windows" href="https://github.com/kevinberg84/toyland-kb09/releases/latest"><span><b>Windows</b><small>64-bit · Standalone + VST3</small></span><span aria-hidden="true">↓</span></a>
+        <a class="platform-download" data-platform="mac" href="https://github.com/kevinberg84/toyland-kb09/releases/latest"><span><b>macOS</b><small>12+ · Apple Silicon + Intel · Standalone, AU + VST3</small></span><span aria-hidden="true">↓</span></a>
+        <a class="platform-download" data-platform="linux" href="https://github.com/kevinberg84/toyland-kb09/releases/latest"><span><b>Linux</b><small>x86-64 · Standalone only</small></span><span aria-hidden="true">↓</span></a>
+        <p class="download-note">Download the ZIP for your system, extract the whole folder, and open <b>OPEN ME FIRST!.html</b>. No GitHub account is needed to download.</p>
+        <p class="download-note">Windows is unsigned; Mac is ad-hoc signed and not notarized. Follow the included installation guide. Linux desktop, audio and MIDI testing on physical hardware remains unverified.</p>
+        <a class="text-link" href="https://github.com/kevinberg84/toyland-kb09/releases/latest">Release notes &amp; all downloads ↗</a>
+      </div>
+    </section>
+
+    <section class="preset-section shell" aria-labelledby="preset-title"><div><p class="eyebrow">LET'S HEAR WHAT YOU MAKE</p><h2 id="preset-title">Made a cool sound?<br>Send me your presets!</h2></div><div><p>I'd love to hear what you make with KB-09! Your sound might become a factory preset in the next update.</p><a class="button primary" href="https://github.com/kevinberg84/toyland-kb09/issues/new?template=share_a_preset.yml">Share your preset <span aria-hidden="true">↗</span></a><p class="small-print">Save your sound as a <code>.kb09</code> preset, put it in a ZIP and attach it to the submission—GitHub accepts ZIP attachments, but not .kb09 files directly. Tell me about the sound and how you'd like to be credited. Submissions are public and require a free GitHub account.</p></div></section>
+
+    <section class="help-section shell" aria-labelledby="help-title"><div><p class="eyebrow">A LITTLE HELP, IF YOU NEED IT</p><h2 id="help-title">Get playing.</h2></div><div class="help-links"><a href="manual/"><span><b>Read the manual</b><small>Installation, the panel, sound design and the whole story.</small></span><span aria-hidden="true">↗</span></a><a href="https://github.com/kevinberg84/toyland-kb09/issues/new?template=bug_report.yml"><span><b>Report a bug</b><small>Tell me your version, system and what happened.</small></span><span aria-hidden="true">↗</span></a><a href="https://github.com/kevinberg84/toyland-kb09"><span><b>Explore the source</b><small>Code, build instructions and development notes on GitHub.</small></span><span aria-hidden="true">↗</span></a><p class="small-print">Bug reports and attachments are public. Hide personal information before posting. Reports require a free GitHub account.</p></div></section>
+  </main>
+  <footer class="shell">
+    <div class="license-note"><p>Use KB-09 free, including to make and sell music. You can study, modify and share the software free of charge; selling the software or modified versions, charging for access, or bundling it as a paid software component is prohibited.</p><p><a href="https://github.com/kevinberg84/toyland-kb09/blob/main/LICENSE.md">KB-09 Free Use and No Sale License</a> · <a href="https://github.com/kevinberg84/toyland-kb09/blob/main/docs/LICENSING.md">Licensing details</a>. The source is available; this is not an OSI open-source license. Third-party components retain their own licenses.</p><p>KB-09 is an unofficial personal project, unaffiliated with and not endorsed by Roland Corporation. Roland and SH-09 identify the instrument that inspired this project.</p></div>
+    <div class="dedication"><p>This project is dedicated to the memory of<br><strong>Jaime Castillo</strong><br>(AKA Spliff Roland)<br>1982–2022</p></div>
+  </footer>
+  <dialog id="image-dialog" aria-label="Enlarged image"><div class="dialog-toolbar"><span id="image-title">Panel preview</span><button type="button" id="close-dialog">Close <span aria-hidden="true">×</span></button></div><div class="dialog-scroll"><img id="dialog-image" alt=""></div><p class="dialog-hint">Scroll to inspect the image. Press Escape or Close to return.</p></dialog>
+</body>
+</html>

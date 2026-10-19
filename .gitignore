@@ -12,3 +12,5 @@ Research/*.pdf
 
 docs/manual/qa/server*.log
 docs/manual/qa/server.pid
+
+_site/
