@@ -4,7 +4,7 @@
 
 Free for everyone, forever. Make music, share it with your friends, and enjoy!
 
-**Formats:** Windows standalone / VST3 · macOS standalone / AU / VST3 · **Linux standalone only**.
+**Formats:** Windows standalone / VST3 · macOS standalone / AU / VST3 · Linux standalone only.
 
 **Watch KB-09 age!** Press **Play** to see all five conditions, from **Minty** to **Fire Hazard**. Use **Play/Pause** or drag the playback bar to inspect any AGE without leaving this page. AGE changes both the instrument's appearance and its sound; this preview has no audio.
 
