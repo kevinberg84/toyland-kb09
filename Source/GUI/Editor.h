@@ -12,6 +12,7 @@ public:
     void visibilityChanged() override;
     void prepareStandaloneWindow();
     void setAudioSettingsObserver(std::function<void(bool)>);
+    void setStandaloneMidiChannelObserver(std::function<void(int)>);
 private:
     class Panel;
     sh09::WindowSizing sizing;

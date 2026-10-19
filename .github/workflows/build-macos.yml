@@ -79,7 +79,6 @@ jobs:
             codesign --verify --deep --strict "$bundle"
           done
       - name: Run Apple AU validation on this runner
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -113,6 +112,7 @@ jobs:
           mkdir -p "$folder/Support/Licenses"
           ditto 'build-mac/factory-auditions/Factory Presets' "$folder/Support/Factory Presets"
           cp Assets/Fonts/OFL.txt "$folder/Support/Licenses/OFL-Jost.txt"
+          cp LICENSE.md "$folder/Support/Licenses/KB-09-LICENSE.md"
           cp auval.txt "$folder/Support/auval.txt"
           cp au-components.txt "$folder/Support/au-components.txt"
           cp tools/install-mac.command "$folder/INSTALL KB-09.command"

@@ -29,6 +29,7 @@ def main():
     shutil.copytree(args.build / 'factory-auditions/Factory Presets', support / 'Factory Presets', dirs_exist_ok=True)
     (support / 'Licenses').mkdir(exist_ok=True)
     shutil.copy2(ROOT / 'Assets/Fonts/OFL.txt', support / 'Licenses/OFL-Jost.txt')
+    shutil.copy2(ROOT / 'LICENSE.md', support / 'Licenses/KB-09-LICENSE.md')
     for name in ('Start KB-09.sh', 'Create desktop shortcut.sh'):
         (package / name).write_text((ROOT / 'tools/linux' / name).read_text(), encoding='utf-8', newline='\n')
     executable = {'Toyland KB-09 Standalone', 'Start KB-09.sh', 'Create desktop shortcut.sh'}

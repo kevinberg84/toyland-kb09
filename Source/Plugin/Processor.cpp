@@ -114,7 +114,23 @@ void SH09Processor::clearKeyDisplay() noexcept {
  for(auto& k:displayedComputerKeys)k.store(0,std::memory_order_relaxed);
  displayedKeyboardNote.store(-1,std::memory_order_relaxed);
 }
+void SH09Processor::updateStandaloneMidiChannel() noexcept {
+ if(wrapperType!=wrapperType_Standalone)return;
+ const int next=requestedMidiChannel.load(std::memory_order_acquire);
+ if(next==activeMidiChannel)return;
+ activeMidiChannel=next;
+ const auto excluded=[next](int channel){return next!=0&&channel!=0&&channel!=next;};
+ for(size_t channel=0;channel<midiHeld.size();++channel)if(excluded(int(channel)+1))
+   for(size_t note=0;note<midiHeld[channel].size();++note)if(midiHeld[channel][note]) {
+     midiHeld[channel][note]=false;engine.noteOff(int(note));updateKeyDisplay(int(note),false);
+   }
+ if(excluded(midiBendChannel)){applyPitchBend(0);midiBendChannel=0;}
+ if(excluded(midiPressureChannel)){engine.setAftertouch(0);midiPressureChannel=0;}
+ if(excluded(midiModChannel)){resetModWheel();midiModChannel=0;}
+ if(midiMap)midiMap->resetPickup();
+}
 void SH09Processor::clearVoiceDisplay() noexcept {
+ midiBendChannel=midiPressureChannel=midiModChannel=0;
  if(midiMap)midiMap->resetPickup();
  resetModWheel();
  bendReturnRemaining=0;soundingBendTarget=0;displayedPitchBendReturning.store(false,std::memory_order_relaxed);
@@ -162,20 +178,23 @@ void SH09Processor::handleMidi(const juce::uint8* bytes,int n) noexcept {
  if(noteClickCapture)noteClickCapture->midi(bytes,n,diagnosticMidiOffset);
 #endif
  int status=bytes[0]&0xf0;
+ const int channel=(bytes[0]&15)+1;
+ if(bytes[0]>=0x80&&bytes[0]<0xf0&&wrapperType==wrapperType_Standalone
+    &&activeMidiChannel!=0&&channel!=activeMidiChannel)return;
  if(bytes[0]>=0x80&&bytes[0]<0xf0)midiActivitySerial.fetch_add(1,std::memory_order_relaxed);
  if((status==0x90||status==0x80)&&n>=3){int note=bytes[1]&127;bool on=status==0x90&&bytes[2]!=0;
    auto& held=midiHeld[size_t(bytes[0]&15)][size_t(note)];
    if(on){engine.noteOn(note,bytes[2]&127,held);if(!held)updateKeyDisplay(note,true);held=true;}
    else if(held){held=false;engine.noteOff(note);updateKeyDisplay(note,false);}
- }else if(status==0xe0&&n>=3){applyPitchBend(float(((bytes[2]&127)<<7)|(bytes[1]&127))/8192.0f-1.0f);}
- else if(status==0xd0&&n>=2)engine.setAftertouch(float(bytes[1]&127)/127.0f);
+ }else if(status==0xe0&&n>=3){midiBendChannel=channel;applyPitchBend(float(((bytes[2]&127)<<7)|(bytes[1]&127))/8192.0f-1.0f);}
+ else if(status==0xd0&&n>=2){midiPressureChannel=channel;engine.setAftertouch(float(bytes[1]&127)/127.0f);}
  else if(status==0xb0&&n>=3){
    if(midiMap&&midiMap->controller((bytes[0]&15)+1,bytes[1]&127,bytes[2]&127)) {
      if(midiMap->assignment(12)>=0)resetModWheel();
      renderControls=readControls();if(modWheelOverride)renderControls.vcoMod=modWheelTarget;
      engine.setControls(renderControls);return;
    }
-   if(bytes[1]==1)applyModWheel(bytes[2]&127);
+   if(bytes[1]==1){midiModChannel=channel;applyModWheel(bytes[2]&127);}
    else if(bytes[1]==120){engine.allSoundOff();applyPitchBend(0);clearKeyDisplay();resetModWheel();}
    else if(bytes[1]==123){engine.allNotesOff();clearKeyDisplay();}
    else if(bytes[1]==121){applyPitchBend(0);engine.setAftertouch(0);resetModWheel();if(midiMap)midiMap->resetPickup();renderControls=readControls();engine.setControls(renderControls);}
@@ -205,6 +224,7 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
    guiBendDirty.exchange(false,std::memory_order_acq_rel);
    midi.clear();buffer.clear();return;
  }
+ updateStandaloneMidiChannel();
  const auto controls=readControls();
  const auto revision=programRevision.load(std::memory_order_acquire);
  const auto edits=modParameterEdits.load(std::memory_order_acquire);
@@ -216,6 +236,7 @@ void SH09Processor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuff
  engine.setControls(renderControls);
  if(controls.modern>=.5f&&bendReturnRemaining>0)applyPitchBend(0);
  if(guiBendDirty.exchange(false,std::memory_order_acq_rel)) {
+   midiBendChannel=0;
    if(guiBendReturn.load(std::memory_order_relaxed)&&controls.modern<.5f&&std::abs(soundingBendTarget)>.0001f) {
      bendReturnFrom=soundingBendTarget;
      bendReturnLength=juce::jmax(1,juce::roundToInt(bendSampleRate*benderReturnSeconds));

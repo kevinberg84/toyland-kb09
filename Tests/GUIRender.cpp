@@ -1,3 +1,4 @@
+#include "../Source/GUI/AgeAppearance.h"
 #include "../Source/GUI/PowerLampFade.h"
 #include "../Source/GUI/RateLampClock.h"
 #include "../Source/GUI/CollarDustGeometry.h"
@@ -438,9 +439,13 @@ void checkFineGestures(SH09Processor& processor,juce::Component& editor,Checks& 
         checks.expect(changedPixels(authentic,labelled)==0,"C octave labels remain visible in both Authentic and Modern modes");
         const float oldRange=processor.state.getRawParameterValue("range")->load();
         setParameter(processor,"range",oldRange==0?1:0);settleEditor();
-        checks.expect(changedPixels(labelled,snap(),5)>15,"RANGE updates octave labels without touching the keyboard");
+        auto updated=snap();auto deadline=juce::Time::getMillisecondCounterHiRes()+2000.0;
+        while(changedPixels(labelled,updated,5)<=15&&juce::Time::getMillisecondCounterHiRes()<deadline){settleEditor();updated=snap();}
+        checks.expect(changedPixels(labelled,updated,5)>15,"RANGE updates octave labels without touching the keyboard");
         setParameter(processor,"range",oldRange);setParameter(processor,"modern",0);settleEditor();
-        checks.expect(changedPixels(authentic,snap())==0,"restoring RANGE keeps the same Authentic C key labels");
+        auto restored=snap();deadline=juce::Time::getMillisecondCounterHiRes()+2000.0;
+        while(changedPixels(authentic,restored)!=0&&juce::Time::getMillisecondCounterHiRes()<deadline){settleEditor();restored=snap();}
+        checks.expect(changedPixels(authentic,restored)==0,"restoring RANGE keeps the same Authentic C key labels");
     }
 
 }
@@ -974,7 +979,17 @@ void renderBenderPositions(SH09Processor& processor, juce::Component& editor,
                       prefix + "actual drag-end callback restores zero and identical neutral pixels");
     }
     const auto capture=[&](float age) {
-        setParameter(processor,"age",age);settleEditor();
+        setParameter(processor,"age",age);
+        const float targetAge=kb09_gui::appearanceAge(age);
+        const auto deadline=juce::Time::getMillisecondCounterHiRes()+10000.0;
+        auto* panel=bender->getParentComponent();
+        do {settleEditor();}
+        while((std::abs(float(panel->getProperties().getWithDefault("displayedConditionAge",-1.f))-targetAge)>.00001f
+               ||bool(panel->getProperties().getWithDefault("conditionRenderDeferred",false)))
+              &&juce::Time::getMillisecondCounterHiRes()<deadline);
+        if(std::abs(float(panel->getProperties().getWithDefault("displayedConditionAge",-1.f))-targetAge)>.00001f
+           ||bool(panel->getProperties().getWithDefault("conditionRenderDeferred",false)))
+            throw std::runtime_error("Bender AGE snapshot timed out waiting for the committed material");
         return bender->createComponentSnapshot(bender->getLocalBounds(),true,3.0f);
     };
     // Isolate the bender so moving lamps/keys and other Age events cannot pass
@@ -3753,7 +3768,7 @@ int main(int argc, char** argv) {
         {
             kb09::UpdateInstructions instructions("https://drive.google.com/drive/folders/test");
             auto* copy=findText<juce::TextButton>(instructions,"Copy instructions");
-            auto* download=findText<juce::TextButton>(instructions,"Open download folder");
+            auto* download=findText<juce::TextButton>(instructions,"Open downloads");
             checks.expect(copy&&download,"update instructions offer copy and download actions");
             checks.expect(copy&&download&&!copy->getBounds().intersects(download->getBounds()),"update instruction actions do not overlap");
             const auto image=instructions.createComponentSnapshot(instructions.getLocalBounds(),true,1.0f);

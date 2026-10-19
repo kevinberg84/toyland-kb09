@@ -39,6 +39,12 @@ public:
  bool getPluginHasMainInput() const override {return false;}
  // Visual RATE reads live control values even when a host suspends audio.
  double rateLampFrequency() const noexcept;
+ // Standalone app preference: 0 accepts all MIDI channels, 1..16 selects one.
+ int standaloneMidiChannel() const noexcept {return requestedMidiChannel.load(std::memory_order_relaxed);}
+ void setStandaloneMidiChannel(int channel) noexcept {
+   if(wrapperType==wrapperType_Standalone)
+     requestedMidiChannel.store(channel>=0&&channel<=16?channel:0,std::memory_order_release);
+ }
  bool isPowerEnabled() const noexcept {return powerEnabled.load(std::memory_order_acquire);}
  void setPowerEnabled(bool enabled) noexcept;
  void queueKeyboard(int,bool,bool mouse=true) noexcept;
@@ -87,6 +93,9 @@ private:
  void updateKeyDisplay(int,bool) noexcept;
  // One hold per MIDI channel and pitch; GUI holds remain independent.
  std::array<std::array<bool,128>,16> midiHeld{};
+ std::atomic<int> requestedMidiChannel{0};
+ int activeMidiChannel=0,midiBendChannel=0,midiPressureChannel=0,midiModChannel=0;
+ void updateStandaloneMidiChannel() noexcept;
  sh09::Engine engine;
  std::atomic<double> rateLampTempo{120};
  std::array<std::atomic<float>*,sh09::specs.size()> raw{};

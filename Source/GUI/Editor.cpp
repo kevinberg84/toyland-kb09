@@ -3571,6 +3571,7 @@ struct PanelMaterialBank {
 class SH09Editor::Panel final : public juce::Component, private juce::Timer, private juce::KeyListener {
 public:
     std::function<void(bool)> audioSettingsObserver;
+    std::function<void(int)> midiChannelObserver;
     void bufferUnchangedHardware() {
         bufferInSoftware(keyboard,true);bufferInSoftware(bender,true);bufferInSoftware(power,true);
         for(auto& c:controls) {
@@ -3653,7 +3654,12 @@ public:
                     const auto observer=audioSettingsObserver;
                     kb09_gui::AudioSettingsDialog::show(holder->deviceManager,this,
                         holder->getProcessorHasPotentialFeedbackLoop()?&holder->shouldMuteInput:nullptr,
-                        [observer]{if(observer)observer(false);});
+                        [observer]{if(observer)observer(false);},processor.standaloneMidiChannel(),
+                        [safe=juce::Component::SafePointer<Panel>(this)](int channel) {
+                            if(safe==nullptr)return;
+                            safe->processor.setStandaloneMidiChannel(channel);
+                            if(safe->midiChannelObserver)safe->midiChannelObserver(channel);
+                        });
                 }
             };
         }
@@ -4617,6 +4623,7 @@ SH09Editor::SH09Editor(SH09Processor& p)
 }
 void SH09Editor::prepareStandaloneWindow() { sizing.prepareStandaloneWindow(); }
 void SH09Editor::setAudioSettingsObserver(std::function<void(bool)> observer) {panel->audioSettingsObserver=std::move(observer);}
+void SH09Editor::setStandaloneMidiChannelObserver(std::function<void(int)> observer) {panel->midiChannelObserver=std::move(observer);}
 void SH09Editor::visibilityChanged() {sizing.peerAttached();}
 SH09Editor::~SH09Editor()=default;
 void SH09Editor::parentHierarchyChanged() {

@@ -1,0 +1,53 @@
+name: Bug report
+description: Report a problem with KB-09 or its manual.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for helping improve KB-09. Search existing issues first. Reports and attachments are public: hide private information and do not upload passwords, license keys or private projects."
+  - type: input
+    id: version
+    attributes:
+      label: KB-09 version
+      description: Find it under TOYLAND / KB-09.
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Operating system and version
+      description: On Linux include distribution, desktop and X11 or Wayland if known.
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Standalone or DAW and plug-in format
+      placeholder: Standalone, or Live 12 / VST3, Logic / AU, etc.
+    validations:
+      required: true
+  - type: input
+    id: audio-midi
+    attributes:
+      label: Audio and MIDI setup
+      description: Audio device, driver, sample rate, buffer size and controller, if relevant.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the preset and relevant control settings.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      description: Include exact errors. You can attach a screenshot or short example here after hiding private information.
+    validations:
+      required: true

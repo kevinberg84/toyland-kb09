@@ -75,6 +75,7 @@ public:
         holder->stopPlaying();
         auto* processor = dynamic_cast<SH09Processor*>(holder->processor.get());
         if (processor == nullptr) { quit(); return; }
+        processor->setStandaloneMidiChannel(settings->getIntValue("standaloneMidiChannel",0));
         midiInputs=std::make_unique<sh09::StandaloneMidiInputs>(holder->deviceManager,*settings);
         if(processor->midiMap) {
             processor->midiMap->restore(settings->getValue("standaloneMidiMap"));
@@ -96,8 +97,13 @@ public:
 #endif
         holder->startPlaying();
         window = std::make_unique<InstrumentWindow>(getApplicationName(), juce::Colour(0xff151a1d), std::move(holder));
-        if(auto* editor=dynamic_cast<SH09Editor*>(processor->getActiveEditor()))
+        if(auto* editor=dynamic_cast<SH09Editor*>(processor->getActiveEditor())) {
             editor->setAudioSettingsObserver([this](bool editing){if(midiInputs)midiInputs->setEditing(editing);});
+            editor->setStandaloneMidiChannelObserver([this](int channel) {
+                properties.getUserSettings()->setValue("standaloneMidiChannel",channel);
+                properties.saveIfNeeded();
+            });
+        }
         presets = std::make_unique<sh09::PresetFiles>(*processor, *window);
         presets->onCancelled = [this] { closing = false; };
         presets->onCompleted = [this](const juce::Result& result, const juce::File& file, bool loading) {

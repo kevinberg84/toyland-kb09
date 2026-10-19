@@ -9,6 +9,19 @@ namespace kb09 {
 inline constexpr const char* versionEndpoint = "https://raw.githubusercontent.com/kevinberg84/toyland-kb09-updates/main/version.json";
 class Updates final : private juce::Thread {
 public:
+    static bool validDownloadLink(const juce::String& link) {
+        const auto domain=juce::URL(link).getDomain();
+        if(!link.startsWith("https://"))return false;
+        if(domain=="drive.google.com"||domain=="docs.google.com")return true;
+        return link.startsWith("https://github.com/kevinberg84/toyland-kb09/releases/")
+            &&!link.contains("..")&&!link.contains("%")&&!link.contains("?");
+    }
+    static juce::String selectDownloadLink(const juce::var& json,const char* platform) {
+        const auto release=json["releasePage"].toString();
+        if(release.isNotEmpty())return validDownloadLink(release)?release:juce::String();
+        const auto legacy=json[platform].toString();
+        return validDownloadLink(legacy)?legacy:juce::String();
+    }
     static Updates& instance() { static Updates service; return service; }
     bool configured() const {
 #if KB09_LOCAL_DSP_TEST || KB09_LOCAL_MIDI_TEST
@@ -88,13 +101,13 @@ private:
             while(!threadShouldExit()&&!stream->isExhausted()&&body.getSize()<=65536){int n=stream->read(block,sizeof block);if(n<=0)break;body.append(block,size_t(n));}
             if(body.getSize()<=65536){auto json=juce::JSON::parse(body.toString());v=json["version"].toString();ok=json["product"].toString()=="KB-09"&&validVersion(v);
 #if JUCE_MAC
-                link=json["mac"].toString();
+                link=selectDownloadLink(json,"mac");
 #elif JUCE_LINUX
-                link=json["linux"].toString();
+                link=selectDownloadLink(json,"linux");
 #else
-                link=json["windows"].toString();
+                link=selectDownloadLink(json,"windows");
 #endif
-                auto url=juce::URL(link);const auto domain=url.getDomain();if(!link.startsWith("https://")||(domain!="drive.google.com"&&domain!="docs.google.com"))ok=false;
+                if(!validDownloadLink(link))ok=false;
                 if(!ok||!newer(v,JucePlugin_VersionString))link.clear();
             }
         }

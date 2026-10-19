@@ -342,6 +342,52 @@ int main(int argc,char** argv) {
         audio.clear();trackMidiAllocations=true;processor.processBlock(audio,midi);trackMidiAllocations=false;
     }
     expect(processor.displayedNote.load()==-1,"dense mapped controller traffic preserves note-offs");
+    {
+        juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Standalone);
+        auto selected=std::make_unique<SH09Processor>();
+        juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Undefined);
+        selected->prepareToPlay(48000,64);
+        juce::MidiBuffer events;events.ensureSize(4096);juce::AudioBuffer<float> block(2,64);
+        auto render=[&] {block.clear();trackMidiAllocations=true;selected->processBlock(block,events);trackMidiAllocations=false;};
+        expect(selected->standaloneMidiChannel()==0,"new standalone defaults to all MIDI channels");
+        for(int channel=1;channel<=16;++channel) {
+            selected->reset();selected->setStandaloneMidiChannel(channel);
+            events.addEvent(juce::MidiMessage::noteOn(channel%16+1,60,juce::uint8(100)),0);render();
+            expect(selected->displayedNote.load()==-1,"receive channel "+juce::String(channel)+" excludes other channels");
+            events.addEvent(juce::MidiMessage::noteOn(channel,60,juce::uint8(100)),0);render();
+            expect(selected->displayedNote.load()==60,"receive channel "+juce::String(channel)+" accepts its notes");
+        }
+        selected->reset();selected->setStandaloneMidiChannel(0);
+        events.addEvent(juce::MidiMessage::noteOn(1,64,juce::uint8(100)),0);
+        events.addEvent(juce::MidiMessage::noteOn(16,64,juce::uint8(100)),1);render();
+        expect(selected->keyDisplay[64].load()==2,"All accepts independent same-pitch notes on channels 1 and 16");
+        selected->queueKeyboard(67,true);selected->setStandaloneMidiChannel(1);render();
+        expect(selected->keyDisplay[64].load()==1&&selected->keyDisplay[67].load()==1,"channel change releases excluded MIDI notes and preserves selected MIDI and GUI holds");
+        selected->setStandaloneMidiChannel(2);render();
+        expect(selected->keyDisplay[64].load()==0&&selected->displayedNote.load()==67,"switching receive channels leaves no excluded stuck note");
+        events.addEvent(juce::MidiMessage::pitchWheel(1,16383),0);render();
+        expect(selected->displayedPitchBend.load()==0,"excluded channel cannot change pitch bend");
+        events.addEvent(juce::MidiMessage::pitchWheel(2,16383),0);render();
+        expect(selected->displayedPitchBend.load()>.9f,"selected channel pitch bend works");
+        selected->setStandaloneMidiChannel(3);render();
+        expect(selected->displayedPitchBend.load()==0,"changing channel clears excluded MIDI bend");
+        selected->queuePitchBend(.5f);render();selected->setStandaloneMidiChannel(4);render();
+        expect(selected->displayedPitchBend.load()==.5f,"receive channel does not reset the GUI bender");
+        selected->midiMap->learn(index("cutoff"));
+        events.addEvent(juce::MidiMessage::controllerEvent(3,74,127),0);render();selected->midiMap->pump();
+        expect(selected->midiMap->assignment(index("cutoff"))==-1,"excluded controller channel is ignored by MIDI Learn");
+        events.addEvent(juce::MidiMessage::controllerEvent(4,74,127),0);render();selected->midiMap->pump();
+        expect(selected->midiMap->assignment(index("cutoff"))==3*128+74,"selected controller channel is available to MIDI Learn");
+        selected->midiMap->cancelLearn();selected->setCurrentProgram(1);selected->reset();
+        juce::MemoryBlock saved;selected->getStateInformation(saved);selected->setStandaloneMidiChannel(5);selected->setStateInformation(saved.getData(),int(saved.getSize()));
+        expect(selected->standaloneMidiChannel()==5,"preset loading and reset do not restore the app receive channel");
+        selected->setStandaloneMidiChannel(99);expect(selected->standaloneMidiChannel()==0,"invalid stored receive channel falls back to All");
+        juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_VST3);
+        auto vst=std::make_unique<SH09Processor>();juce::AudioProcessor::setTypeOfNextNewPlugin(juce::AudioProcessor::wrapperType_Undefined);
+        vst->prepareToPlay(48000,64);vst->setStandaloneMidiChannel(1);
+        events.addEvent(juce::MidiMessage::noteOn(16,72,juce::uint8(100)),0);vst->processBlock(block,events);
+        expect(vst->standaloneMidiChannel()==0&&vst->displayedNote.load()==72,"DAW plug-ins ignore the standalone-only receive preference");
+    }
     expect(midiAllocations==0,"learning and all mapped render paths perform zero C++ new allocations");
     std::cout<<"RESULT failures="<<failures<<" checks="<<checks<<" allocations="<<midiAllocations<<'\n';return failures?1:0;
 }

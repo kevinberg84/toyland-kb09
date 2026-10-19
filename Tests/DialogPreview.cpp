@@ -42,7 +42,7 @@ int main(int argc,char** argv){
         kb09::UpdateInstructions instructions("https://example.invalid/",&stage,false);
         expect(instructions.navigation.current()->getButtonText()=="Close","update instructions default must be Close");
         instructions.keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
-        expect(instructions.navigation.current()->getButtonText()=="Open download folder","custom download action must join navigation");
+        expect(instructions.navigation.current()->getButtonText()=="Open downloads","custom download action must join navigation");
         instructions.keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
         expect(instructions.navigation.current()->getButtonText()=="Copy instructions","custom copy action must join navigation");
         instructions.keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
@@ -114,7 +114,8 @@ int main(int argc,char** argv){
     juce::Value muteInput(true);
     for(const auto size:{juce::Point<int>(1800,1400),juce::Point<int>(1024,768),juce::Point<int>(800,600)}) {
         stage.setSize(size.x,size.y);
-        kb09_gui::AudioSettingsDialog settings(layoutManager,&stage,&muteInput,.7f);
+        int changedChannel=-1;
+        kb09_gui::AudioSettingsDialog settings(layoutManager,&stage,&muteInput,.7f,{},0,[&](int channel){changedChannel=channel;});
         stage.addAndMakeVisible(settings);
         // Force a shorter window as on high-DPI/small-work-area desktops.
         settings.setSize(juce::jmin(settings.getWidth(),size.x-40),juce::jmin(settings.getHeight(),size.y-50));
@@ -124,6 +125,11 @@ int main(int argc,char** argv){
            ||!settings.getLocalBounds().contains(close->getBounds()))return 4;
         auto* content=viewport->getViewedComponent();
         if(content==nullptr)return 5;
+        juce::ComboBox* receive=nullptr;
+        for(auto* child:content->getChildren())if(child->getComponentID()=="midiReceiveChannel")receive=dynamic_cast<juce::ComboBox*>(child);
+        if(receive==nullptr||receive->getNumItems()!=17||receive->getSelectedId()!=1)return 8;
+        receive->setSelectedId(17,juce::sendNotificationSync);
+        if(changedChannel!=16||!content->getLocalBounds().contains(receive->getBounds()))return 9;
         for(auto* child:content->getChildren())if(auto* selector=dynamic_cast<juce::AudioDeviceSelectorComponent*>(child)) {
             for(auto* row:selector->getChildren())if(!selector->getLocalBounds().contains(row->getBounds()))return 6;
         }

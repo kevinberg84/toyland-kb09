@@ -16,7 +16,7 @@ inline juce::String updateInstructions(bool mac, bool isLinux = false) {
     if(isLinux)return
         "Save your current patch before closing KB-09. Your saved presets and audio/MIDI preferences stay in your user account. "
         "Keep any personal presets you saved inside the old download folder.\n\n"
-        "1. Download Toyland KB-09 for Linux (Standalone Only).zip and extract the entire ZIP.\n"
+        "1. Open the release page and choose the Linux (Standalone Only).zip under Assets. Do not choose Source code. Extract the entire ZIP.\n"
         "2. Close KB-09, then replace the old extracted files with the new ones.\n"
         "3. Run Start KB-09.sh, or mark Toyland KB-09 Standalone executable and open it.\n"
         "4. If you used Create desktop shortcut.sh, run it again after moving the folder.\n"
@@ -27,7 +27,7 @@ inline juce::String updateInstructions(bool mac, bool isLinux = false) {
         "Installing the update is optional.\n\n"
         "Your saved presets and audio/MIDI preferences are kept. Save your current patch before closing KB-09. "
         "Keep any personal presets you saved inside the old download folder.\n\n"
-        "1. Open the download folder and download the ZIP for your computer.\n"
+        "1. Open the release page, expand Assets if needed, and download the ZIP for your computer. Do not choose Source code archives.\n"
         "2. Extract the entire ZIP. Save your patch and close KB-09.\n";
     text += mac
         ? "3. For standalone only: replace your old extracted KB-09 folder with the new one, then open Toyland KB-09 Standalone. "
@@ -52,7 +52,7 @@ public:
         controls.setSize(450, 36);
         controls.addAndMakeVisible(download);
         controls.addAndMakeVisible(copy);
-        download.setButtonText("Open download folder");
+        download.setButtonText("Open downloads");
         copy.setButtonText("Copy instructions");
         download.setBounds(0, 2, 240, 30);
         copy.setBounds(250, 2, 200, 30);

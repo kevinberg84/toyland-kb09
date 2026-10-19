@@ -1,5 +1,19 @@
 # Kevin's release preferences
 
+GitHub release policy (October 18, 2026): GitHub Releases is the primary destination
+for the next validated public release. Keep the current Drive download file IDs
+working as compatibility links for older apps whose update checker accepts only
+Drive URLs. Add releasePage to the existing update feed for new apps while retaining
+its platform fields for old apps. Do not announce an update before all platform
+downloads are verified. Prepare the public-facing main branch and README after the
+engineering checks; do not confuse code changes with a published binary release.
+
+License packaging (October 18, 2026): include the current root LICENSE.md as
+Support/Licenses/KB-09-LICENSE.md in every new platform package, alongside all
+applicable third-party notices. KB-09 is source available under its custom Free Use
+and No Sale license. Commercial music-making is allowed; software sales are not.
+See docs/LICENSING.md for scope and the recorded JUCE interpretation uncertainty.
+
 Retention preference (October 13, 2026): keep all released 1.x.x versions for
 now. Only obsolete pre-release/test builds are cleanup candidates. Preserve the
 production source and regression tests. Kevin approved release 1.6.0 and asked
