@@ -48,8 +48,8 @@ This is an approximation, not a claim of measured hardware equivalence. See the 
 ## What's new in 1.9.0
 
 - Standalone MIDI receive channel: **All** by default, or **1–16**, remembered between launches.
-- RATE LED corrections for host window ordering and idle audio processing. Kevin confirmed the corrected Windows VST in Live.
-- Startup update and shortcut questions wait for one another. This fixes the overlapping-dialog race; Cameron's reported KDE desktop freeze still needs confirmation on his machine.
+- RATE LED corrections for host window ordering and idle audio processing. The corrected Windows VST was confirmed working in Ableton Live.
+- Startup update and shortcut questions wait for one another. This fixes the overlapping-dialog race; the reported KDE desktop freeze still needs confirmation on a physical system.
 - Updated manual, installation guides and GitHub bug reporting.
 
 Read the [release notes](docs/RELEASE_NOTES.md) and [validation record](docs/VALIDATION_1.9.0.md) for testing scope and remaining limitations.

@@ -20,17 +20,17 @@ Native evidence: [Mac run 39185447069](https://github.com/kevinberg84/toyland-kb
 
 ## Confirmed user observation
 
-Kevin reported “RATE LED seems good now” while testing the corrected Windows VST in Live. Hosted regressions cover window restacking and idle audio processing. This is bounded evidence, not a guarantee for every DAW or system.
+The corrected Windows VST was reported working in Ableton Live. Hosted regressions cover window restacking and idle audio processing. This is bounded evidence, not a guarantee for every DAW or system.
 
-## Cameron's Linux report
+## Reported Linux desktop issue
 
-Cameron's system is Arch Linux, KDE, XWayland and PipeWire; its GPU/driver and Plasma version are unknown. He reported the update and shortcut questions opening together, with a temporary desktop freeze.
+A report from Arch Linux with KDE, XWayland and PipeWire described the update and shortcut questions opening together, followed by a temporary desktop freeze. The GPU/driver and Plasma version were not established.
 
-A real startup-dialog race was corrected: a shared reservation is acquired before asynchronous dialog creation and held until dismissal. The second question and update results wait for it. Both launch orders, queued-before-visible requests and unrelated modal windows are covered by 16 regression checks. This may solve his report, but his machine has not yet retested it.
+A real startup-dialog race was corrected: a shared reservation is acquired before asynchronous dialog creation and held until dismissal. The second question and update results wait for it. Both launch orders, queued-before-visible requests and unrelated modal windows are covered by 16 regression checks. Whether this resolves the reported desktop freeze has not yet been confirmed on a physical system.
 
-The JUCE Linux native-titlebar maximize path uses standard window-manager maximize states, not Windows fullscreen APIs or a monitor resolution change. Headless KDE diagnostics did not reproduce Cameron's complete scenario: the virtual compositor failed before an independent X11 clock, and a nested X11 test explicitly reported missing DRI3 1.2 support in Xvfb. Those failures describe the diagnostic environment, not proof of a defective GPU driver on Cameron's machine.
+The JUCE Linux native-titlebar maximize path uses standard window-manager maximize states, not Windows fullscreen APIs or a monitor resolution change. Headless KDE diagnostics did not reproduce the complete reported scenario: the virtual compositor failed before an independent X11 clock, and a nested X11 test explicitly reported missing DRI3 1.2 support in Xvfb. Those failures describe the diagnostic environment, not proof of a defective GPU driver on a user's machine.
 
-**Linux physical desktop, audio and MIDI remain UNVERIFIED.** Cameron was unavailable for the candidate retest. Keep this label on the Linux download until real hardware confirmation.
+**Linux physical desktop, audio and MIDI remain UNVERIFIED.** Keep this label on the Linux download until real hardware confirmation.
 
 ## Preservation and other limits
 
@@ -42,6 +42,6 @@ Mac Intel slices were built and architecture-checked, but were not executed on a
 
 GitHub Releases hosts the 1.9.0 platform ZIPs. The manual links to GitHub Issues and explains that reports are public and require a free account. Downloading releases does not require an account.
 
-The public 1.9.0 release has three platform ZIPs, each downloaded without authentication and verified against its full SHA256. The update feed now uses the trusted GitHub release URL in `releasePage` and every platform field. Kevin chose to direct the few users of Drive-only old builds to GitHub personally for a manual upgrade; further Drive maintenance is retired. Old checkers cannot consume the new GitHub URLs. Existing Drive files were left untouched.
+The public 1.9.0 release has three platform ZIPs, each downloaded without authentication and verified against its full SHA256. The update feed now uses the trusted GitHub release URL in `releasePage` and every platform field. Users of Drive-only old builds need a manual upgrade from GitHub; further Drive maintenance is retired. Old checkers cannot consume the new GitHub URLs. Existing Drive files were left untouched.
 
 First-party material is source available under the KB-09 Free Use and No Sale License; dependency licenses remain separate. See [licensing scope](LICENSING.md).

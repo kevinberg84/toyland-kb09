@@ -16,3 +16,8 @@ Power-button contract:
 - Verify both the mechanical motion and audio timing with `SH09PowerButton` before updating the TS.
 
 See `docs/APPROVED_INTERACTIONS.md` for approved interaction and appearance details.
+
+## Personal information in public material
+
+- Do not publish anyone's personal details, including their name, without the user's explicit consent. A name mentioned in conversation is not permission to publish it.
+- Describe bug reports and validation observations anonymously. Preserve names only where their public use was explicitly approved, such as the project dedication.
