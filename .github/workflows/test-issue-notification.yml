@@ -1,0 +1,25 @@
+name: Test issue email notification
+on:
+  workflow_dispatch:
+permissions:
+  issues: write
+jobs:
+  test-submission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Send the requested test submission
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > notification-test.md <<'BODY'
+          This is a test submission requested by Kevin to check GitHub-to-Gmail notifications for new preset submissions and bug reports.
+
+          No real preset or bug is attached. GitHub automation created this issue to exercise an incoming submission from another account.
+
+          Once Kevin confirms the email arrived, this test issue can be closed.
+          BODY
+          gh issue create --title '[Test submission] Gmail notifications for KB-09' --body-file notification-test.md
