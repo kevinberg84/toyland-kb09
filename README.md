@@ -2,7 +2,7 @@
 
 **A free recreation of Kevin's Roland SH-09, with a few cool extras.**
 
-Free for everyone, forever. Make music, share it with your friends, and enjoy.
+Free for everyone, forever. Make music, share it with your friends, and enjoy!
 
 **Formats:** Windows standalone / VST3 · macOS standalone / AU / VST3 · **Linux standalone only**.
 
@@ -12,7 +12,7 @@ https://github.com/user-attachments/assets/7cfeee19-5665-4f6a-9b49-605f9a0191c9
 
 ## Download and play
 
-**[Download KB-09 1.9.0](https://github.com/kevinberg84/toyland-kb09/releases/tag/v1.9.0)**
+**[Download the latest KB-09](https://github.com/kevinberg84/toyland-kb09/releases/latest)**
 
 Open **Assets** on the release page and choose your operating system's ZIP. You don't need a GitHub account to download it. The automatic **Source code** archives are for building the software yourself.
 
