@@ -4,6 +4,8 @@
 
 Free for everyone, forever. Make music, share it with your friends, and enjoy.
 
+**Formats:** Windows standalone / VST3 · macOS standalone / AU / VST3 · **Linux standalone only**.
+
 **Watch KB-09 age:** the preview below automatically cycles through all five conditions, from **Minty** to **Fire Hazard**, then repeats. AGE changes both the instrument's appearance and its sound.
 
 ![KB-09 automatically cycling through all five AGE conditions: Minty, Seen Some Shit, Vintage, Baby!, Sold As-Is and Fire Hazard](docs/manual/assets/kb09-five-ages.gif)
@@ -62,8 +64,8 @@ First-party material uses the [KB-09 Free Use and No Sale License](LICENSE.md). 
 
 Builders can start with the [build instructions](docs/BUILD.md). Earlier implementation notes are preserved in the [engineering history](HISTORY.md).
 
-## Dedication
-
-This project is dedicated to the memory of **Jaime Castillo** (AKA **Spliff Roland**), **1982–2022**.
-
 KB-09 is an unofficial personal project, unaffiliated with and not endorsed by Roland Corporation. Roland and SH-09 identify the instrument that inspired this project.
+
+<p align="center">
+  <img src="docs/manual/assets/jaime-dedication.svg" width="900" alt="This project is dedicated to the memory of Jaime Castillo (AKA Spliff Roland), 1982–2022.">
+</p>
