@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1140" height="400" viewBox="0 0 1140 400" role="img" aria-labelledby="title description">
   <title id="title">In memory of Jaime Castillo</title>
   <desc id="description">This project is dedicated to the memory of Jaime Castillo (AKA Spliff Roland), 1982–2022.</desc>
-  <rect width="1140" height="400" fill="#171d1d"/>
-  <g fill="#e7e8e2" text-anchor="middle" font-family="Arial, Helvetica, sans-serif">
+  <rect width="1140" height="400" fill="#ffffff"/>
+  <g fill="#1f2328" text-anchor="middle" font-family="Arial, Helvetica, sans-serif">
     <text x="570" y="113" font-size="42">This project is dedicated to the memory of</text>
     <text x="570" y="201" font-size="72" font-weight="700">Jaime Castillo</text>
     <text x="570" y="271" font-size="42">(AKA Spliff Roland)</text>
