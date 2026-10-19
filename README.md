@@ -6,11 +6,9 @@ Free for everyone, forever. Make music, share it with your friends, and enjoy.
 
 **Formats:** Windows standalone / VST3 · macOS standalone / AU / VST3 · **Linux standalone only**.
 
-**Watch KB-09 age:** the preview below automatically cycles through all five conditions, from **Minty** to **Fire Hazard**, then repeats. AGE changes both the instrument's appearance and its sound.
+**Watch KB-09 age!** Press **Play** to see all five conditions, from **Minty** to **Fire Hazard**. Use **Play/Pause** or drag the playback bar to inspect any AGE without leaving this page. AGE changes both the instrument's appearance and its sound; this preview has no audio.
 
-![KB-09 automatically cycling through all five AGE conditions: Minty, Seen Some Shit, Vintage, Baby!, Sold As-Is and Fire Hazard](docs/manual/assets/kb09-five-ages.gif)
-
-**Inspect a still image:** [1 · Minty](docs/manual/assets/panel-age-1.png) · [2 · Seen Some Shit](docs/manual/assets/panel-age-2.png) · [3 · Vintage, Baby!](docs/manual/assets/panel-age-3.png) · [4 · Sold As-Is](docs/manual/assets/panel-age-4.png) · [5 · Fire Hazard](docs/manual/assets/panel-age-5.png)
+https://github.com/user-attachments/assets/7cfeee19-5665-4f6a-9b49-605f9a0191c9
 
 ## Download and play
 
@@ -29,6 +27,12 @@ Open **Assets** on the release page and choose your operating system's ZIP. You 
 3. Launch the standalone or load the plug-in in your DAW. The standalone's **AUDIO / MIDI** settings select your audio output, MIDI controller and receive channel.
 
 Each package includes an illustrated **User Manual.html**, installation helpers and 24 factory presets. The app and included manual work offline. Unsigned-app warnings and installation steps are explained in the platform guide; don't disable your computer's security protections.
+
+## Made a cool sound? Send me your presets!
+
+**I'd love to hear what you make with KB-09!** [Send me your presets](https://github.com/kevinberg84/toyland-kb09/issues/new?template=share_a_preset.yml)—your sound might become a **factory preset in the next update!**
+
+Save your sound as a `.kb09` preset, put it in a ZIP and attach it to the submission. Tell me a little about the sound and how you'd like to be credited. Submissions are public and require a free GitHub account.
 
 ## The instrument
 

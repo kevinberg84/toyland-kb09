@@ -1,0 +1,36 @@
+name: Share a preset!
+description: Made a cool KB-09 sound? Send it in—it might become a factory preset!
+title: "[Preset] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Made a cool sound? I'd love to hear it!** A favorite might become a factory preset in the next KB-09 update.
+
+        Save your sound as a `.kb09` preset, put it in a ZIP and attach the ZIP in the sound description below. GitHub doesn't accept `.kb09` files directly. Submissions and attachments are public, so don't include private information.
+  - type: input
+    id: preset-name
+    attributes:
+      label: Preset name
+      placeholder: Give your sound a name!
+    validations:
+      required: true
+  - type: textarea
+    id: sound
+    attributes:
+      label: Tell me about your sound and attach your ZIP
+      description: What does it sound like? Any playing tips? Drag your preset ZIP into this box.
+    validations:
+      required: true
+  - type: input
+    id: credit
+    attributes:
+      label: How would you like to be credited?
+      description: A name or alias is fine. Leave blank if you prefer no credit.
+  - type: checkboxes
+    id: factory-permission
+    attributes:
+      label: Factory preset permission
+      options:
+        - label: I made this preset and give Kevin permission to include it as a free KB-09 factory preset if selected.
+          required: true
