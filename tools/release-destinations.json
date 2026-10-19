@@ -10,10 +10,16 @@
       "fileId": "1rGIq_l31dPX4o3fMvlskKsKcTXBwBd3P",
       "fileName": "Toyland KB-09 for Mac.zip"
     },
-    "updatePolicy": "Upload a new version to each existing file ID. Preserve the folder, filenames, sharing and IDs. Verify downloaded hashes and embedded versions before announcing an update.",
+    "updatePolicy": "Leave existing files and sharing untouched. Kevin will personally direct legacy users to GitHub for a manual upgrade.",
     "linux": {
       "fileId": "11oRmSe2V4g1pbXrnavfndi8oz5Wdk3Jr",
       "fileName": "Toyland KB-09 for Linux (Standalone Only) - UNVERIFIED.zip"
-    }
+    },
+    "status": "retired; historical IDs retained; no further uploads"
+  },
+  "github": {
+    "repository": "https://github.com/kevinberg84/toyland-kb09",
+    "releases": "https://github.com/kevinberg84/toyland-kb09/releases/latest",
+    "policy": "Sole maintained public downloads from 1.9.0 onward; verify all three release assets before advancing update feed."
   }
 }

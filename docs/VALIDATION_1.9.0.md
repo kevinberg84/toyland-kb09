@@ -42,6 +42,6 @@ Mac Intel slices were built and architecture-checked, but were not executed on a
 
 GitHub Releases hosts the 1.9.0 platform ZIPs. The manual links to GitHub Issues and explains that reports are public and require a free account. Downloading releases does not require an account.
 
-New update checkers prefer the trusted `releasePage` GitHub URL. Older checkers accept only Drive URLs, so their platform fields and permanent download IDs must be preserved. Advance the advertised feed version only after the old links also provide verified current packages; publishing a GitHub release alone does not update those Drive files.
+The public 1.9.0 release has three platform ZIPs, each downloaded without authentication and verified against its full SHA256. The update feed now uses the trusted GitHub release URL in `releasePage` and every platform field. Kevin chose to direct the few users of Drive-only old builds to GitHub personally for a manual upgrade; further Drive maintenance is retired. Old checkers cannot consume the new GitHub URLs. Existing Drive files were left untouched.
 
 First-party material is source available under the KB-09 Free Use and No Sale License; dependency licenses remain separate. See [licensing scope](LICENSING.md).

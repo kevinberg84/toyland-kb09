@@ -1,12 +1,15 @@
 # Kevin's release preferences
 
-GitHub release policy (October 18, 2026): GitHub Releases is the primary destination
-for the next validated public release. Keep the current Drive download file IDs
-working as compatibility links for older apps whose update checker accepts only
-Drive URLs. Add releasePage to the existing update feed for new apps while retaining
-its platform fields for old apps. Do not announce an update before all platform
-downloads are verified. Prepare the public-facing main branch and README after the
-engineering checks; do not confuse code changes with a published binary release.
+GitHub release policy (October 18, 2026, final migration decision): GitHub Releases
+is the sole maintained public download destination from 1.9.0 onward. Kevin will
+personally direct the few people using Drive-only update checkers to GitHub for a
+manual upgrade. Do not maintain or upload new Drive versions. Leave the old Drive
+files and sharing intact unless Kevin explicitly asks otherwise. The update feed's
+releasePage and platform fields point to the verified GitHub release. The old
+checkers cannot open these URLs; this one-time manual migration is intentional.
+Do not announce an update before all platform downloads are verified. Keep the
+newest stable GitHub release marked Latest and retain future stable releases as
+history. Do not publish historical private binary backups or test builds.
 
 License packaging (October 18, 2026): include the current root LICENSE.md as
 Support/Licenses/KB-09-LICENSE.md in every new platform package, alongside all
@@ -23,8 +26,7 @@ Two older locked DSP test modules have one-time cleanup queued for the next
 Windows sign-in. Local-only test requests do not authorize a GitHub push,
 Drive upload, update-feed publication, or replacement of the released product.
 
-After every completed build, update the installed plug-in and the platform folders in Kevin's OneDrive Desktop Host Folder
-and the current Windows, Mac and Linux shared Google Drive ZIPs, then notify him. Verify matching hashes.
+After every completed validated release build, update the installed plug-in and the platform folders in Kevin's OneDrive Desktop Host Folder, then notify him. Publish the Windows, Mac and Linux ZIPs on GitHub Releases and verify matching hashes. Drive maintenance is retired.
 The Desktop Host folder must contain exactly three platform folders: Windows,
 Mac, and Linux standalone (UNVERIFIED until hardware verification). Keep ZIP
 archives and previous-release backups outside that Host folder. Preserve the
@@ -43,28 +45,21 @@ OPEN ME FIRST file. Installed help uses that same self-contained edition as
 `Support/User Guide/index.html`. Do not include other operating systems' guides.
 
 Mac is a verified released platform. Do not restore the old verification label.
-Distribute and document only usable plug-in formats. The shared download folder
-contains one current Mac ZIP, one Windows ZIP and one Linux standalone ZIP;
-upload new versions of those existing files to preserve links. The first Linux folder and ZIP carry an UNVERIFIED tag until Kevin confirms launch, audio playback and MIDI input on a real Arch desktop. Automated checks alone do not remove that tag. Publish the
-update feed only after all three platform uploads are verified.
+Distribute and document only usable plug-in formats. The Linux folder and ZIP
+retain UNVERIFIED until real launch, audio playback and MIDI input are confirmed
+on a physical Arch desktop. Automated checks alone do not remove that tag.
+Publish the update feed only after all three GitHub platform downloads are verified.
 
-### Permanent shared destinations
+### Download destinations
 
-Keep the existing **KB-09 Host Folder**, its name, and its sharing settings.
-Its permanent folder ID is `18-S-iz4-5i8mkjPSaRtNXy4BTG2D1VBo`.
-Never create a replacement folder for an iteration. Update only its contents.
-Also preserve these existing download file IDs by uploading a **new version**
-of each ZIP (Drive: Manage versions > Upload new version), rather than deleting
-and re-uploading them as new files:
+- Project: https://github.com/kevinberg84/toyland-kb09
+- Current stable downloads: https://github.com/kevinberg84/toyland-kb09/releases/latest
+- Public update feed: https://raw.githubusercontent.com/kevinberg84/toyland-kb09-updates/main/version.json
 
-- `Toyland KB-09 for Windows.zip`: `1E3zEFVccSlNBXAaLd_MuO8YCAzyJxW7U`
-- `Toyland KB-09 for Mac.zip`: `1rGIq_l31dPX4o3fMvlskKsKcTXBwBd3P`
-- `Toyland KB-09 for Linux (Standalone Only) - UNVERIFIED.zip`: `11oRmSe2V4g1pbXrnavfndi8oz5Wdk3Jr`
-
-These destinations are recorded in `tools/release-destinations.json`. Verify
-the folder and all platform file IDs before and after each upload, then download the
-current ZIPs and verify their hashes and embedded versions. Do not assume a
-matching filename proves the linked file is the intended item.
+Historical Drive IDs are retained in tools/release-destinations.json as an archive
+record, not active upload targets. Do not delete the existing shared folder or files
+as part of GitHub migration. Keep the local Desktop Host folder and three platform
+folder paths intact. Public downloads are release Assets, not source-code archives.
 
 ## Release numbering (required)
 

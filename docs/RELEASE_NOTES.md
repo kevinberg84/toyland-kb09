@@ -2,11 +2,11 @@
 
 - Standalone AUDIO / MIDI adds MIDI receive channel: All channels (default) or 1–16. The selection is remembered across launches and applies to all enabled input devices. Changing it releases excluded MIDI holds while preserving GUI notes. Presets and DAW MIDI routing are unchanged.
 - Includes the approved RATE LED host-restacking and idle-audio correction, plus serialized startup update and shortcut prompts.
-- Downloads and update instructions support GitHub Releases. Existing update-feed platform links remain available for compatibility with older builds.
+- Downloads, update instructions and the public update feed use GitHub Releases. The few users of older Drive-only builds should upgrade manually from GitHub; further Drive maintenance is retired.
 - The manual and installation guides explain release Assets and Source code downloads, retain platform-specific security instructions, and route bug reports to GitHub Issues.
 - First-party source, documentation and assets use the KB-09 Free Use and No Sale License. Commercial music-making is allowed; selling the software or modified versions is prohibited. Third-party licenses remain separate.
 
-Windows, universal Mac and Linux automated release checks passed; see VALIDATION_1.9.0.md for scope. Linux physical desktop, audio and MIDI verification remains outstanding. Mac binaries are ad-hoc signed, not Apple-notarized. New builds prefer the GitHub release page for update downloads; older builds retain their Drive compatibility links.
+Windows, universal Mac and Linux automated release checks passed; see VALIDATION_1.9.0.md for scope. Linux physical desktop, audio and MIDI verification remains outstanding. Mac binaries are ad-hoc signed, not Apple-notarized. New builds use the GitHub release page for update downloads. Older Drive-only builds require a one-time manual upgrade from GitHub.
 
 # 1.8.3 — Toyland KB-09
 
