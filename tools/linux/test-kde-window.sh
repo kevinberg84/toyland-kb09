@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Isolated CI container only. No user's desktop, preferences or audio hardware.
 set -euo pipefail
-pacman -Syu --noconfirm --needed kwin xorg-xwayland xorg-xclock mesa alsa-lib freetype2 fontconfig curl dbus pipewire wireplumber gdb libx11 libxext libxinerama libxrandr libxcursor libxrender libxi libxcomposite
+pacman -Syu --noconfirm --needed kwin xorg-xwayland xorg-xclock xorg-server-xvfb mesa alsa-lib freetype2 fontconfig curl dbus pipewire wireplumber gdb libx11 libxext libxinerama libxrandr libxcursor libxrender libxi libxcomposite
 # Arch gives KWin a scheduling capability. Docker cannot execute that capped
 # binary with its default capability ceiling. Remove the file capability only
 # inside this disposable container; no host or real desktop settings change.
@@ -42,10 +42,16 @@ printf '<PROPERTIES><VALUE name="asked" val="1"/><VALUE name="annual" val="0"/><
 timeout 120 /tmp/kb09-window-probe --native-window285=/results > /results/probe.log 2>&1
 SESSION
 chmod 755 /tmp/kb09-session
+# Give nested KWin a real software-rendered X11 EGL display. The virtual
+# framebuffer backend in this Arch snapshot crashes before any KB-09 code runs.
+Xvfb :99 -screen 0 1920x1080x24 +extension GLX -nolisten tcp > /results/xvfb.log 2>&1 &
+xvfbProcess=$!
+trap 'kill "$xvfbProcess" 2>/dev/null || true' EXIT
+sleep 2
 set +e
-timeout 180 runuser -u kb09probe -- env XDG_RUNTIME_DIR=/tmp/kb09-runtime XDG_CURRENT_DESKTOP=KDE LIBGL_ALWAYS_SOFTWARE=1 KWIN_COMPOSE=Q QT_QUICK_BACKEND=software \
+timeout 180 runuser -u kb09probe -- env XDG_RUNTIME_DIR=/tmp/kb09-runtime XDG_CURRENT_DESKTOP=KDE DISPLAY=:99 LIBGL_ALWAYS_SOFTWARE=1 QT_QUICK_BACKEND=software \
   dbus-run-session -- gdb --batch --return-child-result -ex 'set debuginfod enabled off' -ex 'set print thread-events off' -ex run -ex 'thread apply all bt' \
-  --args kwin_wayland --virtual --xwayland --no-lockscreen --width 1920 --height 1080 --exit-with-session /tmp/kb09-session \
+  --args kwin_wayland --x11-display=:99 --xwayland --no-lockscreen --width 1920 --height 1080 --exit-with-session /tmp/kb09-session \
   > /results/kwin.log 2>&1
 result=$?
 set -e
