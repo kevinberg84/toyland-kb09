@@ -67,5 +67,8 @@ Builders can start with the [build instructions](docs/BUILD.md). Earlier impleme
 KB-09 is an unofficial personal project, unaffiliated with and not endorsed by Roland Corporation. Roland and SH-09 identify the instrument that inspired this project.
 
 <p align="center">
-  <img src="docs/manual/assets/jaime-dedication.svg" width="900" alt="This project is dedicated to the memory of Jaime Castillo (AKA Spliff Roland), 1982–2022.">
+  This project is dedicated to the memory of<br>
+  <strong>Jaime Castillo</strong><br>
+  (AKA Spliff Roland)<br>
+  1982–2022
 </p>
