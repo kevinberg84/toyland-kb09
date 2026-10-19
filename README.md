@@ -4,7 +4,11 @@
 
 Free for everyone, forever. Make music, share it with your friends, and enjoy.
 
-![The KB-09 synthesizer panel](docs/manual/assets/panel-1.9.0.png)
+**Watch KB-09 age:** the preview below automatically cycles through all five conditions, from **Minty** to **Fire Hazard**, then repeats. AGE changes both the instrument's appearance and its sound.
+
+![KB-09 automatically cycling through all five AGE conditions: Minty, Seen Some Shit, Vintage, Baby!, Sold As-Is and Fire Hazard](docs/manual/assets/kb09-five-ages.gif)
+
+**Inspect a still image:** [1 · Minty](docs/manual/assets/panel-age-1.png) · [2 · Seen Some Shit](docs/manual/assets/panel-age-2.png) · [3 · Vintage, Baby!](docs/manual/assets/panel-age-3.png) · [4 · Sold As-Is](docs/manual/assets/panel-age-4.png) · [5 · Fire Hazard](docs/manual/assets/panel-age-5.png)
 
 ## Download and play
 
@@ -57,5 +61,9 @@ Use KB-09 free, including to make and sell music. You may study, modify and shar
 First-party material uses the [KB-09 Free Use and No Sale License](LICENSE.md). This is **source available**, rather than an OSI open-source license. Third-party components retain their own licenses; see [licensing details](docs/LICENSING.md). The license grants only rights held by the project owner.
 
 Builders can start with the [build instructions](docs/BUILD.md). Earlier implementation notes are preserved in the [engineering history](HISTORY.md).
+
+## Dedication
+
+This project is dedicated to the memory of **Jaime Castillo** (AKA **Spliff Roland**), **1982–2022**.
 
 KB-09 is an unofficial personal project, unaffiliated with and not endorsed by Roland Corporation. Roland and SH-09 identify the instrument that inspired this project.
