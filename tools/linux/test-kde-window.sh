@@ -48,10 +48,18 @@ Xvfb :99 -screen 0 1920x1080x24 +extension GLX -nolisten tcp > /results/xvfb.log
 xvfbProcess=$!
 trap 'kill "$xvfbProcess" 2>/dev/null || true' EXIT
 sleep 2
+runuser -u kb09probe -- env XDG_RUNTIME_DIR=/tmp/kb09-runtime QT_LOGGING_TO_CONSOLE=1 \
+  kwin_wayland --help > /results/kwin-help.log 2>&1 || true
+if grep -q -- '--x11-display' /results/kwin-help.log; then
+  backend=(--x11-display=:99)
+else
+  backend=(--virtual)
+fi
+printf 'Selected backend: %s\n' "${backend[*]}" > /results/backend.txt
 set +e
-timeout 180 runuser -u kb09probe -- env XDG_RUNTIME_DIR=/tmp/kb09-runtime XDG_CURRENT_DESKTOP=KDE DISPLAY=:99 LIBGL_ALWAYS_SOFTWARE=1 QT_QUICK_BACKEND=software \
+timeout 180 runuser -u kb09probe -- env XDG_RUNTIME_DIR=/tmp/kb09-runtime XDG_CURRENT_DESKTOP=KDE DISPLAY=:99 LIBGL_ALWAYS_SOFTWARE=1 KWIN_COMPOSE=O2 EGL_PLATFORM=surfaceless QT_QUICK_BACKEND=software QT_LOGGING_TO_CONSOLE=1 \
   dbus-run-session -- gdb --batch --return-child-result -ex 'set debuginfod enabled off' -ex 'set print thread-events off' -ex run -ex 'thread apply all bt' \
-  --args kwin_wayland --x11-display=:99 --xwayland --no-lockscreen --width 1920 --height 1080 --exit-with-session /tmp/kb09-session \
+  --args kwin_wayland "${backend[@]}" --xwayland --no-lockscreen --width 1920 --height 1080 --exit-with-session /tmp/kb09-session \
   > /results/kwin.log 2>&1
 result=$?
 set -e
