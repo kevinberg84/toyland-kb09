@@ -1,80 +1,61 @@
-# Toyland KB-09 — Windows, Mac and Linux synthesizer
+# Toyland KB-09
 
-**Next release: 1.9.0 (in preparation). Current public release: 1.8.2.** Revised photographic screws, cheek wear, knob markings and dust follow the approved SH-09 references. Only the main instrument ages; bottom-strip utilities and dialogs stay clean. Prepared cheek materials and lazy screw rendering reduce editor startup work. RANGE and WAVEFORM switch directly between their fixed positions. SAVE / DON'T SAVE requires a fresh deliberate click before dragging. AUTHENTIC bender return remains 35 ms with a small 20 ms visual recoil; POWER springs back immediately on release.
+**A free recreation of Kevin's Roland SH-09, with a few cool extras.**
 
-Windows includes standalone/VST3; universal Mac includes standalone/AU/VST3; Linux x86-64 includes standalone only and remains UNVERIFIED pending real Arch audio and MIDI. Each download includes OS-specific installation instructions, an illustrated HTML manual and release notes. The sound engine, parameter identities, saved presets and 128-sample reported latency are retained. See [release validation](docs/VALIDATION_1.8.3.md).
+Free for everyone, forever. Make music, share it with your friends, and enjoy.
 
-## License
+![The KB-09 synthesizer panel](docs/manual/assets/panel-1.9.0.png)
 
-KB-09's first-party code, documentation and project assets are source available under the
-[KB-09 Free Use and No Sale License](LICENSE.md). Use it free, including to make and sell
-music, study or modify it, and share copies free of charge. Selling the software or modified
-versions, charging for access, and including it as a paid software component are prohibited.
-Third-party components retain their own licenses; this license grants only rights held by
-the KB-09 project owner. See [licensing scope and release notes](docs/LICENSING.md).
+## Download and play
 
-## Historical engineering record
+**[Download KB-09 1.9.0](https://github.com/kevinberg84/toyland-kb09/releases/tag/v1.9.0)**
 
-The implementation notes below describe preceding revisions. Use the current manual, release notes and release validation for current behavior and supported formats.
+Open **Assets** on the release page and choose your operating system's ZIP. You don't need a GitHub account to download it. The automatic **Source code** archives are for building the software yourself.
 
-**Toyland KB-09 1.5.2** is a playable monophonic instrument based on Roland SH-09 manuals and service schematics, with a photographic-style panel informed by Kevin's own instrument. Its engine is a **circuit-informed approximation** with explicit unmeasured parameters. This GUI-only patch refines bender visibility, VCF lettering, exposed slider posts and accumulating slot dust, the left performance-bay seam, POWER button shading and four individual metal screw heads. It preserves the restored 1.1.3 sound engine, controller bender feedback, CC1 pickup for VCO MOD, and Modern FREE modulation down to 0.05 Hz. Windows includes VST3 and standalone; Mac includes AU, VST3 and standalone; Linux x86-64 is standalone only. Modern TUNE now spans ±12 semitones, while Authentic keeps ±65 cents. Static panel and keyboard material caching reduce live rendering work. Release-specific checks belong in the validation artifacts. See the [user manual](docs/manual/index.html), [known limitations](docs/KNOWN_LIMITATIONS.md), [fidelity evidence](docs/FIDELITY.md) and [acceptance](docs/ACCEPTANCE.md).
+| System | Included formats | Notes |
+| --- | --- | --- |
+| Windows 64-bit | Standalone, VST3 | ASIO, WASAPI and DirectSound |
+| macOS 12 or later | Standalone, AU, VST3 | Universal Apple Silicon / Intel; ad-hoc signed, not notarized |
+| Linux x86-64 | Standalone | ALSA and JACK, including PipeWire's JACK layer; physical desktop/audio/MIDI testing remains **UNVERIFIED** |
 
-## Load and play
+1. Download and extract the whole ZIP.
+2. Open **OPEN ME FIRST!.html** and follow the instructions for your system.
+3. Launch the standalone or load the plug-in in your DAW. The standalone's **AUDIO / MIDI** settings select your audio output, MIDI controller and receive channel.
 
-The Windows build produces `Toyland KB-09.vst3` and `Toyland KB-09.exe`. An opt-in AAX target also produces an unsigned development bundle. Outputs are under:
+Each package includes an illustrated **User Manual.html**, installation helpers and 24 factory presets. The app and included manual work offline. Unsigned-app warnings and installation steps are explained in the platform guide; don't disable your computer's security protections.
 
-- `C:\Dev\SH-09\build-kb09\SH09_artefacts\Release\VST3\Toyland KB-09.vst3`
-- `C:\Dev\SH-09\build-kb09\SH09_artefacts\Release\Standalone\Toyland KB-09.exe`
-- `C:\Dev\SH-09\build-kb09\SH09_artefacts\Release\AAX\Toyland KB-09.aaxplugin` — unsigned development only
+## The instrument
 
-The system destination is `C:\Program Files\Common Files\VST3\Toyland KB-09.vst3`. The 0.13.2 package path is `artifacts/Release/Toyland KB-09-0.13.2-Windows-x64`, with a sibling ZIP; the versioned evidence directories are `artifacts/GUI-0.13.2-final` and `artifacts/Presets-0.13.2-final`. These path conventions do not establish completed checks or installation. For installation, copy the entire VST3 bundle, including `Contents`, into a DAW-scanned folder. The build does not install automatically. Legacy SH-09 and Toyland KB-09 share plugin identifiers, so install one identity in scanned folders and retain historical backups outside them. [Build instructions](docs/BUILD.md) explain the outputs and dependencies; [release validation](docs/VALIDATION.md) identifies the installed/tested binary and its completed checks.
+- Monophonic, circuit-informed sound engine inspired by SH-09 documentation and Kevin's own instrument.
+- Saw, square, pulse and noise, a sub oscillator, resonant filter, envelope and LFO.
+- **AUTHENTIC** and **MODERN** modes, with velocity, aftertouch and tempo sync in Modern.
+- An **AGE** control that changes the instrument's character and appearance, from Minty to Fire Hazard.
+- MIDI Learn, saved presets, an onscreen keyboard and pitch bender.
+- External-audio filtering and envelope following where the format and host expose the input.
 
-The `.exe` is a standalone virtual synthesizer: open its audio/MIDI settings, select your output device and MIDI keyboard, and play without a DAW. The compiled Windows AAX is **unsigned and untested in Pro Tools**; it belongs in the package's clearly labeled Development area, not the ordinary installation flow. Native AU configuration and a Mac build recipe are available, but no AU binary has been built because this session has no Mac/Xcode host. A Mac source kit is source, not an installable Audio Unit. See [format status](docs/FORMAT_ROADMAP.md). The updated offline [HTML manual](docs/manual/index.html) starts with the instrument's features, then covers playing, AGE, presets, installation and DAW settings. Keep its HTML, stylesheet and assets together when copying it. The consumer guide omits the separate technical `reference/evidence.html` page.
+This is an approximation, not a claim of measured hardware equivalence. See the [model's evidence and limits](docs/FIDELITY.md).
 
-Load **Toyland KB-09** on a MIDI track, select **Calibrated Init**, and play MIDI or the onscreen keyboard. The lowest held note wins. Gate+Trigger re-attacks from the current envelope level when the effective note changes; Gate retains legato. Oscillator and sub-divider phases run continuously.
+## What's new in 1.9.0
 
-The main selector offers noise, saw, square and variable pulse. Noise replaces the main waveform; the sub remains available. PWM uses manual width, undelayed LFO sine or ADSR. The VCF tracks keyboard pitch and accepts positive ADSR, negative ADSR or external-follower modulation. VCA Hold sustains without MIDI; Envelope uses ADSR; Gate follows held notes. Double-click continuous sound controls to restore defaults.
+- Standalone MIDI receive channel: **All** by default, or **1–16**, remembered between launches.
+- RATE LED corrections for host window ordering and idle audio processing. Kevin confirmed the corrected Windows VST in Live.
+- Startup update and shortcut questions wait for one another. This fixes the overlapping-dialog race; Cameron's reported KDE desktop freeze still needs confirmation on his machine.
+- Updated manual, installation guides and GitHub bug reporting.
 
-**SAVE** stores the current sound as a `.kb09` preset. **LOAD** accepts `.kb09` and compatible earlier `.sh09state` files. Loading a user sound retains all sixteen factory programs; selecting a factory program recalls its original settings. Invalid files leave the current patch unchanged. Power, held notes and window placement are not preset contents.
+Read the [release notes](docs/RELEASE_NOTES.md) and [validation record](docs/VALIDATION_1.9.0.md) for testing scope and remaining limitations.
 
-## Panel and window sizes
+## Help and bug reports
 
-The 0.13.2 panel uses **black painted metal with restrained reflections**, photo-informed wear, 18 faders with scales, six compact slide switches, upper-arc range/wave selectors and a 32-key F-to-C keyboard. The large knobs draw the complete `knob-personal-overhead-v5.png` sprite derived from the owner's selected object, with slightly smaller silver tops, thinner black rims, the original silver skirt and grouped ribs alternating with smooth panels. Physical barrel height is retained in the near-overhead view. Native black top ticks, approximately one third of the silver top's diameter, rotate independently of the fixed photographed lighting; no collar tick is drawn. The shared native camera target is 9° for the tick projection, rigid extruded bender and exposed blades. The approved overhead fader retains its stripe across the top and down the sides, with a black front lip. Exposed blades present thin longitudinal edges. The volume control excludes the owner's replacement-knob geometry. Dimensions remain image-derived rather than measured original-part CAD. A small panel label identifies this as an unofficial personal project, unaffiliated with Roland Corporation and not for sale.
+Start with the illustrated manual included in your download. If something goes wrong, [search GitHub Issues](https://github.com/kevinberg84/toyland-kb09/issues) or [report a bug](https://github.com/kevinberg84/toyland-kb09/issues/new?template=bug_report.yml). Include your KB-09 version, operating system, standalone or DAW/plug-in format, and steps to reproduce it.
 
-The supplied **KEVINBERG 09 / KB-09** mark remains on the left and **Toyland** on the right. **AGE — fresh to well loved** is both a creative sound profile and a visual condition control. Dust, yellowed ink/ivory, dulling and corrosion around exposed panel paint develop gradually. Fine irregular micro-pitting and reflection dulling extend across each knob's silver top and skirt, with separate deterministic patterns for Range, Waveform and Volume. The registered case screws gain localized pale white/grey deposits; the two photo-referenced POWER screws use different full-head wear, with a dark tarnished upper head and broader pale oxidation below. No alloy or chemistry is claimed. Keys lose gloss over opaque native surfaces, and the lower rail has fine matte grain. POWER is diffuse grey plastic with a broad rounded bevel, standing tall in OFF and lowering in ON; its filled side-profile symbols, label, screws and lamp follow the close-up reference. Independent seeded microdetail gives each key its own dust and grime; the old wear/crack atlas is unused. The coffee ring appears at AGE 6 with fixed shape and opacity, shifted 40 design units right and 45 up to clear the envelope-source switch. Its GATE / + / TRIG legend sits above the axis, GATE to the left and LFO below.
+Issues and attachments are public, so remove private information before posting. Reporting requires a free GitHub account; KB-09 does not upload diagnostics automatically.
 
-One photo-informed hairline crack appears on MIDI note 60 at AGE 5.6 and can lengthen slightly. The VCO mixer cap disappears at 6.4, RELEASE loses its cap at 8.8, and the bender tip breaks at 9.2. Cap loss and tip breakage appear as discrete events, revealing flat stepped metal blades or the broken bender sector. These controls remain fully functional. Lowering AGE reverses the appearance; wear is deterministic and illustrative, not a model of elapsed years. The owner's bunny sticker and taped waveform marks are excluded.
+## Source and license
 
-A separate header contains factory/user-preset controls, meters, S/M/L and maximise/restore. S fits within 65% of available monitor width and height, M within 90%, and L requests the available work area. The complete panel and footer scale uniformly with letterboxing. Restore returns to the preceding S, M or custom dimensions. Initial fitting waits for the attached peer scale, and Windows sizing measures actual child-client pixels separately from permission to move a host frame. Hosts retain control over their windows and DPI settings. Kevin confirmed that disabling **Auto-Scale Plug-in Window** fixed the Live display. If a setting change is not reflected, reopen the editor and optionally test a fresh instance; creating one was not part of that reported confirmation. See the [manual's Live instructions](docs/manual/index.html#live), [HiDPI notes](docs/HIDPI.md), [UI](docs/UI.md) and [window behaviour](docs/GUI_WINDOW_BEHAVIOR.md).
+Use KB-09 free, including to make and sell music. You may study, modify and share the software free of charge. You may not sell the software or modified versions, charge for access, or bundle it as a paid software component.
 
-Power mutes output and clears voice history while callbacks continue consuming MIDI. Notes released while off cannot remain held; play a fresh note after switching on. External audio in VCA Hold can resume immediately. Power is transient and is not stored in patches.
+First-party material uses the [KB-09 Free Use and No Sale License](LICENSE.md). This is **source available**, rather than an OSI open-source license. Third-party components retain their own licenses; see [licensing details](docs/LICENSING.md). The license grants only rights held by the project owner.
 
-Click and hold an onscreen key to see the effective lowest note's amber marker immediately at its lower edge. Other held notes are blue. Mouse presses, drags and release update the marker before the next audio callback; MIDI and mouse notes share the same low-note priority.
+Builders can start with the [build instructions](docs/BUILD.md). Earlier implementation notes are preserved in the [engineering history](HISTORY.md).
 
-## External audio
-
-The VST3 instrument exposes an **External Input auxiliary bus**. Route a DAW audio source to it. **External Filter** and **External Follower** factory patches lower VCO/Sub and select VCA Hold for processing without MIDI. Raise EXT, then adjust cutoff and resonance. For follower filtering, choose ENV FOL'R in VCF and raise ENV depth. The detector listens before the EXT mixer slider, so reducing EXT can leave follower modulation active.
-
-Stereo input is averaged to mono; opposite-polarity channels cancel. Mono output is duplicated for stereo output buses. The follower opens the filter; it does not trigger ADSR or open the VCA. [External architecture](docs/EXTERNAL_AUDIO_ARCHITECTURE.md) and the [Live report](docs/LIVE_TEST.md) describe routing and the host observations actually completed.
-
-## Authentic, Modern and Age
-
-Authentic ignores velocity, aftertouch, LFO tempo sync and input trim. Age remains independently adjustable; zero selects the healthy calibration profile.
-
-Modern adds velocity-to-level, aftertouch-to-cutoff, tempo-synchronised LFO and ±24 dB input trim. Since **0.11**, maximum LFO MOD depth is **±36 semitones for VCO and ±8 octaves for VCF**. Authentic retains **±12 semitones and ±5 octaves**. These are engineering ranges, not hardware measurements. **Older Modern patches with nonzero MOD can sound deeper after upgrading**, although their saved values and identifiers remain compatible. These depth changes do not alter the separate pitch-bender sensitivity controls.
-
-There is no polyphony, unison, sequencer, onboard effect, MIDI Learn or hardware Gate/CV interface. The DAW stores sound parameters and factory-program reference. The former branding parameter remains an inert compatibility slot; the visible identity is always Toyland KB-09.
-
-## Evidence and current release status
-
-The signal path uses fixed 4x oversampling and reports **128 samples of resampling latency**. The x64 plugin processes float samples with double-precision filter state. Continuous controls smooth over approximately 8 ms; ordinary host automation follows block updates, while MIDI note offsets are sample-positioned.
-
-[Validation](docs/VALIDATION.md) records release-specific build results, module hashes, installed/staged identity and the bounded scope of completed checks. Historical 0.11–0.13.1 results belong to their respective binaries; they do not validate 0.13.2's changed materials, POWER area, mouse feedback or new AAX wrapper. [The Live report](docs/LIVE_TEST.md) distinguishes native observations from the owner's confirmed Auto-Scale fix; this revision does not claim a new native DAW or physical-display test.
-
-GUI assertions exercise button-selected S/M/L sizes and restoration, transformed footer bounds, held white/black key feedback, bender positions, configured value-popup contrast, individual aging events, cap opacity outside the slot, visible thin blades and moving black top ticks. They do not establish every host gesture or physical-display condition. The renderer combines **nine runtime PNG inputs** with native geometry and wear; a 3840-pixel compiled-editor export does not create additional photographic detail. [Artwork inventory and provenance](Assets/Photoreal/README.md) records current asset sources and dimensions.
-
-Primary-document facts and inferred DSP are distinguished in `docs/SH09_RESEARCH.md`, `docs/DSP_DESIGN.md` and `docs/DSP_DESIGN_DSP.md`. No physical SH-09 audio capture set or completed listening A/B is claimed. `tools/calibrate.py` supports future recording analysis; WAV files under `artifacts/Audio` are software renders.
-
-## Release process
-
-Follow [Kevin's release workflow](docs/RELEASE-WORKFLOW.md). Fixes advance the patch version, new backward-compatible features advance the minor version, and incompatible changes advance the major version. Verify the same version across binaries, manuals, packages and the update feed before publication.
+KB-09 is an unofficial personal project, unaffiliated with and not endorsed by Roland Corporation. Roland and SH-09 identify the instrument that inspired this project.

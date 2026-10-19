@@ -1,23 +1,47 @@
-# KB-09 1.9.0 release validation — in progress
+# KB-09 1.9.0 release validation
 
-Public release remains 1.8.2. This file is a checklist, not a declaration that tests passed.
+Binary source: `4a155170158ea945ed6de9b1738055b695500a6e` on `codex/sh09-emulation`. The runtime implementation is commit `28314180e0fbbd275e7f1d4e738aa3a379a7c9bd`; the later binary-source commit corrects historical release-note encoding. Publication adds documentation and diagnostic-workflow records without changing the tested production source, tests, assets or CMake configuration.
 
-## Remaining gates
+## Completed checks
 
-- Build exact 1.9.0 Windows, universal Mac and Linux sources; record commit and hashes.
-- Run all core/preset/processor/MIDI/POWER/RATE/startup regressions, including new channel filtering and UI menu checks.
-- Render the production GUI and settings dialogs. Mac AGE snapshots must wait for the committed material rather than assuming one timer slice.
-- Validate Windows VST3 in pluginval/Steinberg and the actual host; validate native Mac AU/VST3 and universal architecture/signatures.
-- Exercise startup prompts/fullscreen under KDE/XWayland and retain real hardware limitations.
-- Check all three platform manuals, installation/update paths, license notices, ZIP integrity, executable permissions and hashes.
-- Publish matching source and packages on GitHub; preserve legacy Drive update links for older versions that cannot read GitHub URLs. Advance the update feed only after downloads are verified.
+| Area | Result |
+| --- | --- |
+| Windows x64 | 15/15 core suites, including processor, DSP, presets, POWER, RATE, startup-dialog reservations, input memory and update-link selection |
+| Windows rendering | 881 GUI checks; 63 actual dialog/menu states plus all 17 channel choices and three small settings-dialog layouts |
+| Windows standalone MIDI | 219 checks, zero failures and zero audio-thread C++ new allocations |
+| Windows VST3 | 47 Steinberg checks; pluginval strictness 10 with GUI enabled; 77 actual host assertions plus 8 hosted RATE assertions |
+| Windows installation | Fresh and upgrade installs in an isolated TestRoot; expected binaries/license installed, SHA256 matched and sentinel user file preserved |
+| Universal Mac | Native arm64 runner: 15/15 core suites, repeated MIDI interleaving tests, 881 GUI checks and 63 dialog states; actual hosted RATE checks in AU and VST3 |
+| Mac formats | Standalone, AU and VST3 contain arm64 and x86_64; ad-hoc signatures verified; Apple AU validation succeeded |
+| Linux x86-64 | Native build: 15/15 core suites, 881 GUI checks and 63 dialog states; ELF/shared libraries and executable permissions checked |
+| Documentation and packages | All three OS-specific manuals and OPEN ME FIRST! guides; local references/anchors, ZIP CRC, 24 presets, applicable license notices and package SHA256 |
 
-## Baseline evidence retained
+Native evidence: [Mac run 39185447069](https://github.com/kevinberg84/toyland-kb09/actions/runs/39185447069) and [Linux run 39185447028](https://github.com/kevinberg84/toyland-kb09/actions/runs/39185447028). Windows logs, package manifests and preservation hashes are retained in the local release-validation archive. Installation smoke tests did not replace user preferences or exercise every real system configuration.
 
-The 1.8.3 RATE correction was confirmed by Kevin in Live and passed Windows host regressions.
-The latest Mac baseline passed 15 core suites but failed two bender AGE visual assertions.
-The headless Arch diagnostic crashed in KWin::RenderDevice::eglShareContext before even an independent X11 clock could stay open. That is evidence about the diagnostic environment, not proof of the friend's freeze cause or a successful fix.
+## Confirmed user observation
 
-## Support migration
+Kevin reported “RATE LED seems good now” while testing the corrected Windows VST in Live. Hosted regressions cover window restacking and idle audio processing. This is bounded evidence, not a guarantee for every DAW or system.
 
-Retain a short manual section linking to GitHub Issues and the issue form. Reports are public and require a GitHub account; no automatic diagnostic uploads. Remove the old Google submission form from new manual editions without deleting historical reports or the service.
+## Cameron's Linux report
+
+Cameron's system is Arch Linux, KDE, XWayland and PipeWire; its GPU/driver and Plasma version are unknown. He reported the update and shortcut questions opening together, with a temporary desktop freeze.
+
+A real startup-dialog race was corrected: a shared reservation is acquired before asynchronous dialog creation and held until dismissal. The second question and update results wait for it. Both launch orders, queued-before-visible requests and unrelated modal windows are covered by 16 regression checks. This may solve his report, but his machine has not yet retested it.
+
+The JUCE Linux native-titlebar maximize path uses standard window-manager maximize states, not Windows fullscreen APIs or a monitor resolution change. Headless KDE diagnostics did not reproduce Cameron's complete scenario: the virtual compositor failed before an independent X11 clock, and a nested X11 test explicitly reported missing DRI3 1.2 support in Xvfb. Those failures describe the diagnostic environment, not proof of a defective GPU driver on Cameron's machine.
+
+**Linux physical desktop, audio and MIDI remain UNVERIFIED.** Cameron was unavailable for the candidate retest. Keep this label on the Linux download until real hardware confirmation.
+
+## Preservation and other limits
+
+The DSP engine equations, parameter identities, preset compatibility and processing latency are retained. Raw hashes confirm no changes to Engine.cpp, PowerButtonTravel.h or InsetRedLamp.h. Approved POWER mechanics/timing and LED artwork remain intact; production audio/MIDI capture diagnostics are disabled.
+
+Mac Intel slices were built and architecture-checked, but were not executed on a physical Intel Mac. Mac binaries are ad-hoc signed, not Apple-notarized. Hardware SH-09 equivalence is not established. No automatic diagnostic uploads are performed.
+
+## Distribution and support
+
+GitHub Releases hosts the 1.9.0 platform ZIPs. The manual links to GitHub Issues and explains that reports are public and require a free account. Downloading releases does not require an account.
+
+New update checkers prefer the trusted `releasePage` GitHub URL. Older checkers accept only Drive URLs, so their platform fields and permanent download IDs must be preserved. Advance the advertised feed version only after the old links also provide verified current packages; publishing a GitHub release alone does not update those Drive files.
+
+First-party material is source available under the KB-09 Free Use and No Sale License; dependency licenses remain separate. See [licensing scope](LICENSING.md).

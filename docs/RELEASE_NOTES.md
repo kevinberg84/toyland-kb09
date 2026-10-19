@@ -1,4 +1,4 @@
-# 1.9.0 — Toyland KB-09 (in preparation)
+# 1.9.0 — Toyland KB-09
 
 - Standalone AUDIO / MIDI adds MIDI receive channel: All channels (default) or 1–16. The selection is remembered across launches and applies to all enabled input devices. Changing it releases excluded MIDI holds while preserving GUI notes. Presets and DAW MIDI routing are unchanged.
 - Includes the approved RATE LED host-restacking and idle-audio correction, plus serialized startup update and shortcut prompts.
@@ -6,7 +6,7 @@
 - The manual and installation guides explain release Assets and Source code downloads, retain platform-specific security instructions, and route bug reports to GitHub Issues.
 - First-party source, documentation and assets use the KB-09 Free Use and No Sale License. Commercial music-making is allowed; selling the software or modified versions is prohibited. Third-party licenses remain separate.
 
-Validation is in progress. Linux physical desktop, audio and MIDI verification remains outstanding. Mac binaries are ad-hoc signed, not Apple-notarized. No public update feed has been changed.
+Windows, universal Mac and Linux automated release checks passed; see VALIDATION_1.9.0.md for scope. Linux physical desktop, audio and MIDI verification remains outstanding. Mac binaries are ad-hoc signed, not Apple-notarized. New builds prefer the GitHub release page for update downloads; older builds retain their Drive compatibility links.
 
 # 1.8.3 — Toyland KB-09
 
