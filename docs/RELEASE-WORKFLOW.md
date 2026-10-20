@@ -52,7 +52,8 @@ Publish the update feed only after all three GitHub platform downloads are verif
 
 ### Download destinations
 
-- Project: https://github.com/kevinberg84/toyland-kb09
+- Public website / sharing link: https://kevinberg84.github.io/toyland-kb09/
+- Source repository: https://github.com/kevinberg84/toyland-kb09
 - Current stable downloads: https://github.com/kevinberg84/toyland-kb09/releases/latest
 - Public update feed: https://raw.githubusercontent.com/kevinberg84/toyland-kb09-updates/main/version.json
 

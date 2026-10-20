@@ -1,6 +1,6 @@
 # KB-09 material aging research and implementation guide
 
-Current source: **Toyland KB-09 0.12.0, 2026-10-07**. The user's personal SH-09 photographs now guide the chassis, controls and wear. Gradual material changes are separate from a retained coffee-ring event, individual native key flecks, one native key crack, two lost fader caps and a broken bender tip. The corrected fader artwork is integrated in source; the changes described here do **not** establish a validated new build. [VALIDATION.md](VALIDATION.md) owns build-specific results; the 0.11 evidence below is historical.
+Historical source snapshot: **Toyland KB-09 0.12.0, 2026-10-07**. These are earlier implementation notes; use the [current manual](manual/index.html) for the released appearance. The user's personal SH-09 photographs now guide the chassis, controls and wear. Gradual material changes are separate from a retained coffee-ring event, individual native key flecks, one native key crack, two lost fader caps and a broken bender tip. The corrected fader artwork is integrated in source; the changes described here do **not** establish a validated new build. [VALIDATION.md](VALIDATION.md) owns build-specific results; the 0.11 evidence below is historical.
 
 ## Integrated runtime images
 
@@ -50,7 +50,7 @@ The user's additional close-ups are recorded in [PERSONAL_SH09_CONTROL_REFERENCE
 
 The blending curves, damage placement and warm printing colours below are **art direction and implementation choices**. They are not material measurements, an elapsed-years timeline, or a chemical model. Fine warm stipple on the knob rims is a stylized tarnish/soiling treatment, not proof of iron or a claim that aluminium develops red rust. Screw heads use a dull silver appearance; no ferrous-alloy or red-rust claim is made for them.
 
-## Current 0.12 material treatment
+## Historical 0.12 material treatment
 
 The normalized Age value is `a`. Appearance is deterministic: lowering Age reverses the corresponding cosmetic event. These changes do not remove control hit targets or disable sound control.
 

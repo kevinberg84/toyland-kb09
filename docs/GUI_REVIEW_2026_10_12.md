@@ -1,3 +1,5 @@
+> **Historical record.** Version numbers, proposals, pending statuses and test results below refer to the revision/date described, not the current release. See [1.9.0 validation](VALIDATION_1.9.0.md) and [current sound-model evidence](FIDELITY.md).
+
 # GUI proposal — 12 October 2026
 
 Status: **uncommitted, awaiting Kevin's visual approval**. Base release is 1.4.0, HEAD `756b902`. Do not install, package, push, publish, or change version numbers before approval. The released Host-folder files, installed plug-in and Drive downloads remain unchanged.

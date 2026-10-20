@@ -1,3 +1,5 @@
+> **Historical record.** Version numbers, proposals, pending statuses and test results below refer to the revision/date described, not the current release. See [1.9.0 validation](VALIDATION_1.9.0.md) and [current sound-model evidence](FIDELITY.md).
+
 # KB-09 1.8.3 preparation — October 18, 2026
 
 Status: unreleased candidate. The public release remains 1.8.2.

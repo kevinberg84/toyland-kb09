@@ -1,3 +1,5 @@
+> **Historical record.** Version numbers, proposals, pending statuses and test results below refer to the revision/date described, not the current release. See [1.9.0 validation](VALIDATION_1.9.0.md) and [current sound-model evidence](FIDELITY.md).
+
 # Core DSP validation
 
 Executed 2026-09-27 in the shared workspace with Visual Studio 2026 Developer Environment 18.10.2, native x64 `cl`, C++20, `/O2 /EHsc /W4`. Both standalone test and renderer builds completed without warnings. These are core tests; VST3 wrapper, GUI and Ableton results are recorded separately.

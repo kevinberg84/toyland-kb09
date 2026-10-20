@@ -1,3 +1,5 @@
+> **Historical record.** Version numbers, proposals, pending statuses and test results below refer to the revision/date described, not the current release. See [1.9.0 validation](VALIDATION_1.9.0.md) and [current sound-model evidence](FIDELITY.md).
+
 # Acceptance — Toyland KB-09 0.13.2
 
 Reviewed 2026-10-07. The Windows x64 VST3 and standalone are built; final release checks pass and the VST3 is installed. The tested identity and limits are recorded in [VALIDATION.md](VALIDATION.md). The previous installed 0.13.1 bundle is verified outside scanned folders. AAX compiled as an unsigned development binary; AU remains unbuilt and requires a Mac.

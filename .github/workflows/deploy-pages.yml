@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'website/**'
+      - 'CMakeLists.txt'
+      - 'README.md'
+      - 'docs/FIDELITY.md'
+      - 'docs/VALIDATION.md'
       - 'docs/manual/**'
       - 'tools/build_site.py'
       - '.github/workflows/deploy-pages.yml'

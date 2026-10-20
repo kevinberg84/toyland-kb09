@@ -30,6 +30,7 @@ MAC_DISPLAY = '<strong>Keep the plug-in sharp:</strong> use KB-09’s S/M/L butt
 
 def document(source, platform):
     text = source
+    release = re.search(r"User Manual · Version (\d+\.\d+\.\d+)", source).group(1)
     selected = {'windows':'install-windows', 'mac':'install-mac', 'linux':'linux-standalone'}[platform]
     for identifier in ('install-windows','install-mac','linux-standalone'):
         if identifier != selected:
@@ -47,8 +48,8 @@ def document(source, platform):
         text = text[:start]+install+text[end:]
     text = text.replace('User Manual · Version', f'{PLATFORMS[platform]} User Manual · Version')
     text = text.replace("<title>Toyland KB-09 — A recreation of Kevin's Roland SH-09</title>", f'<title>Toyland KB-09 — {PLATFORMS[platform]} User Manual</title>')
-    text = re.sub(r'<aside class="notice"><strong>KB-09 1\.8\.3\.</strong>.*?</aside>',
-        '<aside class="notice"><strong>KB-09 1.9.0 for '+PLATFORMS[platform]+'.</strong> '+
+    text = re.sub(r'<aside class="notice"><strong>KB-09 \d+\.\d+\.\d+\.</strong>.*?</aside>',
+        '<aside class="notice"><strong>KB-09 '+release+' for '+PLATFORMS[platform]+'.</strong> '+
         ('This download includes the standalone app and '+('VST3.' if platform=='windows' else 'AU and VST3.') if platform!='linux' else 'This download is standalone only. Real Arch desktop audio and MIDI playback remain unverified.')+'</aside>',text,count=1,flags=re.S)
     # Cross-platform hosts stay collapsible, with only applicable recipes.
     if platform == 'windows':

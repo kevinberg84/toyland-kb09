@@ -1,3 +1,5 @@
+> **Historical geometry research.** Source versions and pending statuses below describe the earlier revision under study. Use the [current manual](manual/index.html) and [approved interaction contracts](APPROVED_INTERACTIONS.md) for the released appearance.
+
 # SH-09 control geometry and printed legends
 
 Research inspection: 2026-10-07. Scope: physical references for the Toyland KB-09 interface, not a claim of measured replica geometry. Coordinates below refer to the 1500 × 750 instrument body; the software toolbar adds 34 pixels above it. Photographs are research references, not proposed runtime artwork.

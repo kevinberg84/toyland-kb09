@@ -1,3 +1,5 @@
+> **Historical record.** Version numbers, proposals, pending statuses and test results below refer to the revision/date described, not the current release. See [1.9.0 validation](VALIDATION_1.9.0.md) and [current sound-model evidence](FIDELITY.md).
+
 # GUI proposal — revision 3, 12 October 2026
 
 Approved by Kevin on 12 October 2026 for release 1.5.0, with the additional request for lighter white-key scuffs at Sold As-Is. The final scuff ramp starts after Vintage, Baby! and retains the approved Fire Hazard endpoint. Release validation is recorded separately.

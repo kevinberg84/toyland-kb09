@@ -1,3 +1,5 @@
+> **Historical research/test record.** Statements about the current source, pending work or test results refer to the date and revision below. For the released instrument, see [1.9.0 validation](VALIDATION_1.9.0.md), [current sound-model evidence](FIDELITY.md) and the [manual](manual/index.html).
+
 # Local Windows DSP Test 2 — MIDI feedback
 
 The MPK249 modulation wheel worked in the standalone but behaved poorly in Live. The physical controller was also checked against a Live instrument. Direct Live/MPK testing remains Kevin's acceptance check; the automated reproduction exercises the processor and the actual VST3 module.

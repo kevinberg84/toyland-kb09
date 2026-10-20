@@ -1,6 +1,6 @@
 # Hardware recording comparison
 
-`tools/calibrate.py` imports PCM 8/16/24/32-bit or IEEE float WAV and produces JSON plus spectrum and optional transfer CSV files. It requires Python and NumPy. No hardware recording has been supplied, so the tool is a future measurement framework, not a validation result.
+`tools/calibrate.py` imports PCM 8/16/24/32-bit or IEEE float WAV and produces JSON plus spectrum and optional transfer CSV files. It requires Python and NumPy. Hardware and model recordings have since been supplied and used for the resonant-filter comparisons described in [current sound-model evidence](FIDELITY.md) and the [manual](manual/index.html#filter-craft). The commands below are measurement tools, not proof that every hardware behavior has been calibrated.
 
 Record raw waveforms, filter sweeps, resonance/self-oscillation, ADSR and follower bursts, saturation levels, and noise separately. Keep the unit/revision, warmup time, interface gain, sample rate, exact control positions, note, input level and recording time in an adjacent text file. Disable interface processing and DAW normalization. Preserve raw takes.
 

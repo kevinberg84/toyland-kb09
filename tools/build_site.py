@@ -45,6 +45,18 @@ def validate(output):
 
 
 def build(output):
+    # Fail publication if current documentation still identifies an older release.
+    cmake = (ROOT / 'CMakeLists.txt').read_text(encoding='utf-8-sig')
+    version = re.search(r'project\(SH09 VERSION (\d+\.\d+\.\d+)', cmake).group(1)
+    required = {
+        'docs/manual/index.html': 'User Manual · Version ' + version,
+        'docs/FIDELITY.md': 'Release scope: **KB-09 ' + version + '**',
+        'docs/VALIDATION.md': '(VALIDATION_' + version + '.md)',
+        'README.md': "## What's new in " + version,
+    }
+    for relative, expected in required.items():
+        if expected not in (ROOT / relative).read_text(encoding='utf-8-sig'):
+            raise ValueError('Outdated current-release documentation: ' + relative)
     output = output.resolve()
     source = ROOT / 'website'
     if output == ROOT or output == source or output.is_relative_to(source):

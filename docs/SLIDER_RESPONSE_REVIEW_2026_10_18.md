@@ -1,3 +1,5 @@
+> **Historical research/test record.** Statements about the current source, pending work or test results refer to the date and revision below. For the released instrument, see [1.9.0 validation](VALIDATION_1.9.0.md), [current sound-model evidence](FIDELITY.md) and the [manual](manual/index.html).
+
 # Slider response review — October 18, 2026
 
 Status: user authorized the four squared curves and Linux JACK on October 18, 2026. CurvesJack283 implements physical GUI/MIDI tapering; Engine.cpp and stored/automated effect parameter values remain unchanged. Approved282 remains the previous appearance-only baseline. The updated TS is an audition, not a public release.

@@ -1,3 +1,5 @@
+> **Historical record.** Version numbers, proposals, pending statuses and test results below refer to the revision/date described, not the current release. See [1.9.0 validation](VALIDATION_1.9.0.md) and [current sound-model evidence](FIDELITY.md).
+
 # Five-stage GUI proposal — revision 2, 12 October 2026
 
 **Uncommitted; awaiting Kevin's preview approval.** No install, packaging, push, publication or version bump is authorized until the GUI is approved. Released 1.4.0 files remain unchanged. The earlier preview and its images remain available for comparison.

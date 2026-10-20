@@ -1,6 +1,6 @@
 # Known limitations and remaining fidelity work
 
-For current 1.5.2 boundaries, see [the release validation](VALIDATION_1.5.2.md), [the audio investigation](ANALOG_INVESTIGATION_2026_10.md) and [the user manual](manual/index.html). The material below records **historical 0.13.2** behavior and formats; it is not the current release specification.
+For current 1.9.0 boundaries, see [the release validation](VALIDATION_1.9.0.md), [sound-model evidence and limits](FIDELITY.md) and [the user manual](manual/index.html). The material below records **historical 0.13.2** behavior and formats; it is not the current release specification.
 
 ## Historical 0.13.2 record
 

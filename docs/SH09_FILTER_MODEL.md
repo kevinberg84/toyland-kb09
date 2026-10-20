@@ -1,8 +1,8 @@
 # SH-09 filter model: evidence, assumptions and verification
 
-> Historical candidate document, **not a description of the released 1.5.2
-> engine**. That engine uses the restored normalized four-stage model; see
-> `Source/DSP/Engine.cpp` and `VCF_STEPPING_INVESTIGATION_2026_10_13.md`.
+> **Historical 1.2.0 candidate, not the released 1.9.0 model.**
+> See [current sound-model evidence](FIDELITY.md) and `Source/DSP/ResonanceModel.h`.
+> The earlier restored-core summary is superseded by the later recorded-comparison work.
 > Schematic reinspection correction (13 October): C17–20 are marked 1500 pF
 > (1.5 nF). Further path tracing: R79 (58 kOhm) belongs to the cutoff-control
 > circuit, **not the first audio-input attenuation network**. Audio reaches

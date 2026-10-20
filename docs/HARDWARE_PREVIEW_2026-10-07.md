@@ -1,3 +1,5 @@
+> **Historical record.** Version numbers, proposals, pending statuses and test results below refer to the revision/date described, not the current release. See [1.9.0 validation](VALIDATION_1.9.0.md) and [current sound-model evidence](FIDELITY.md).
+
 # Hardware visual preview — 7 October 2026
 
 **Release follow-up:** this historical preview is incorporated in 0.13.2, whose rebuilt VST3 passed final release checks and was installed. See [VALIDATION.md](VALIDATION.md) for the new binary identity; the unchanged-install statements below describe the preview stage.

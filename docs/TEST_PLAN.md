@@ -1,6 +1,6 @@
 # Acceptance record
 
-The project remains in development until the validation record records actual results. Research classifications do not substitute for executable tests.
+Current release results are recorded in [1.9.0 validation](VALIDATION_1.9.0.md). The checkpoint list below is historical; research classifications do not substitute for executable tests.
 
 1. Disposable VSTLab: compiled x64 Release with JUCE 9.0.2, loaded through JUCE VST3 format, generated audio at five rates and seven block sizes, state recall and repeated editor creation passed; pluginval level 5 passed. Logs are under `artifacts/Validation`.
 2. Core DSP: frequency/range/bend, coherent sub division, PWM, LFO/delay, ADSR/retrigger, low-note priority, external detector and filter numerical stress.

@@ -1,12 +1,12 @@
 # KB-09 formats and personal package
 
-Current 1.4.0 distribution: Windows x64 VST3/standalone, Mac universal AU/VST3/standalone, and Linux x86-64 standalone only. Mac native CI and AU validation pass; signing is ad-hoc, without notarization. AAX is not part of the friend-facing release. See [current validation](VALIDATION_1.4.0.md), [build instructions](BUILD.md) and [release destinations](RELEASE-WORKFLOW.md).
+Current 1.9.0 distribution: Windows x64 VST3/standalone, Mac universal AU/VST3/standalone, and Linux x86-64 standalone only. Mac native CI, AU validation and hosted AU/VST3 checks passed; signing is ad-hoc, without notarization. Linux physical desktop/audio/MIDI confirmation remains outstanding. AAX is not part of the friend-facing release. See [current validation](VALIDATION_1.9.0.md), [build instructions](BUILD.md) and [release destinations](RELEASE-WORKFLOW.md).
 
 ## Historical 0.13.2 plan
 
 Updated 7 October 2026. The owner requested a finished Windows update, AU/AAX where possible, an updated manual and a desktop package. The shared CMake project now defines the native format paths below. Exact build, validator, package and installation results are recorded in [VALIDATION.md](VALIDATION.md); a configured target is not a host-tested release.
 
-## Formats and their actual boundaries
+## Historical 0.13.2 formats and boundaries
 
 | Deliverable | CMake target | This workstation | Remaining platform work |
 |---|---|---|---|

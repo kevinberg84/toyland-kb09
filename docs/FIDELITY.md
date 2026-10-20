@@ -1,30 +1,50 @@
-# Fidelity evidence classification
+# KB-09 sound model: evidence and limits
 
-Current release 1.3.0 restores the preserved 1.1.3 four-times DSP core after listening feedback. The 1.2.0 coupled diode/OTA revision is superseded. The restored core is a circuit-informed nonlinear four-stage approximation, not a component-calibrated model. Modern FREE adds a 0.05 Hz minimum only within the bottom fifth of RATE travel; Authentic retains 0.2–25 Hz. Parameter IDs, state format and reported 128-sample latency are unchanged. Earlier evidence below is historical unless explicitly identified as current.
+Release scope: **KB-09 1.9.0**. Reviewed 19 October 2026 against the released engine, current manual, recording-comparison provenance and release validation. This page describes the current model; older design and investigation records are historical evidence, not current release specifications.
 
+## What comes from the SH-09 documentation
 
-This describes **Toyland KB-09 0.11.0**. “Authentic” names the software's original-routing mode; it is not a claim that every control law or sound has been measured against hardware.
+The original owner and service documentation establish the monophonic signal path, low-note selection, noise/saw/square/pulse sources, divider sub oscillator, mixer, envelope and LFO routing, external audio and envelope following, and VCA modes. The service schematic identifies four selected BA662 filter stages and a BA662 VCA. These relationships guide the software, but reading a schematic correctly does not establish that its digital approximation behaves identically.
 
-## Verified from primary SH-09 documentation
+See the [SH-09 documentation research](SH09_RESEARCH.md) for sources and circuit references.
 
-The owner/service documents establish the monophonic control layout and routing, low-note selection, selectable noise/saw/square/pulse, divider sub modes, LFO/PWM/envelope routing, external mixer input and follower-to-VCF behavior, VCA modes, and published endpoint ranges. The service schematic identifies four selected BA662 filter stages, a BA662 VCA and the VCO/sub/noise circuits. These facts guide the implementation; a correct schematic reading alone does not certify its digital approximation. See SH09_RESEARCH.md for page-level evidence and sources.
+## What the released sound engine does
 
-## Supported by other evidence
+The 1.9.0 engine uses four-times internal processing, band-limited oscillator edges and filtered downsampling. The filter is a reduced nonlinear four-stage model. Its stage states and a diode-like resonance limiter are solved together with instantaneous feedback. Later stages have different nonlinear headroom scales, informed by the schematic's interstage gain relationships. The filter generates its own self-oscillation through that feedback loop; it does not mix in a separate sine oscillator or use automatic level correction.
 
-Real-instrument photographs support the panel section order, materials and proportions. Published virtual-analog research supports trapezoidal integration, bounded nonlinear feedback solving and band-limiting choices. Official JUCE/VST3/Ableton documentation supports the host adapter. Recorded compiled-module and Live tests demonstrate the implemented route only for the binaries and host sessions identified in VALIDATION.md and LIVE_TEST.md; they do not automatically validate a subsequent 0.11.0 build. Contemporary instrument documentation informs optional workflow features. None of these substitutes for measuring a physical SH-09.
+The model also applies a resonance-dependent pitch correction to compensate for the frequency shift introduced by its nonlinear equations. This is software calibration, not a component copied from the original circuit. Absolute stage headroom, limiter scales, source levels, control mappings and output coloration are engineering choices rather than measured values for every component in the hardware.
 
-## Engineering inferences
+Implementation references: [Engine.cpp](../Source/DSP/Engine.cpp), [Engine.h](../Source/DSP/Engine.h) and [ResonanceModel.h](../Source/DSP/ResonanceModel.h). The old 1.3.0 restored-core description and the superseded 1.2.0 candidate do not describe the currently released filter.
 
-Normalized nonlinear OTA stages, saturation and resonance limiting, filter/follower equations, control tapers between published endpoints, source gain staging, anti-alias filters, output coupling, smoothing times, pitch-bend depth maps and the deterministic Condition profile are explicit implementation choices. The Authentic MOD maxima—±12 semitones for VCO pitch and ±5 octaves for VCF cutoff—are engineering choices, not measured hardware values or maxima established by the reviewed primary documents.
+## What the hardware recordings contributed
 
-Modern velocity, aftertouch, tempo sync, input trim and the 0.11.0 extended MOD depths are software extensions. Modern VCO MOD reaches ±36 semitones (±3 octaves); Modern VCF MOD reaches ±8 octaves. Those spans are applied before the existing oscillator/filter frequency bounds. The original 35 parameter IDs/order and normalized values remain intact, but an old Modern patch with nonzero MOD intentionally gains depth; see DSP_DESIGN.md for the exact scaling and how to recover its previous depth. Authentic depth mappings are unchanged by this extension.
+The crucial test put a steady VCO into a self-oscillating filter while its pitch swept slowly past the VCO’s harmonics. The two signals interacted inside the filter, revealing whether its tone stayed steady, changed level or was pulled toward the incoming oscillator.
 
-The current Toyland KB-09 panel combines embedded raster artwork and drawn interactive controls. It replaces the earlier vector-only interpretation; its visual treatment is separate from evidence of sonic fidelity.
+We compared a collection of SH-09 and KB-09 recordings at different VCO mixer levels, alongside filter-only and oscillator-only recordings, captured at 96 kHz in 32-bit floating point. Listening, waveforms and frequency analysis guided the model toward the hardware’s balance of stable resonance and musical interaction. Matching pitch and relative signal levels made those comparisons more useful than copying slider positions alone.
 
-## Bounded digital evidence for extended modulation
+The earlier approximation could be pulled too strongly toward the incoming oscillator's pitch during the sweep. The revised stage headroom and feedback limiter address that interaction. The improvement follows the hardware's behavior more closely while remaining a reduced mathematical model; it is not a simulation of every transistor and component.
 
-The standalone extended-depth core test log, `artifacts/ModDepth/DSPTests.txt`, records **92 passing assertions and zero failures**. It measures VCO endpoint frequencies and VCF transfer behavior, exercises maximum Modern depths at five sample rates with a 25 Hz LFO, and reports zero solver failures and zero tracked C++ allocation calls in the stress loops. These results establish the stated software behavior under the test conditions. They do not establish hardware equivalence, all-frequency alias limits or completion of the final 0.11.0 plug-in/host validation.
+The manual's overview uses common time and amplitude scales and fixed calibration gains, with no automatic leveling or peak normalization. The close-up uses excerpts from the same recordings, each starting at an upward zero crossing. The hardware and software recordings are not phase locked, and fine waveform differences remain. See [the recording and comparison explanation](manual/index.html#filter-craft) and [figure provenance](manual/assets/vcf-comparison-provenance.json).
 
-## Unverified without physical SH-09 measurements
+## What those comparisons do not prove
 
-Waveform curvature, PWM transitions, noise spectrum, exact stage drive, cutoff/resonance interaction and self-oscillation level, input sensitivity and volts-to-dBFS mapping, active follower timing, envelope/control-law curves, VCA/output coloration and real-unit aging/tolerance distributions have not been fitted to hardware captures. No measured error bounds, blind listening result, completed listening A/B or component-level SPICE equivalence is claimed. The calibration tools and generated stimuli prepare for that work.
+- The examples compare one aged SH-09 and particular settings, not every surviving instrument or possible patch.
+- The recording set is not a component-by-component calibration of BA662 behavior, diode characteristics, noise, oscillator curvature, envelope timing, VCA coloration or external-input sensitivity.
+- No full-circuit SPICE equivalence, comprehensive measured error bounds or controlled blind-listening equivalence is claimed.
+- Natural beating, signal interaction and unit-to-unit variation remain relevant; matching two pictures is not a complete sound-equivalence test.
+
+## Software additions and compatibility
+
+AUTHENTIC preserves original-style routing; its name does not mean that every control law has been measured against hardware. MODERN adds features including velocity, aftertouch, tempo sync and extended control ranges. AGE is a creative, deterministic condition model for sound and appearance, not a measurement of decades of component deterioration.
+
+The 1.8.2 physical slider changes give PORTAMENTO and selected modulation-depth controls squared response for finer adjustment near the bottom. Stored preset and DAW automation effect amounts retain their meanings; MIDI CC response follows the revised physical taper. The 1.9.0 release adds standalone MIDI receive-channel selection and fixes visual/startup behavior without changing the released sound-engine equations, preset compatibility or reported 128-sample processing latency.
+
+## Release validation and platform limits
+
+The [1.9.0 validation record](VALIDATION_1.9.0.md) distinguishes automated checks, actual hosted tests and user observations. Windows standalone/VST3, universal Mac standalone/AU/VST3 and Linux x86-64 standalone were built and checked in their documented environments. These checks do not establish every DAW, device, desktop or sample-rate/buffer combination.
+
+Linux physical desktop, audio and MIDI confirmation remains outstanding. Mac builds are ad-hoc signed, not Apple-notarized; Intel slices were architecture-checked but not run on a physical Intel Mac. These are current distribution limits, separate from evidence about the sound model.
+
+## Reading older engineering notes
+
+[DSP design notes](DSP_DESIGN.md), [the 1.2.0 filter candidate](SH09_FILTER_MODEL.md), dated investigations and versioned validation files document how the implementation developed. Their version-specific proposals, counts, measurements and pending statuses must not be read as current release claims. Use this page, the [current manual](manual/index.html) and [current validation](VALIDATION_1.9.0.md) for the released instrument.

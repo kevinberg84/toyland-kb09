@@ -1,3 +1,5 @@
+> **Historical research/test record.** Statements about the current source, pending work or test results refer to the date and revision below. For the released instrument, see [1.9.0 validation](VALIDATION_1.9.0.md), [current sound-model evidence](FIDELITY.md) and the [manual](manual/index.html).
+
 # SH-09 DSP research: next approach after the first recordings
 
 13 October 2026. Research memo, not a release specification. No production DSP

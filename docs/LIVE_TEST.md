@@ -1,3 +1,5 @@
+> **Historical research/test record.** Statements about the current source, pending work or test results refer to the date and revision below. For the released instrument, see [1.9.0 validation](VALIDATION_1.9.0.md), [current sound-model evidence](FIDELITY.md) and the [manual](manual/index.html).
+
 # Ableton Live observations
 
 ## Human report — 2026-10-07

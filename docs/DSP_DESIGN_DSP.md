@@ -1,6 +1,6 @@
-# DSP implementation design
+> **Historical design notes.** These describe earlier implementation targets and revisions, not the released 1.9.0 filter. See [current sound-model evidence](FIDELITY.md), the [manual](manual/index.html#filter-craft) and [1.9.0 validation](VALIDATION_1.9.0.md).
 
-Current release 1.3.0 restores the preserved 1.1.3 four-times DSP core after listening feedback. The 1.2.0 coupled diode/OTA revision is superseded. The restored core is a circuit-informed nonlinear four-stage approximation, not a component-calibrated model. Modern FREE adds a 0.05 Hz minimum only within the bottom fifth of RATE travel; Authentic retains 0.2–25 Hz. Parameter IDs, state format and reported 128-sample latency are unchanged. Earlier evidence below is historical unless explicitly identified as current.
+# DSP implementation design
 
 
 Written before core implementation, 2026-09-26. This is a circuit-informed reduced model and not a measured hardware-equivalence claim.
