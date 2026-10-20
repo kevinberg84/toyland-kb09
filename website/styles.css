@@ -10,3 +10,5 @@ dialog{padding:0;border:1px solid #687261;border-radius:7px;width:94vw;max-width
 .hero h1 span{white-space:nowrap}
 
 .recording-story{border-top:1px solid #56604f;padding-top:30px;margin:0 0 30px;max-width:960px}.recording-story .eyebrow{margin-bottom:15px}.recording-story h3{font-size:29px;margin-bottom:20px}.recording-story p:not(.eyebrow){font-size:17px;line-height:1.7;color:#c1c6ba}.sound-links{display:flex;flex-direction:column;align-items:flex-end;gap:14px}.sound-links .text-link{font-size:13px}@media(max-width:700px){.recording-story h3{font-size:25px}.recording-story p:not(.eyebrow){font-size:15px}.sound-links{align-items:flex-start}}
+
+.no-wrap{white-space:nowrap}
