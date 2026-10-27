@@ -43,7 +43,7 @@ The 1.8.2 physical slider changes give PORTAMENTO and selected modulation-depth 
 
 The [1.10.0 validation record](VALIDATION_1.10.0.md) distinguishes automated checks, actual hosted tests and user observations. Windows standalone/VST3, universal Mac standalone/AU/VST3 and Linux x86-64 standalone were built and checked in their documented environments. These checks do not establish every DAW, device, desktop or sample-rate/buffer combination.
 
-Linux standalone operation has been reported on Arch/KDE with XWayland and PipeWire. The startup-dialog fix has passed automated checks, but confirmation of that specific fix on the physical desktop remains outstanding. Other desktop/audio/MIDI combinations are not covered by that report. Mac builds are ad-hoc signed, not Apple-notarized; Intel slices were architecture-checked but not run on a physical Intel Mac. These are current distribution limits, separate from evidence about the sound model.
+Linux standalone operation has been reported on Arch/KDE with XWayland and PipeWire. Startup update and shortcut prompts are serialized to prevent overlapping dialogs. Other desktop/audio/MIDI combinations are not covered by that report. Mac builds are ad-hoc signed, not Apple-notarized; Intel slices were architecture-checked but not run on a physical Intel Mac. These are current distribution limits, separate from evidence about the sound model.
 
 ## Reading older engineering notes
 

@@ -22,7 +22,7 @@ Open **Assets** on the release page and choose your operating system's ZIP. You 
 | --- | --- | --- |
 | Windows 64-bit | Standalone, VST3 | ASIO, WASAPI and DirectSound |
 | macOS 12 or later | Standalone, AU, VST3 | Universal Apple Silicon / Intel; ad-hoc signed, not notarized |
-| Linux x86-64 | Standalone | ALSA and JACK, including PipeWire's JACK layer; operation reported on Arch/KDE with XWayland and PipeWire. Physical-desktop confirmation of the startup-dialog fix is pending. |
+| Linux x86-64 | Standalone | ALSA and JACK, including PipeWire's JACK layer; operation reported on Arch/KDE with XWayland and PipeWire. |
 
 1. Download and extract the whole ZIP.
 2. Open **OPEN ME FIRST!.html** and follow the instructions for your system.
@@ -50,7 +50,7 @@ This is an approximation, not a claim of measured hardware equivalence. See the 
 ## What's new in 1.10.0
 
 - Fixed the false error message after successfully loading a preset, in standalone and plug-in formats.
-- Added the approved top shadow across the performance bay, including its upper strip.
+- Added a top shadow across the performance bay, including its upper strip.
 - Added release highlights to future update prompts. Existing 1.9.0 installations retain their original prompt for this upgrade.
 - Refreshed the manual and installation guides with the official download page and clearer Linux verification wording.
 - The project website now includes a full KB-09 audio demo and cookie-free visitor analytics.
@@ -59,7 +59,7 @@ This is an approximation, not a claim of measured hardware equivalence. See the 
 
 - Standalone MIDI receive channel: **All** by default, or **1–16**, remembered between launches.
 - RATE LED corrections for host window ordering and idle audio processing. The corrected Windows VST was confirmed working in Ableton Live.
-- Startup update and shortcut questions wait for one another. This fixes the overlapping-dialog race; the reported KDE desktop freeze still needs confirmation on a physical system.
+- Startup update and shortcut questions wait for one another. This fixes the overlapping-dialog race.
 - Updated manual, installation guides and GitHub bug reporting.
 
 Read the [release notes](docs/RELEASE_NOTES.md) and [validation record](docs/VALIDATION_1.10.0.md) for testing scope and remaining limitations.

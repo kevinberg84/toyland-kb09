@@ -1,6 +1,6 @@
 # KB-09 formats and personal package
 
-Current 1.9.0 distribution: Windows x64 VST3/standalone, Mac universal AU/VST3/standalone, and Linux x86-64 standalone only. Mac native CI, AU validation and hosted AU/VST3 checks passed; signing is ad-hoc, without notarization. Linux physical desktop/audio/MIDI confirmation remains outstanding. AAX is not part of the friend-facing release. See [current validation](VALIDATION_1.9.0.md), [build instructions](BUILD.md) and [release destinations](RELEASE-WORKFLOW.md).
+Current 1.10.0 distribution: Windows x64 VST3/standalone, Mac universal AU/VST3/standalone, and Linux x86-64 standalone only. Mac native CI, AU validation and hosted AU/VST3 checks passed; signing is ad-hoc, without notarization. Linux operation was reported on Arch/KDE with XWayland and PipeWire. AAX is not part of the friend-facing release. See [current validation](VALIDATION_1.10.0.md), [build instructions](BUILD.md) and [release destinations](RELEASE-WORKFLOW.md).
 
 ## Historical 0.13.2 plan
 

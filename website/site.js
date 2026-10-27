@@ -115,7 +115,7 @@
   const repo = 'https://github.com/kevinberg84/toyland-kb09';
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 6000);
-  fetch('https://api.github.com/repos/kevinberg84/toyland-kb09/releases/latest', { signal: controller.signal })
+  fetch('https://api.github.com/repos/kevinberg84/toyland-kb09/releases/latest', { signal: controller.signal, cache: 'no-store' })
     .then(response => { if (!response.ok) throw new Error('Use the release-page fallback'); return response.json(); })
     .then(release => {
       if (!Array.isArray(release.assets) || release.draft || release.prerelease) return;

@@ -4,8 +4,8 @@
 - Added a top contact shadow to the performance bay, matching the keys and covering the upper strip.
 - Added short release highlights to future update prompts. Existing 1.9.0 installations keep their original prompt for this upgrade; the new layout works after upgrading.
 - Updated the manual and all three OPEN ME FIRST! guides with the official website download section and an easier-to-find update section.
-- Removed the blanket Linux UNVERIFIED package label. Operation has been reported on Arch/KDE with XWayland and PipeWire; physical-desktop confirmation of the startup-dialog fix is still pending.
-- Updated the landing page with the user's KB-09 audio demo, clearer typography, a two-tone played/remaining timeline and cookie-free analytics. Every demo sound, including kick and hi-hats, comes from KB-09; only EQ, compression, reverb, delay and panning were added.
+- Removed the blanket Linux UNVERIFIED package label. Operation has been reported on Arch/KDE with XWayland and PipeWire.
+- Updated the landing page with an all-KB-09 audio demo, clearer typography, a two-tone played/remaining timeline and cookie-free analytics. Every demo sound, including kick and hi-hats, comes from KB-09; only EQ, compression, reverb, delay and panning were added.
 
 Sound-engine equations, parameter identities, preset compatibility, POWER press/hold/release behavior, independent RATE rendering and processing latency are unchanged. Mac builds are ad-hoc signed and not notarized. See VALIDATION_1.10.0.md for the final build and check results.
 

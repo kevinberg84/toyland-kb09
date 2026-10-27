@@ -28,7 +28,7 @@ Drive upload, update-feed publication, or replacement of the released product.
 
 After every completed validated release build, update the installed plug-in and the platform folders in Kevin's OneDrive Desktop Host Folder, then notify him. Publish the Windows, Mac and Linux ZIPs on GitHub Releases and verify matching hashes. Drive maintenance is retired.
 The Desktop Host folder must contain exactly three platform folders: Windows,
-Mac, and Linux standalone (UNVERIFIED until hardware verification). Keep ZIP
+Mac, and Linux standalone. Keep ZIP
 archives and previous-release backups outside that Host folder. Preserve the
 three existing platform folder paths and update their contents in place.
 If a DAW locks the installed binary, ask Kevin to save and close it; never kill
@@ -45,9 +45,7 @@ OPEN ME FIRST file. Installed help uses that same self-contained edition as
 `Support/User Guide/index.html`. Do not include other operating systems' guides.
 
 Mac is a verified released platform. Do not restore the old verification label.
-Distribute and document only usable plug-in formats. The Linux folder and ZIP
-retain UNVERIFIED until real launch, audio playback and MIDI input are confirmed
-on a physical Arch desktop. Automated checks alone do not remove that tag.
+Distribute and document only usable plug-in formats. The Linux folder and ZIP no longer carry a blanket UNVERIFIED label: standalone operation was reported on Arch/KDE with XWayland and PipeWire. Treat the serialized-startup-dialog correction as addressed unless a new report indicates otherwise, as Kevin explicitly requested on October 27, 2026.
 Publish the update feed only after all three GitHub platform downloads are verified.
 
 ### Download destinations

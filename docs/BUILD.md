@@ -1,4 +1,4 @@
-# Toyland KB-09 1.9.0 — source/build instructions
+# Toyland KB-09 1.10.0 - source/build instructions
 
 JUCE **9.0.2** is an external dependency; this project does not modify it. The development toolchain is MSVC 19.51.36260.0, Visual Studio 18 2026, the Windows SDK and C++20. CMake's generator selects the compiler without changing PowerShell execution policy.
 
@@ -24,7 +24,7 @@ The project adds the generated `Info.txt` dependency to JUCE 9's Windows resourc
 
 ## Targets and source contents
 
-The internal target remains `SH09`; the public product is **Toyland KB-09**. CMake sets version 1.9.0. Windows builds **VST3** and **Standalone** by default. Native macOS builds also enable **AU** by default; **AAX Native** is an explicit option on Windows/macOS. Target configuration does not establish that a particular format was built, signed or host-tested. Consult [VALIDATION.md](VALIDATION.md) for the actual release artifacts. `Assets/Branding.h` defines the visible identity; compatibility keys remain unchanged as described in [REBRANDING.md](REBRANDING.md).
+The internal target remains `SH09`; the public product is **Toyland KB-09**. CMake sets version 1.10.0. Windows builds **VST3** and **Standalone** by default. Native macOS builds also enable **AU** by default; **AAX Native** is an explicit option on Windows/macOS. Target configuration does not establish that a particular format was built, signed or host-tested. Consult [VALIDATION.md](VALIDATION.md) for the actual release artifacts. `Assets/Branding.h` defines the visible identity; compatibility keys remain unchanged as described in [REBRANDING.md](REBRANDING.md).
 
 | Target | Release output relative to build directory |
 |---|---|

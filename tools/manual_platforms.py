@@ -50,7 +50,7 @@ def document(source, platform):
     text = text.replace("<title>Toyland KB-09 — A recreation of Kevin's Roland SH-09</title>", f'<title>Toyland KB-09 — {PLATFORMS[platform]} User Manual</title>')
     text = re.sub(r'<aside class="notice"><strong>KB-09 \d+\.\d+\.\d+\.</strong>.*?</aside>',
         '<aside class="notice"><strong>KB-09 '+release+' for '+PLATFORMS[platform]+'.</strong> '+
-        ('This download includes the standalone app and '+('VST3.' if platform=='windows' else 'AU and VST3.') if platform!='linux' else 'This download is standalone only. Operation has been reported on Arch Linux with KDE, XWayland and PipeWire. Physical-desktop confirmation of the startup-dialog fix is still pending.')+'</aside>',text,count=1,flags=re.S)
+        ('This download includes the standalone app and '+('VST3.' if platform=='windows' else 'AU and VST3.') if platform!='linux' else 'This download is standalone only. Operation has been reported on Arch Linux with KDE, XWayland and PipeWire.')+'</aside>',text,count=1,flags=re.S)
     # Cross-platform hosts stay collapsible, with only applicable recipes.
     if platform == 'windows':
         for identifier in ('garageband','future-hosts'):
@@ -105,7 +105,7 @@ def document(source, platform):
         text=text.replace('In a DAW, use the host’s mapping system; MIDI MAP is available only in standalone.','')
         text=text.replace('In a DAW, record or edit MIDI Pitch Bend envelopes; the bender position is a MIDI performance control, while its VCO and VCF depth faders are automatable plug-in parameters.', 'The wheel’s position is a performance control; the VCO and VCF depth faders set its sensitivities.')
         text=text.replace('Check track monitoring, MIDI input, VOLUME and the DAW output.', 'Check the selected audio output, MIDI input and VOLUME.')
-        text=replace(text,'blurry-display','<details id="blurry-display"><summary>The display is blurry or low resolution</summary><p>Keep your monitor at its native resolution and use KB-09’s S/M/L buttons for size. Reopen the app after a desktop scaling change. On Wayland, XWayland scaling can affect appearance; compare an X11 session if available. Include your desktop/session, scale and resolution in a <a href="#feedback">bug report</a>. Behavior can vary with desktop and display configuration; the startup-dialog fix still awaits physical-desktop confirmation.</p></details>')
+        text=replace(text,'blurry-display','<details id="blurry-display"><summary>The display is blurry or low resolution</summary><p>Keep your monitor at its native resolution and use KB-09’s S/M/L buttons for size. Reopen the app after a desktop scaling change. On Wayland, XWayland scaling can affect appearance; compare an X11 session if available. Include your desktop/session, scale and resolution in a <a href="#feedback">bug report</a>. Behavior can vary with desktop and display configuration.</p></details>')
         text=text.replace('note the DAW version,','note')
         text=text.replace('a host can constrain a plug-in\'s requested dimensions.', 'a desktop can constrain a window’s requested dimensions.')
         text=text.replace('Select the input connected to your source in AUDIO / MIDI, raise EXT,', 'Select the input connected to your source in AUDIO / MIDI and turn off <strong>Mute audio input</strong> only when the routing avoids feedback. Raise EXT,')

@@ -2,7 +2,7 @@
 
 Open `index.html` in a browser. Keep `styles.css` and the complete `assets/` folder alongside it. The guide uses local images and system fonts, so its contents, instructions and pictures work offline. Links to DAW vendors require an internet connection.
 
-`index.html` is the shared editorial source. Distribute the separate Windows, Mac or Linux edition from `platforms/<os>/User Manual.html`; each is self-contained and includes only that platform's setup and troubleshooting. Linux remains standalone-only. Operation has been reported on Arch/KDE with XWayland and PipeWire; physical confirmation of the startup-dialog fix is pending. OS-specific `docs/open-me-first*.html` accompanies the corresponding manual.
+`index.html` is the shared editorial source. Distribute the separate Windows, Mac or Linux edition from `platforms/<os>/User Manual.html`; each is self-contained and includes only that platform's setup and troubleshooting. Linux remains standalone-only. Operation has been reported on Arch/KDE with XWayland and PipeWire; startup update and shortcut prompts are serialized. OS-specific `docs/open-me-first*.html` accompanies the corresponding manual.
 
 Use **Print / Save PDF** for a printable copy. The browser expands the troubleshooting answers for printing and restores their earlier state afterward. HTML is the supplied navigable manual; there is no separately reviewed PDF edition.
 
