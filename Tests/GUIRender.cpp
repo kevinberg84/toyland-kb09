@@ -685,13 +685,27 @@ void checkCapLoss(SH09Processor& processor,juce::Component& editor,Checks& check
     setParameter(processor,"age",initialAge);settleEditor();
 }
 
-void checkAgeEvents(SH09Processor& processor, juce::Component& editor, Checks& checks) {
+void checkAgeEvents(SH09Processor& processor, juce::Component& editor, const juce::File& directory, Checks& checks) {
     auto* keyboard=findComponent(editor,"keyboard");
     if(keyboard==nullptr)return;
     auto* panel=keyboard->getParentComponent();
     const auto capture=[&](float age) {
-        setParameter(processor,"age",age);settleEditor();
-        return panel->createComponentSnapshot(panel->getLocalBounds(),true,1.0f);
+        setParameter(processor,"age",age);
+        // AGE intentionally commits after a deferred timer. A single 120 ms
+        // dispatch slice can end before that commit on a busy native runner.
+        // Wait for the reported stage, without relaxing the pixel assertion.
+        const auto target=kb09_gui::appearanceAge(age);
+        const auto deadline=juce::Time::getMillisecondCounterHiRes()+2000.0;
+        do {settleEditor();}
+        while((bool(panel->getProperties().getWithDefault("conditionRenderDeferred",false))
+               ||std::abs(float(panel->getProperties().getWithDefault("displayedConditionAge",-1.f))-target)>.00001f)
+              &&juce::Time::getMillisecondCounterHiRes()<deadline);
+        if(bool(panel->getProperties().getWithDefault("conditionRenderDeferred",false))
+           ||std::abs(float(panel->getProperties().getWithDefault("displayedConditionAge",-1.f))-target)>.00001f)
+            throw std::runtime_error("AGE stage did not commit before cheek capture");
+        const auto image=panel->createComponentSnapshot(panel->getLocalBounds(),true,1.0f);
+        writePNG(image.getClippedImage({0,34,55,732}),directory.getChildFile("cheek-age-"+juce::String(kb09_gui::appearanceStage(age))+".png"));
+        return image;
     };
     for(int stage=0;stage<5;++stage) {
         const float centre=stage*.25f;
@@ -702,8 +716,13 @@ void checkAgeEvents(SH09Processor& processor, juce::Component& editor, Checks& c
             "cheek has one fixed appearance throughout stage "+juce::String(stage));
         checks.expect(std::abs(processor.state.getRawParameterValue("age")->load()-juce::jlimit(0.f,1.f,centre+.04f))<1.e-6f,
             "legacy intermediate AGE remains stored without parameter quantization");
-        if(stage<4)checks.expect(changedPixels(before.getClippedImage(cheek),capture((stage+1)*.25f).getClippedImage(cheek),0)>200,
-            "successive cheek stages retain distinct material and local wear, including subtle early dulling");
+        if(stage<4) {
+            const auto next=capture((stage+1)*.25f);
+            const int changed=changedPixels(before.getClippedImage(cheek),next.getClippedImage(cheek),0);
+            std::cout<<"CHEEK stages="<<stage<<"->"<<(stage+1)<<" changed="<<changed<<'\n';
+            checks.expect(changed>200,
+                "successive cheek stages retain distinct material and local wear, including subtle early dulling");
+        }
     }
     const float width=float(keyboard->getWidth())/19;
     juce::Colour healthyIvory;
@@ -1624,7 +1643,7 @@ void renderFixture(const Fixture& fixture, const juce::File& directory, Checks& 
         checkMidiBender(processor,*editor,directory,checks);
         checkModWheel(processor,*editor,checks);
         checkEnvelopeMeter(processor,*editor,checks);
-        checkAgeEvents(processor, *editor, checks);
+        checkAgeEvents(processor, *editor, directory, checks);
     }
 
     // Change the patch after creating the editor to exercise attachment redraw.

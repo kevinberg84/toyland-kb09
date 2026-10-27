@@ -67,6 +67,16 @@ jobs:
       - name: Test keyboard visual feedback and panel rendering
         if: inputs.validated_run == ''
         run: build-mac/SH09GUIRender_artefacts/Release/SH09GUIRender gui-validation
+      - name: Preserve cheek-stage rendering evidence
+        if: always() && inputs.validated_run == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: KB-09-Mac-cheek-validation
+          path: |
+            gui-validation/cheek-age-*.png
+            gui-validation/GUIRender.log
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Check architectures and sign for development testing
         shell: bash
         run: |
