@@ -70,6 +70,47 @@
   document.getElementById('close-dialog').addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', event => { if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
 
+  // The timeline shows played and remaining audio only, never buffered ranges.
+  const demo = document.querySelector('.demo-player audio');
+  const controls = document.querySelector('.demo-controls');
+  if (demo && controls) {
+    const toggle = controls.querySelector('.demo-toggle');
+    const mute = controls.querySelector('.demo-mute');
+    const seek = controls.querySelector('.demo-seek');
+    const clock = controls.querySelector('.demo-time');
+    const format = seconds => {
+      const value = Math.max(0, Math.floor(seconds || 0));
+      return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
+    };
+    const update = () => {
+      const duration = Number.isFinite(demo.duration) ? demo.duration : 218;
+      seek.max = String(duration);
+      seek.value = String(demo.currentTime);
+      seek.style.setProperty('--played', `${duration > 0 ? demo.currentTime / duration * 100 : 0}%`);
+      seek.setAttribute('aria-valuetext', `${format(demo.currentTime)} of ${format(duration)}`);
+      clock.textContent = `${format(demo.currentTime)} / ${format(duration)}`;
+      controls.classList.toggle('is-playing', !demo.paused);
+      controls.classList.toggle('is-muted', demo.muted);
+      toggle.setAttribute('aria-label', demo.paused ? 'Play demo' : 'Pause demo');
+      mute.setAttribute('aria-label', demo.muted ? 'Unmute demo' : 'Mute demo');
+      mute.setAttribute('aria-pressed', String(demo.muted));
+    };
+    toggle.addEventListener('click', () => {
+      if (demo.paused) demo.play().catch(() => {
+        controls.hidden = true; demo.hidden = false; demo.controls = true;
+      });
+      else demo.pause();
+    });
+    mute.addEventListener('click', () => { demo.muted = !demo.muted; });
+    seek.addEventListener('input', () => { if (demo.readyState > 0) demo.currentTime = Number(seek.value); update(); });
+    for (const event of ['loadedmetadata', 'timeupdate', 'play', 'pause', 'ended', 'volumechange', 'seeked'])
+      demo.addEventListener(event, update);
+    update();
+    controls.hidden = false;
+    demo.controls = false;
+    demo.hidden = true;
+  }
+
   // Every link works without the API. Hydration only adds convenient direct ZIPs.
   const repo = 'https://github.com/kevinberg84/toyland-kb09';
   const controller = new AbortController();

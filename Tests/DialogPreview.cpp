@@ -80,7 +80,8 @@ int main(int argc,char** argv){
         menuCapture(false);menuCapture(true);
         alert("external-audio","External audio + envelope follower",kb09_gui::externalAudioMessage,I::InfoIcon,{"OK"});
         alert("update-consent","KB-09 updates",kb09_gui::updateConsentMessage,I::QuestionIcon,{"Allow","No thanks"});
-        alert("update-available","KB-09 update available",kb09_gui::updateAvailableMessage("1.1.2"),I::InfoIcon,{"Show update instructions","Not now"});
+        alert("update-available-existing-190","KB-09 update available","Version 1.10.0 is available. Installation is manual and usually takes a few minutes, depending on your download speed. KB-09 will show you the steps.\n\nYour saved presets and audio/MIDI preferences are kept. Save your current patch before closing KB-09. Installing this update is optional.",I::InfoIcon,{"Show update instructions","Not now"});
+        alert("update-available","KB-09 update available",kb09_gui::updateAvailableMessage("1.10.0", "- Fix the false error after loading a valid preset.\n- Add a top shadow to the performance bay.\n- Show release highlights in future update prompts."),I::InfoIcon,{"Show update instructions","Not now"});
         alert("up-to-date","KB-09 updates","You're up to date!",I::InfoIcon,{"OK"});
         alert("update-error","KB-09 updates","Could not check for updates. Please try again later.",I::InfoIcon,{"OK"});
         alert("updates-unconfigured","KB-09 updates","Update announcements are not configured in this build yet.",I::InfoIcon,{"OK"});

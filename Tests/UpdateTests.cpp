@@ -23,4 +23,13 @@ auto feed=juce::JSON::parse(R"({"windows":"https://drive.google.com/file/d/legac
 check(kb09::Updates::selectDownloadLink(feed,"windows").contains("github.com"));
 feed.getDynamicObject()->removeProperty("releasePage");check(kb09::Updates::selectDownloadLink(feed,"windows").contains("drive.google.com"));
 feed.getDynamicObject()->setProperty("releasePage","https://example.com/untrusted");check(kb09::Updates::selectDownloadLink(feed,"windows").isEmpty());
+auto notes=juce::JSON::parse(R"({"changes":["Fix the false preset-load warning.","Refresh the update guide.",17,"","Third item","Fourth item","Ignored fifth item"]})");
+const auto summary=kb09::Updates::releaseSummary(notes);
+check(summary.contains("false preset-load warning"));
+check(summary.contains("Fourth item")&&!summary.contains("Ignored fifth item"));
+check(kb09::Updates::releaseSummary(juce::var{}).isEmpty());
+check(kb09_gui::updateAvailableMessage("1.9.1",summary).contains("What's new"));
+check(kb09_gui::updateAvailableMessage("1.9.1").contains("release notes"));
+auto huge=juce::JSON::parse("{\"changes\":[\""+juce::String::repeatedString("x",10000)+"\"]}");
+check(kb09::Updates::releaseSummary(huge).length()<=162);
 std::cout<<"Update version checks: "<<fails<<" failures\n";return fails?1:0;}

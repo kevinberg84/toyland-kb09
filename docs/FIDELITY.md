@@ -1,6 +1,6 @@
 # KB-09 sound model: evidence and limits
 
-Release scope: **KB-09 1.9.0**. Reviewed 19 October 2026 against the released engine, current manual, recording-comparison provenance and release validation. This page describes the current model; older design and investigation records are historical evidence, not current release specifications.
+Release scope: **KB-09 1.10.0**. Reviewed 26 October 2026 against the released engine, current manual, recording-comparison provenance and release validation. This page describes the current model; older design and investigation records are historical evidence, not current release specifications.
 
 ## What comes from the SH-09 documentation
 
@@ -41,10 +41,12 @@ The 1.8.2 physical slider changes give PORTAMENTO and selected modulation-depth 
 
 ## Release validation and platform limits
 
-The [1.9.0 validation record](VALIDATION_1.9.0.md) distinguishes automated checks, actual hosted tests and user observations. Windows standalone/VST3, universal Mac standalone/AU/VST3 and Linux x86-64 standalone were built and checked in their documented environments. These checks do not establish every DAW, device, desktop or sample-rate/buffer combination.
+The [1.10.0 validation record](VALIDATION_1.10.0.md) distinguishes automated checks, actual hosted tests and user observations. Windows standalone/VST3, universal Mac standalone/AU/VST3 and Linux x86-64 standalone were built and checked in their documented environments. These checks do not establish every DAW, device, desktop or sample-rate/buffer combination.
 
-Linux physical desktop, audio and MIDI confirmation remains outstanding. Mac builds are ad-hoc signed, not Apple-notarized; Intel slices were architecture-checked but not run on a physical Intel Mac. These are current distribution limits, separate from evidence about the sound model.
+Linux standalone operation has been reported on Arch/KDE with XWayland and PipeWire. The startup-dialog fix has passed automated checks, but confirmation of that specific fix on the physical desktop remains outstanding. Other desktop/audio/MIDI combinations are not covered by that report. Mac builds are ad-hoc signed, not Apple-notarized; Intel slices were architecture-checked but not run on a physical Intel Mac. These are current distribution limits, separate from evidence about the sound model.
 
 ## Reading older engineering notes
 
-[DSP design notes](DSP_DESIGN.md), [the 1.2.0 filter candidate](SH09_FILTER_MODEL.md), dated investigations and versioned validation files document how the implementation developed. Their version-specific proposals, counts, measurements and pending statuses must not be read as current release claims. Use this page, the [current manual](manual/index.html) and [current validation](VALIDATION_1.9.0.md) for the released instrument.
+[DSP design notes](DSP_DESIGN.md), [the 1.2.0 filter candidate](SH09_FILTER_MODEL.md), dated investigations and versioned validation files document how the implementation developed. Their version-specific proposals, counts, measurements and pending statuses must not be read as current release claims. Use this page, the [current manual](manual/index.html) and [current validation](VALIDATION_1.10.0.md) for the released instrument.
+
+Version 1.10.0 fixes preset-load feedback, adds the approved bay shadow and update-summary display, and refreshes distribution guidance. It retains the 1.9.0 sound engine and patch/automation meanings.

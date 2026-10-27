@@ -8,7 +8,7 @@ import struct
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-NAME = 'Toyland KB-09 for Linux (Standalone Only) - UNVERIFIED'
+NAME = 'Toyland KB-09 for Linux (Standalone Only)'
 
 def main():
     parser = argparse.ArgumentParser()

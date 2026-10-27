@@ -3957,6 +3957,18 @@ public:
          g.addTransform(juce::AffineTransform::translation(float(performanceBayOffsetX),float(headerH-topStripReduction)));
          paintPowerLamp(g);}
     }
+    void paintOverChildren(juce::Graphics& g) override {
+        // Approved continuation of the keyboard contact shade across the bay.
+        // The bay begins six design units above the keys; keep that upper strip
+        // shaded and align the remaining fade with Keyboard::paint.
+        const auto keyBounds=getLocalArea(&keyboard,keyboard.getLocalBounds()).toFloat();
+        const float top=keyBounds.getY()-6.f;
+        juce::ColourGradient shade(juce::Colours::black.withAlpha(.68f),0,top,
+            juce::Colours::transparentBlack,0,top+26.f,false);
+        shade.addColour(6.0/26.0,juce::Colours::black.withAlpha(.68f));
+        g.setGradientFill(shade);
+        g.fillRect(juce::Rectangle<float>(55.f,top,keyBounds.getX()-55.f,26.f));
+    }
     void beginMaterialBank(const juce::String& key,float scale,int initialStage) {
         const bool enabled=bool(getProperties().getWithDefault("backgroundMaterialWarmup186",isShowing()&&getPeer()!=nullptr));
         if(!enabled||(materialBank&&materialBank->key==key))return;

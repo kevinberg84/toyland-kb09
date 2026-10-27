@@ -7,7 +7,9 @@ inline const juce::String externalAudioMessage =
     "Select ENV FOL'R in VCF, lower CUTOFF and raise ENV for touch-sensitive filtering.\n\n"
     "The follower listens before the EXT fader.";
 inline const juce::String updateConsentMessage = "Allow an update check when you open KB-09, every 90 days? Checks send no presets or personal information. Downloads always require your click.";
-inline juce::String updateAvailableMessage(const juce::String& version) {
-    return "Version "+version+" is available. Installation is manual and usually takes a few minutes, depending on your download speed. KB-09 will show you the steps.\n\nYour saved presets and audio/MIDI preferences are kept. Save your current patch before closing KB-09. Installing this update is optional.";
+inline juce::String updateAvailableMessage(const juce::String& version, const juce::String& summary = {}) {
+    return "Version "+version+" is available."
+        + (summary.isNotEmpty() ? "\n\nWhat's new\n" + summary : "\n\nSee the release notes on the download page for what changed.")
+        + "\n\nInstallation is manual and usually takes a few minutes, depending on your download speed. KB-09 will show you the steps.\n\nYour saved presets and audio/MIDI preferences are kept. Save your current patch before closing KB-09. Installing this update is optional.";
 }
 }

@@ -120,7 +120,7 @@ jobs:
           cp docs/open-me-first-mac.html "$folder/OPEN ME FIRST!.html"
           ditto -c -k --sequesterRsrc --keepParent "$folder" 'Toyland KB-09 for Mac.zip'
       # Release assets are not subject to the Actions artifact-storage quota.
-      # Keep this transfer private as a draft; Drive remains the shared download.
+      # Keep this transfer private as a draft; publish the final GitHub release separately.
       - name: Preserve validated Mac package as a draft release asset
         env:
           GH_TOKEN: ${{ github.token }}
@@ -132,7 +132,7 @@ jobs:
           test -n "$version"
           tag="build-transfer-$version"
           if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Private package transfer $version" --notes "Validated build transfer for the Google Drive release; not a published GitHub release."
+            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Private package transfer $version" --notes "Validated internal build transfer; the public GitHub release is published separately."
           fi
           gh release upload "$tag" 'Toyland KB-09 for Mac.zip' --clobber
 

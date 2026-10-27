@@ -30,6 +30,8 @@ public:
 
     void savePreset();
     void loadPreset();
+    // Explicitly selected file, with the same completion/error UI as LOAD.
+    void loadPreset(const juce::File& selectedFile);
     bool isDialogOpen() const noexcept;
 
     // Copied when a dialog is opened. Called on success or error, not cancellation.

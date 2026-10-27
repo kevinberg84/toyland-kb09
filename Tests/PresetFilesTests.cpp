@@ -173,6 +173,40 @@ int main(int argc, char** argv)
     }
     expect(bankPassed && processor.getNumPrograms() == 24, "all 24 factory programs repeatedly save/overwrite/load exactly");
 
+    // Exercise the actual LOAD completion/alert path, not just disk decoding.
+    {
+        juce::LookAndFeel_V4 testTheme;
+        testTheme.setUsingNativeAlertWindows(false);
+        juce::Component owner;
+        owner.setLookAndFeel(&testTheme);
+        owner.setBounds(20,20,640,480);
+        owner.addToDesktop(juce::ComponentPeer::windowIsTemporary);
+        owner.setVisible(true);
+        const auto before = values(processor);
+        const int modals = juce::Component::getNumCurrentlyModalComponents();
+        bool completed = false, loadedOK = false;
+        {
+            sh09::PresetFiles ui(processor, owner);
+            ui.onCompleted = [&](const juce::Result& result, const juce::File&, bool loading) {
+                completed = true; loadedOK = result.wasOk() && loading;
+            };
+            ui.loadPreset(saved.getFile());
+            juce::MessageManager::getInstance()->runDispatchLoopUntil(80);
+            expect(completed && loadedOK, "selected valid LOAD reports successful completion");
+            expect(juce::Component::getNumCurrentlyModalComponents() == modals,
+                   "successful LOAD does not show the false Preset not loaded alert (issue 3)");
+            expect(values(processor) == before, "successful LOAD restores all saved parameter values");
+            completed = loadedOK = false;
+            ui.loadPreset(saved.getFile().withFileExtension("missing.kb09"));
+            juce::MessageManager::getInstance()->runDispatchLoopUntil(80);
+            expect(completed && !loadedOK, "missing selected preset reports failure");
+            expect(juce::Component::getNumCurrentlyModalComponents() > modals,
+                   "genuine LOAD failure still displays its warning");
+            expect(values(processor) == before, "failed selected LOAD keeps the current patch intact");
+        }
+        juce::MessageManager::getInstance()->runDispatchLoopUntil(30);
+    }
+
     // Optional path to the actual bank exported by Tests/Host.cpp. This tests real
     // JUCE-host output, in addition to synthetic edge cases above.
     if (argc > 1)

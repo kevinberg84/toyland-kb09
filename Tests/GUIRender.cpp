@@ -3704,6 +3704,29 @@ int main(int argc, char** argv) {
         std::cout<<"Exported 20 native screw-material close-ups\n";
         return 0;
     }
+    if(juce::String(argv[1]).startsWith("--approved-bay-shadow-review=")||juce::String(argv[1]).startsWith("--release-panel-export=")) {
+        const bool releasePanels=juce::String(argv[1]).startsWith("--release-panel-export=");
+        const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));
+        directory.createDirectory();
+        auto object=std::make_unique<SH09Processor>();auto& processor=*object;
+        processor.setCurrentProgram(1);processor.prepareToPlay(sampleRate,blockSize);
+        std::unique_ptr<juce::AudioProcessorEditor,EditorDeleter> editor(processor.createEditorAndMakeActive(),{&processor});
+        editor->setVisible(true);editor->setSize(releasePanels?2880:1483,releasePanels?1620:764);settleEditor();
+        auto* keys=findComponent(*editor,"keyboard");if(!keys)return 1;
+        const auto bounds=editor->getLocalArea(keys,keys->getLocalBounds()).toFloat();
+        const float scale=bounds.getHeight()/float(keys->getHeight());
+        const float left=bounds.getX()-float(keys->getX()-55)*scale;
+        for(int age=0;age<5;++age) {
+            setParameter(processor,"age",float(age)*.25f);settleEditor();
+            const auto image=editor->createComponentSnapshot(editor->getLocalBounds(),true,releasePanels?1.f:2.f);
+            const auto stem="approved-"+juce::String(age);
+            if(!writePNG(image,directory.getChildFile(stem+".png")))return 1;
+            const auto crop=juce::Rectangle<float>(left-10.f,bounds.getY()-25.f,500.f*scale,115.f*scale).toNearestInt();
+            if(!releasePanels&&!writePNG(image.getClippedImage(crop*2),directory.getChildFile(stem+"-close.png")))return 1;
+        }
+        std::cout<<"Approved production shadow exports complete.\n";
+        return 0;
+    }
     if(juce::String(argv[1]).startsWith("--appearance-review=")) {
         const auto directory=juce::File::getCurrentWorkingDirectory().getChildFile(juce::String(argv[1]).fromFirstOccurrenceOf("=",false,false));
         directory.createDirectory();

@@ -267,7 +267,7 @@ struct PresetFiles::Impl : std::enable_shared_from_this<Impl>
             settings->setValue("lastSavedFolder", file.getParentDirectory().getFullPathName());
             settings->saveIfNeeded();
         }
-        else message = juce::AlertWindow::showScopedAsync(
+        else if (result.failed()) message = juce::AlertWindow::showScopedAsync(
             juce::MessageBoxOptions{}.withIconType(juce::MessageBoxIconType::WarningIcon)
                 .withTitle(loading ? "Preset not loaded" : "Preset not saved")
                 .withMessage(result.getErrorMessage() + (loading ? "\n\nYour current patch has not changed." : ""))
@@ -363,6 +363,14 @@ PresetFiles::~PresetFiles()
 }
 void PresetFiles::savePreset() { impl->open(false, onCompleted, onCancelled); }
 void PresetFiles::loadPreset() { impl->open(true, onCompleted, onCancelled); }
+void PresetFiles::loadPreset(const juce::File& selectedFile) {
+    JUCE_ASSERT_MESSAGE_THREAD
+    if (!impl->alive() || impl->busy) return;
+    impl->completion = onCompleted;
+    impl->cancelled = onCancelled;
+    impl->message.close();
+    impl->selected(selectedFile, true);
+}
 bool PresetFiles::isDialogOpen() const noexcept { return impl->busy; }
 
 } // namespace sh09

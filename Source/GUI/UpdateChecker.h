@@ -22,6 +22,19 @@ public:
         const auto legacy=json[platform].toString();
         return validDownloadLink(legacy)?legacy:juce::String();
     }
+    // Optional, bounded plain-text release highlights. Old feeds remain valid.
+    static juce::String releaseSummary(const juce::var& json) {
+        juce::StringArray lines;
+        if (const auto* changes = json["changes"].getArray()) {
+            for (const auto& entry : *changes) {
+                if (!entry.isString()) continue;
+                const auto line = entry.toString().replaceCharacters("\r\n\t", "   ").trim().substring(0, 160);
+                if (line.isNotEmpty()) lines.add("- " + line);
+                if (lines.size() == 4) break;
+            }
+        }
+        return lines.joinIntoString("\n");
+    }
     static Updates& instance() { static Updates service; return service; }
     bool configured() const {
 #if KB09_LOCAL_DSP_TEST || KB09_LOCAL_MIDI_TEST
@@ -66,10 +79,10 @@ public:
         auto reservation=kb09_gui::StartupDialogReservation::tryAcquire();
         if(!reservation)return;
         if(!ready.exchange(false))return;
-        juce::String v,link,message;bool manual=false,ok=false;
-        {juce::ScopedLock lock(resultLock);v=newVersion;link=download;message=error;manual=resultManual;ok=success;}
+        juce::String v,link,message,summary;bool manual=false,ok=false;
+        {juce::ScopedLock lock(resultLock);v=newVersion;link=download;message=error;summary=highlights;manual=resultManual;ok=success;}
         if(ok&&!manual){settings->setValue("lastSuccess",double(juce::Time::currentTimeMillis()));settings->saveIfNeeded();}
-        if(link.isNotEmpty())juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::InfoIcon,"KB-09 update available",kb09_gui::updateAvailableMessage(v),"Show update instructions","Not now",owner,juce::ModalCallbackFunction::create([reservation,link, safe=juce::Component::SafePointer<juce::Component>(owner)](int yes){if(yes)UpdateInstructions::show(link,safe.getComponent());}));
+        if(link.isNotEmpty())juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::InfoIcon,"KB-09 update available",kb09_gui::updateAvailableMessage(v,summary),"Show update instructions","Not now",owner,juce::ModalCallbackFunction::create([reservation,link, safe=juce::Component::SafePointer<juce::Component>(owner)](int yes){if(yes)UpdateInstructions::show(link,safe.getComponent());}));
         else if(manual)juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,"KB-09 updates",ok?"You're up to date!":"Could not check for updates. Please try again later.","OK",owner,juce::ModalCallbackFunction::create([reservation](int){}));
     }
     static bool validVersion(const juce::String& v) {
@@ -94,7 +107,7 @@ private:
     void run() override {
         juce::InterProcessLock lease("ToylandKB09UpdateRequest");
         if(!lease.enter(0))return;
-        bool ok=false;juce::String v,link;
+        bool ok=false;juce::String v,link,summary;
         auto stream=juce::URL(versionEndpoint).createInputStream(juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress).withConnectionTimeoutMs(5000).withNumRedirectsToFollow(3));
         if(stream&&!threadShouldExit()) {
             juce::MemoryBlock body;char block[2048];
@@ -107,13 +120,14 @@ private:
 #else
                 link=selectDownloadLink(json,"windows");
 #endif
+                summary=releaseSummary(json);
                 if(!validDownloadLink(link))ok=false;
                 if(!ok||!newer(v,JucePlugin_VersionString))link.clear();
             }
         }
-        {juce::ScopedLock lock(resultLock);success=ok;resultManual=manualCheck;newVersion=v;download=link;}ready=true;
+        {juce::ScopedLock lock(resultLock);success=ok;resultManual=manualCheck;newVersion=v;download=link;highlights=summary;}ready=true;
     }
     std::unique_ptr<juce::PropertiesFile> settings;juce::CriticalSection resultLock;
-    std::atomic<bool> ready{false},prompting{false};bool manualCheck=false,resultManual=false,success=false;juce::String newVersion,download,error;
+    std::atomic<bool> ready{false},prompting{false};bool manualCheck=false,resultManual=false,success=false;juce::String newVersion,download,error,highlights;
 };
 }

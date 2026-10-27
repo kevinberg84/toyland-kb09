@@ -22,7 +22,7 @@ Open **Assets** on the release page and choose your operating system's ZIP. You 
 | --- | --- | --- |
 | Windows 64-bit | Standalone, VST3 | ASIO, WASAPI and DirectSound |
 | macOS 12 or later | Standalone, AU, VST3 | Universal Apple Silicon / Intel; ad-hoc signed, not notarized |
-| Linux x86-64 | Standalone | ALSA and JACK, including PipeWire's JACK layer; physical desktop/audio/MIDI testing remains **UNVERIFIED** |
+| Linux x86-64 | Standalone | ALSA and JACK, including PipeWire's JACK layer; operation reported on Arch/KDE with XWayland and PipeWire. Physical-desktop confirmation of the startup-dialog fix is pending. |
 
 1. Download and extract the whole ZIP.
 2. Open **OPEN ME FIRST!.html** and follow the instructions for your system.
@@ -32,7 +32,7 @@ Each package includes an illustrated **User Manual.html**, installation helpers 
 
 ## Made a cool sound? Send me your presets!
 
-**I'd love to hear what you make with KB-09!** [Send me your presets](https://github.com/kevinberg84/toyland-kb09/issues/new?template=share_a_preset.yml)—your sound might become a **factory preset in the next update!**
+**I'd love to hear what you make with KB-09!** [Send me your presets](https://github.com/kevinberg84/toyland-kb09/issues/new?template=share_a_preset.yml). Your sound might become a **factory preset in the next update!**
 
 Save your sound as a `.kb09` preset, put it in a ZIP and attach it to the submission. Tell me a little about the sound and how you'd like to be credited. Submissions are public and require a free GitHub account.
 
@@ -46,6 +46,14 @@ Save your sound as a `.kb09` preset, put it in a ZIP and attach it to the submis
 - External-audio filtering and envelope following where the format and host expose the input.
 
 This is an approximation, not a claim of measured hardware equivalence. See the [model's evidence and limits](docs/FIDELITY.md).
+
+## What's new in 1.10.0
+
+- Fixed the false error message after successfully loading a preset, in standalone and plug-in formats.
+- Added the approved top shadow across the performance bay, including its upper strip.
+- Added release highlights to future update prompts. Existing 1.9.0 installations retain their original prompt for this upgrade.
+- Refreshed the manual and installation guides with the official download page and clearer Linux verification wording.
+- The project website now includes a full KB-09 audio demo and cookie-free visitor analytics.
 
 ## What's new in 1.9.0
 

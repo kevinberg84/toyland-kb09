@@ -5,15 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Toyland KB-09: a free Roland SH-09-inspired monophonic synthesizer with five ages of character. Windows and Mac plug-ins and standalone; Linux standalone only.">
   <meta name="theme-color" content="#f8f6ef">
-  <meta property="og:title" content="Toyland KB-09 — Free for everyone, forever.">
+  <meta property="og:title" content="Toyland KB-09: Free for everyone, forever.">
   <meta property="og:description" content="A free recreation of Kevin's Roland SH-09, with a few cool extras. Meet the synth, explore five ages, and download the latest release.">
   <meta property="og:image" content="https://kevinberg84.github.io/toyland-kb09/assets/social-preview.jpg">
   <meta property="og:url" content="https://kevinberg84.github.io/toyland-kb09/">
   <meta name="twitter:card" content="summary_large_image">
-  <title>Toyland KB-09 — Free Roland SH-09-inspired synthesizer</title>
+  <title>Toyland KB-09: Free Roland SH-09-inspired synthesizer</title>
   <link rel="icon" href="assets/icon.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=nowrap-sh09">
-  <script src="site.js" defer></script>
+  <link rel="stylesheet" href="styles.css?v=played-only">
+  <script src="site.js?v=played-only" defer></script>
+  <meta name="goatcounter-endpoint" content="https://toyland-kb09.goatcounter.com/count">
+  <script src="analytics.js?v=goatcounter-verified" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -24,10 +26,21 @@
   <main id="main">
     <section class="hero shell" id="top" aria-labelledby="hero-title">
       <p class="eyebrow"><span class="led" aria-hidden="true"></span> ONE VOICE. PLENTY OF CHARACTER.</p>
-      <div class="hero-heading"><h1 id="hero-title">Toyland <span>KB-09</span></h1><span class="free-stamp">FREE<br>FOREVER</span></div>
+      <div class="hero-heading"><h1 id="hero-title">Toyland <span>KB<span class="title-hyphen">-</span>09</span></h1><span class="free-stamp"><span class="free-stamp-label">FREE<br>FOREVER</span></span></div>
       <p class="hero-description">A free recreation of Kevin's Roland <span class="no-wrap">SH-09</span>,<br class="desktop-break"> with a few cool extras.</p>
       <div class="hero-actions"><a class="button primary" href="#download">Download KB-09 <span aria-hidden="true">↓</span></a><a class="text-link" href="manual/">Explore the illustrated manual <span aria-hidden="true">↗</span></a></div>
       <p class="platform-line">Windows · macOS · Linux standalone only</p>
+      <section class="demo-player" aria-labelledby="demo-title">
+        <div><p class="demo-kicker">HEAR IT IN ACTION</p><h2 id="demo-title">Listen to the KB-09</h2><p class="demo-length">Audio demo · 3:38</p></div>
+        <audio controls preload="metadata" aria-label="KB-09 audio demo"><source src="assets/kb09-demo.mp3" type="audio/mpeg">Your browser does not support the audio player. <a href="assets/kb09-demo.mp3">Listen to the demo</a>.</audio>
+        <div class="demo-controls" role="group" aria-label="Audio demo controls" hidden>
+          <button class="demo-toggle" type="button" aria-label="Play demo"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="play-icon" d="M7 4 L21 12 L7 20 Z"/><path class="pause-icon" d="M6 4 H10 V20 H6 Z M14 4 H18 V20 H14 Z"/></svg></button>
+          <output class="demo-time" aria-label="Playback time">0:00 / 3:38</output>
+          <input class="demo-seek" type="range" min="0" max="218" step="0.1" value="0" aria-label="Seek through the demo" aria-valuetext="0:00 of 3:38">
+          <button class="demo-mute" type="button" aria-label="Mute demo" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9 H7 L13 4 V20 L7 15 H3 Z"/><path class="sound-waves" d="M16 8 Q20 12 16 16 M19 5 Q25 12 19 19" fill="none" stroke="currentColor" stroke-width="2"/><path class="mute-cross" d="M16 9 L22 15 M22 9 L16 15" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+        </div>
+        <p class="demo-production"><strong>Every sound was made with KB-09, even the kick and hi-hats.</strong> Only some EQ, compression, reverb, delay and panning were added for effect.</p>
+      </section>
       <div class="instrument" id="preview">
         <div class="preview-top"><span class="eyebrow">FIVE AGES. ONE INSTRUMENT.</span><button class="subtle" id="enlarge-panel" type="button">Enlarge panel <span aria-hidden="true">↗</span></button></div>
         <div class="panel-frames" aria-label="KB-09 appearance preview">
@@ -51,7 +64,7 @@
         </div>
       </div>
       <p class="age-callout">AGE changes the sound as well as the appearance.</p>
-      <p class="preview-caption">Watch it age—or pause and choose a condition. This is a visual preview, with no audio.</p>
+      <p class="preview-caption">Watch it age, or pause and choose a condition. This panel preview is visual only; it does not change the audio demo.</p>
       <noscript><p>Enable JavaScript to cycle through all five appearances. Downloads and the manual work without it.</p></noscript>
     </section>
 
@@ -73,21 +86,21 @@
     <section class="download-section shell" id="download" aria-labelledby="download-title">
       <div class="section-heading"><p class="eyebrow">YOUR NEXT SOUND STARTS HERE</p><h2 id="download-title">Free for everyone,<br>forever.</h2><p>Make music, share it with your friends, and enjoy!</p></div>
       <div class="downloads"><p class="release-label" id="release-label">Get the latest release</p>
-        <a class="platform-download" data-platform="windows" href="https://github.com/kevinberg84/toyland-kb09/releases/latest"><span><b>Windows</b><small>64-bit · Standalone + VST3</small></span><span aria-hidden="true">↓</span></a>
-        <a class="platform-download" data-platform="mac" href="https://github.com/kevinberg84/toyland-kb09/releases/latest"><span><b>macOS</b><small>12+ · Apple Silicon + Intel · Standalone, AU + VST3</small></span><span aria-hidden="true">↓</span></a>
-        <a class="platform-download" data-platform="linux" href="https://github.com/kevinberg84/toyland-kb09/releases/latest"><span><b>Linux</b><small>x86-64 · Standalone only</small></span><span aria-hidden="true">↓</span></a>
+        <a class="platform-download" data-platform="windows" data-goatcounter-click="download-windows" data-goatcounter-title="Windows download button" href="https://github.com/kevinberg84/toyland-kb09/releases/latest"><span><b>Windows</b><small>64-bit · Standalone + VST3</small></span><span aria-hidden="true">↓</span></a>
+        <a class="platform-download" data-platform="mac" data-goatcounter-click="download-mac" data-goatcounter-title="Mac download button" href="https://github.com/kevinberg84/toyland-kb09/releases/latest"><span><b>macOS</b><small>12+ · Apple Silicon + Intel · Standalone, AU + VST3</small></span><span aria-hidden="true">↓</span></a>
+        <a class="platform-download" data-platform="linux" data-goatcounter-click="download-linux" data-goatcounter-title="Linux download button" href="https://github.com/kevinberg84/toyland-kb09/releases/latest"><span><b>Linux</b><small>x86-64 · Standalone only</small></span><span aria-hidden="true">↓</span></a>
         <p class="download-note">Download the ZIP for your system, extract the whole folder, and open <b>OPEN ME FIRST!.html</b>. No GitHub account is needed to download.</p>
-        <p class="download-note">Windows is unsigned; Mac is ad-hoc signed and not notarized. Follow the included installation guide. Linux desktop, audio and MIDI testing on physical hardware remains unverified.</p>
+        <p class="download-note">Windows is unsigned; Mac is ad-hoc signed and not notarized. Follow the included installation guide. Linux operation has been reported on Arch/KDE with XWayland and PipeWire; physical-desktop confirmation of the startup-dialog fix is still pending.</p>
         <a class="text-link" href="https://github.com/kevinberg84/toyland-kb09/releases/latest">Release notes &amp; all downloads ↗</a>
       </div>
     </section>
 
-    <section class="preset-section shell" aria-labelledby="preset-title"><div><p class="eyebrow">LET'S HEAR WHAT YOU MAKE</p><h2 id="preset-title">Made a cool sound?<br>Send me your presets!</h2></div><div><p>I'd love to hear what you make with KB-09! Your sound might become a factory preset in the next update.</p><a class="button primary" href="https://github.com/kevinberg84/toyland-kb09/issues/new?template=share_a_preset.yml">Share your preset <span aria-hidden="true">↗</span></a><p class="small-print">Save your sound as a <code>.kb09</code> preset, put it in a ZIP and attach it to the submission—GitHub accepts ZIP attachments, but not .kb09 files directly. Tell me about the sound and how you'd like to be credited. Submissions are public and require a free GitHub account.</p></div></section>
+    <section class="preset-section shell" aria-labelledby="preset-title"><div><p class="eyebrow">LET'S HEAR WHAT YOU MAKE</p><h2 id="preset-title">Made a cool sound?<br>Send me your presets!</h2></div><div><p>I'd love to hear what you make with KB-09! Your sound might become a factory preset in the next update.</p><a class="button primary" href="https://github.com/kevinberg84/toyland-kb09/issues/new?template=share_a_preset.yml">Share your preset <span aria-hidden="true">↗</span></a><p class="small-print">Save your sound as a <code>.kb09</code> preset, put it in a ZIP and attach it to the submission. GitHub accepts ZIP attachments, but not .kb09 files directly. Tell me about the sound and how you'd like to be credited. Submissions are public and require a free GitHub account.</p></div></section>
 
     <section class="help-section shell" aria-labelledby="help-title"><div><p class="eyebrow">A LITTLE HELP, IF YOU NEED IT</p><h2 id="help-title">Get playing.</h2></div><div class="help-links"><a href="manual/"><span><b>Read the manual</b><small>Installation, the panel, sound design and the whole story.</small></span><span aria-hidden="true">↗</span></a><a href="https://github.com/kevinberg84/toyland-kb09/issues/new?template=bug_report.yml"><span><b>Report a bug</b><small>Tell me your version, system and what happened.</small></span><span aria-hidden="true">↗</span></a><a href="https://github.com/kevinberg84/toyland-kb09"><span><b>Explore the source</b><small>Code, build instructions and development notes on GitHub.</small></span><span aria-hidden="true">↗</span></a><p class="small-print">Bug reports and attachments are public. Hide personal information before posting. Reports require a free GitHub account.</p></div></section>
   </main>
   <footer class="shell">
-    <div class="license-note"><p>Use KB-09 free, including to make and sell music. You can study, modify and share the software free of charge; selling the software or modified versions, charging for access, or bundling it as a paid software component is prohibited.</p><p><a href="https://github.com/kevinberg84/toyland-kb09/blob/main/LICENSE.md">KB-09 Free Use and No Sale License</a> · <a href="https://github.com/kevinberg84/toyland-kb09/blob/main/docs/LICENSING.md">Licensing details</a>. The source is available; this is not an OSI open-source license. Third-party components retain their own licenses.</p><p>KB-09 is an unofficial personal project, unaffiliated with and not endorsed by Roland Corporation. Roland and SH-09 identify the instrument that inspired this project.</p></div>
+    <div class="license-note"><p id="analytics-notice">This website uses <a href="https://www.goatcounter.com/privacy">GoatCounter</a> for cookie-free visitor statistics and download-button click counts. Click counts are not completed downloads.</p><p>Use KB-09 free, including to make and sell music. You can study, modify and share the software free of charge; selling the software or modified versions, charging for access, or bundling it as a paid software component is prohibited.</p><p><a href="https://github.com/kevinberg84/toyland-kb09/blob/main/LICENSE.md">KB-09 Free Use and No Sale License</a> · <a href="https://github.com/kevinberg84/toyland-kb09/blob/main/docs/LICENSING.md">Licensing details</a>. The source is available; this is not an OSI open-source license. Third-party components retain their own licenses.</p><p>KB-09 is an unofficial personal project, unaffiliated with and not endorsed by Roland Corporation. Roland and SH-09 identify the instrument that inspired this project.</p></div>
     <div class="dedication"><p>This project is dedicated to the memory of<br><strong>Jaime Castillo</strong><br>(AKA Spliff Roland)<br>1982–2022</p></div>
   </footer>
   <dialog id="image-dialog" aria-label="Enlarged image"><div class="dialog-toolbar"><span id="image-title">Panel preview</span><button type="button" id="close-dialog">Close <span aria-hidden="true">×</span></button></div><div class="dialog-scroll"><img id="dialog-image" alt=""></div><p class="dialog-hint">Scroll to inspect the image. Press Escape or Close to return.</p></dialog>

@@ -1,7 +1,7 @@
 """Generate OS-specific guides from the shared editorial source (standard library only)."""
 import re
 
-PLATFORMS = {'windows': 'Windows', 'mac': 'Mac', 'linux': 'Linux — UNVERIFIED'}
+PLATFORMS = {'windows': 'Windows', 'mac': 'Mac', 'linux': 'Linux'}
 
 def span(text, identifier):
     opening = re.search(r'<(\w+)\b[^>]*\bid="' + re.escape(identifier) + r'"[^>]*>', text)
@@ -50,7 +50,7 @@ def document(source, platform):
     text = text.replace("<title>Toyland KB-09 — A recreation of Kevin's Roland SH-09</title>", f'<title>Toyland KB-09 — {PLATFORMS[platform]} User Manual</title>')
     text = re.sub(r'<aside class="notice"><strong>KB-09 \d+\.\d+\.\d+\.</strong>.*?</aside>',
         '<aside class="notice"><strong>KB-09 '+release+' for '+PLATFORMS[platform]+'.</strong> '+
-        ('This download includes the standalone app and '+('VST3.' if platform=='windows' else 'AU and VST3.') if platform!='linux' else 'This download is standalone only. Real Arch desktop audio and MIDI playback remain unverified.')+'</aside>',text,count=1,flags=re.S)
+        ('This download includes the standalone app and '+('VST3.' if platform=='windows' else 'AU and VST3.') if platform!='linux' else 'This download is standalone only. Operation has been reported on Arch Linux with KDE, XWayland and PipeWire. Physical-desktop confirmation of the startup-dialog fix is still pending.')+'</aside>',text,count=1,flags=re.S)
     # Cross-platform hosts stay collapsible, with only applicable recipes.
     if platform == 'windows':
         for identifier in ('garageband','future-hosts'):
@@ -91,7 +91,7 @@ def document(source, platform):
         text=text.replace('KB-09 automatically uses CC1 for VCO MOD in a DAW; other controller faders are mapped by the host.','')
         # Remove DAW routing recipes while retaining the filter explanation.
         a=text.index('<h3 id="external-live">');b=text.index('</section>',a)
-        text=text[:a]+'<h3>In the standalone</h3><p>Select the input connected to your source in AUDIO / MIDI, raise EXT, and choose External Filter or External Follower. Avoid sending the output back into its own input. Audio-server routing and MIDI playback on a real Arch desktop remain unverified.</p>\n'+text[b:]
+        text=text[:a]+'<h3>In the standalone</h3><p>Select the input connected to your source in AUDIO / MIDI, raise EXT, and choose External Filter or External Follower. Avoid sending the output back into its own input. Audio-server routing and device compatibility depend on your setup; include those details when reporting a problem.</p>\n'+text[b:]
         text=text.replace("KB-09's VST3 instrument exposes an <strong>External Input</strong> auxiliary audio bus. A DAW may call this a sidechain. Here the incoming audio can become part of the sound, passing through the mixer, filter and amplifier.", 'The standalone can process audio from the input selected in AUDIO / MIDI. That source passes through the mixer, filter and amplifier.')
         text=text.replace('Confirm the host enabled the auxiliary input','Confirm the intended audio input is selected in AUDIO / MIDI')
         text=text.replace('Play in your DAW or use the standalone with a MIDI keyboard.', 'Play the standalone with a MIDI keyboard or the onscreen keys.')
@@ -105,7 +105,7 @@ def document(source, platform):
         text=text.replace('In a DAW, use the host’s mapping system; MIDI MAP is available only in standalone.','')
         text=text.replace('In a DAW, record or edit MIDI Pitch Bend envelopes; the bender position is a MIDI performance control, while its VCO and VCF depth faders are automatable plug-in parameters.', 'The wheel’s position is a performance control; the VCO and VCF depth faders set its sensitivities.')
         text=text.replace('Check track monitoring, MIDI input, VOLUME and the DAW output.', 'Check the selected audio output, MIDI input and VOLUME.')
-        text=replace(text,'blurry-display','<details id="blurry-display"><summary>The display is blurry or low resolution</summary><p>Keep your monitor at its native resolution and use KB-09’s S/M/L buttons for size. Reopen the app after a desktop scaling change. On Wayland, XWayland scaling can affect appearance; compare an X11 session if available. Include your desktop/session, scale and resolution in a <a href="#feedback">bug report</a>. Real desktop behavior remains unverified.</p></details>')
+        text=replace(text,'blurry-display','<details id="blurry-display"><summary>The display is blurry or low resolution</summary><p>Keep your monitor at its native resolution and use KB-09’s S/M/L buttons for size. Reopen the app after a desktop scaling change. On Wayland, XWayland scaling can affect appearance; compare an X11 session if available. Include your desktop/session, scale and resolution in a <a href="#feedback">bug report</a>. Behavior can vary with desktop and display configuration; the startup-dialog fix still awaits physical-desktop confirmation.</p></details>')
         text=text.replace('note the DAW version,','note')
         text=text.replace('a host can constrain a plug-in\'s requested dimensions.', 'a desktop can constrain a window’s requested dimensions.')
         text=text.replace('Select the input connected to your source in AUDIO / MIDI, raise EXT,', 'Select the input connected to your source in AUDIO / MIDI and turn off <strong>Mute audio input</strong> only when the routing avoids feedback. Raise EXT,')
