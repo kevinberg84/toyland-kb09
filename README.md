@@ -62,7 +62,7 @@ This is an approximation, not a claim of measured hardware equivalence. See the 
 - Startup update and shortcut questions wait for one another. This fixes the overlapping-dialog race; the reported KDE desktop freeze still needs confirmation on a physical system.
 - Updated manual, installation guides and GitHub bug reporting.
 
-Read the [release notes](docs/RELEASE_NOTES.md) and [validation record](docs/VALIDATION_1.9.0.md) for testing scope and remaining limitations.
+Read the [release notes](docs/RELEASE_NOTES.md) and [validation record](docs/VALIDATION_1.10.0.md) for testing scope and remaining limitations.
 
 ## Help and bug reports
 

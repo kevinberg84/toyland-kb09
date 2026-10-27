@@ -140,5 +140,5 @@ int main(int argc,char** argv){
         stage.removeChildComponent(&settings);
     }
     std::cout<<"PASS audio input/output rows: MIDI content reachable and Close separate at 1800x1400, 1024x768, 800x600.\n";
-    std::cout<<"PASS all message and action-button fonts match Save/Don't Save. Rendered 63 actual dialog/menu states. No update requests, device changes, installs or release changes.\n";
+    std::cout<<"PASS all message and action-button fonts match Save/Don't Save. Rendered 66 actual dialog/menu states. No update requests, device changes, installs or release changes.\n";
 }
