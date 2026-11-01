@@ -1,4 +1,4 @@
-# Toyland KB-09 1.10.0 - source/build instructions
+# Toyland KB-09 1.10.1 - source/build instructions
 
 JUCE **9.0.2** is an external dependency; this project does not modify it. The development toolchain is MSVC 19.51.36260.0, Visual Studio 18 2026, the Windows SDK and C++20. CMake's generator selects the compiler without changing PowerShell execution policy.
 
@@ -24,7 +24,7 @@ The project adds the generated `Info.txt` dependency to JUCE 9's Windows resourc
 
 ## Targets and source contents
 
-The internal target remains `SH09`; the public product is **Toyland KB-09**. CMake sets version 1.10.0. Windows builds **VST3** and **Standalone** by default. Native macOS builds also enable **AU** by default; **AAX Native** is an explicit option on Windows/macOS. Target configuration does not establish that a particular format was built, signed or host-tested. Consult [VALIDATION.md](VALIDATION.md) for the actual release artifacts. `Assets/Branding.h` defines the visible identity; compatibility keys remain unchanged as described in [REBRANDING.md](REBRANDING.md).
+The internal target remains `SH09`; the public product is **Toyland KB-09**. CMake sets version 1.10.1. Windows builds **VST3** and **Standalone** by default. Native macOS builds also enable **AU** by default; **AAX Native** is an explicit option on Windows/macOS. Target configuration does not establish that a particular format was built, signed or host-tested. Consult [VALIDATION.md](VALIDATION.md) for the actual release artifacts. `Assets/Branding.h` defines the visible identity; compatibility keys remain unchanged as described in [REBRANDING.md](REBRANDING.md).
 
 | Target | Release output relative to build directory |
 |---|---|
@@ -133,3 +133,7 @@ For a clean-build comparison, close hosts using the binary, configure a new empt
 Release x64 builds use Windows system libraries and the Microsoft C++ x64 runtime. Dependency reports include `MSVCP140.dll`, `VCRUNTIME140.dll` and `VCRUNTIME140_1.dll`; inspect the final module's imports when packaging. The destination PC needs the corresponding release runtime. Python/NumPy serve the optional offline calibration tools, not plugin playback.
 
 JUCE licensing applies independently to distribution. The installed JUCE 9 `LICENSE.md` offers its commercial EULA or AGPLv3 route; this project does not choose a commercial licence for the user. The bundled AAX `SDK/LICENSE.txt` offers the Avid SDK agreement/privacy terms or GPLv3; the bundled AU SDK license is Apache 2.0. Preserve the dependency notices and actual source license files in any source kit. Including source does not establish that all third-party distribution obligations or signing requirements are satisfied, and this build does not assign a new license to Kevin's project. Validator binaries are development tools, not runtime dependencies. No third-party emulator source or copied commercial plugin artwork is incorporated; runtime artwork combines project-generated assets informed by user-supplied reference photographs with user-supplied marks and native drawing.
+
+## VST3 project recall
+
+CMake generates a project-local VST3 wrapper with the host-driven factory-parameter echo correction. The shared JUCE checkout remains unchanged; configuration fails if the expected upstream callback layout changes. See `cmake/KB09VST3ProgramGuard.cmake` and `Tests/VST3ProgramRecall/README.md` for the protocol regression.
