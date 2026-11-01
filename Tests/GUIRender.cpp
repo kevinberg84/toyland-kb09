@@ -801,8 +801,22 @@ void checkKnobMetalAging(SH09Processor& processor,juce::Component& editor,
     if(slider==nullptr)return;
     const float originalAge=processor.state.getRawParameterValue("age")->load();
     const auto rotary=slider->getRotaryParameters();
+    auto* keyboard=findComponent(editor,"keyboard");
+    auto* panel=keyboard?keyboard->getParentComponent():nullptr;
+    if(panel==nullptr)throw std::runtime_error("Knob AGE capture requires the production panel");
     const auto capture=[&](float age) {
-        setParameter(processor,"age",age);settleEditor();
+        setParameter(processor,"age",age);
+        // Like cheek/bender captures, wait for the deferred material commit.
+        // A fixed dispatch slice can capture the preceding AGE on a busy runner.
+        const auto target=kb09_gui::appearanceAge(age);
+        const auto deadline=juce::Time::getMillisecondCounterHiRes()+2000.0;
+        do {settleEditor();}
+        while((bool(panel->getProperties().getWithDefault("conditionRenderDeferred",false))
+               ||std::abs(float(panel->getProperties().getWithDefault("displayedConditionAge",-1.f))-target)>.00001f)
+              &&juce::Time::getMillisecondCounterHiRes()<deadline);
+        if(bool(panel->getProperties().getWithDefault("conditionRenderDeferred",false))
+           ||std::abs(float(panel->getProperties().getWithDefault("displayedConditionAge",-1.f))-target)>.00001f)
+            throw std::runtime_error("AGE stage did not commit before knob capture");
         juce::Image image(juce::Image::ARGB,120*controlRenderScale,120*controlRenderScale,true,juce::SoftwareImageType());
         juce::Graphics g(image);g.fillAll(juce::Colour(0xff232927));
         g.addTransform(juce::AffineTransform::scale(float(controlRenderScale)));
