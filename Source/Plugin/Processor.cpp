@@ -92,6 +92,10 @@ void SH09Processor::setCurrentProgram(int index){
  currentProgram.store(index);
  if(midiMap)midiMap->resetPickup();
  programRevision.fetch_add(1,std::memory_order_release);
+ // Publish only after the complete patch and program identity agree. Hosts
+ // may save their Program parameter separately from our full state chunk.
+ updateHostDisplay(juce::AudioProcessorListener::ChangeDetails{}
+                       .withProgramChanged(true).withNonParameterStateChanged(true));
 }
 sh09::Controls SH09Processor::readControls() const noexcept {
  sh09::Controls c;

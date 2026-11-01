@@ -163,6 +163,41 @@ void timingAndBlocks(Host& h){
     for(int s=0;s<255;++s)before+=std::abs(last.getSample(0,s));
     h.checks.expect(finite&&before<1e-9,"last-sample MIDI note does not start early");
 }
+void programRecallWithPendingEdits(Host& h){
+    if(!h.find("cutoff"))return;
+    // Inspect the processor's persistent state, not the host parameter cache:
+    // Renoise can retain the correct cached value while the sound has reverted.
+    const auto processorState=[](const juce::MemoryBlock& bytes){
+        juce::MemoryBlock component=bytes;
+        if(auto wrapper=juce::AudioProcessor::getXmlFromBinary(bytes.getData(),int(bytes.getSize()));
+           wrapper&&wrapper->hasTagName("VST3PluginState"))
+            if(auto* chunk=wrapper->getChildByName("IComponent"))
+                component.fromBase64Encoding(chunk->getAllSubText());
+        const std::string data(static_cast<const char*>(component.getData()),component.getSize());
+        const auto start=data.find("<SH09State");
+        const auto end=data.find("</SH09State>",start);
+        return start!=std::string::npos&&end!=std::string::npos
+            ?data.substr(start,end+12-start):std::string{};
+    };
+    h.restore();h.prepare();bool retained=true;
+    for(int program=0;program<h.p.getNumPrograms();++program){
+        h.p.setCurrentProgram(program);h.flush();
+        h.set("cutoff",.123456f);h.set("resonance",.245678f);h.set("release",.456789f);h.flush();
+        juce::MemoryBlock saved;h.p.getStateInformation(saved);
+        h.p.setCurrentProgram((program+1)%h.p.getNumPrograms());h.flush();
+        // Match the host's load order: program first, full chunk second, then
+        // deliver the still-pending audio parameter queue.
+        h.p.setCurrentProgram(program);
+        h.p.setStateInformation(saved.getData(),int(saved.getSize()));
+        h.flush();juce::MemoryBlock actual;h.p.getStateInformation(actual);
+        const auto expected=processorState(saved);
+        const bool ok=!expected.empty()&&processorState(actual)==expected;
+        if(!ok)std::cout<<"RECALL MISMATCH program="<<program<<'\n';
+        retained &= ok;
+    }
+    h.checks.expect(retained,"all 24 custom patches survive program-before-state recall and the pending audio queue");
+    h.restore();
+}
 void stateAndPrograms(Host& h){
     h.restore();h.prepare();int index=0;
     for(auto* param:h.p.getParameters())if(param->isAutomatable()&&!param->isMetaParameter()&&!param->isBoolean()){
@@ -372,7 +407,9 @@ int main(int argc,char** argv){
     for(auto* d:descriptions){juce::String error;auto plugin=format->createInstanceFromDescription(*d,48000,256,error);checks.expect(plugin!=nullptr,"instantiate actual VST3: "+error);if(!plugin)continue;
         std::cout<<"Loaded "<<d->name<<" using "<<juce::SystemStats::getJUCEVersion()<<'\n';Host h(*plugin,checks);
         if(argc>2&&juce::String(argv[2])=="--rate-host284") {rateHostProbe(h);continue;}
+        if(argc>2&&juce::String(argv[2])=="--program-recall") {programRecallWithPendingEdits(h);continue;}
         matrix(h);midiMappings(h);timingAndBlocks(h);stateAndPrograms(h);if(h.find("extLevel"))externalTests(h);else std::cout<<"SKIP SH-09-specific external checks for lab component\n";
+        programRecallWithPendingEdits(h);
         stress(h,seconds);editors(h);
         if(argc>4&&juce::String(argv[3])=="--export-presets")exportPresets(h,juce::File(juce::String::fromUTF8(argv[4])));
         h.stop();bool repeatedOK=true;

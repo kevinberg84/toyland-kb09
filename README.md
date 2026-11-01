@@ -47,6 +47,11 @@ Save your sound as a `.kb09` preset, put it in a ZIP and attach it to the submis
 
 This is an approximation, not a claim of measured hardware equivalence. See the [model's evidence and limits](docs/FIDELITY.md).
 
+## What's new in 1.10.1
+
+- Fixed saved custom patches being overwritten during VST3 project recall, including the reproduced Renoise failure.
+- Corrected factory-program synchronization with the host while preserving the sound engine, panel and controls.
+
 ## What's new in 1.10.0
 
 - Fixed the false error message after successfully loading a preset, in standalone and plug-in formats.
@@ -62,7 +67,7 @@ This is an approximation, not a claim of measured hardware equivalence. See the 
 - Startup update and shortcut questions wait for one another. This fixes the overlapping-dialog race.
 - Updated manual, installation guides and GitHub bug reporting.
 
-Read the [release notes](docs/RELEASE_NOTES.md) and [validation record](docs/VALIDATION_1.10.0.md) for testing scope and remaining limitations.
+Read the [release notes](docs/RELEASE_NOTES.md) and [validation record](docs/VALIDATION_1.10.1.md) for testing scope and remaining limitations.
 
 ## Help and bug reports
 

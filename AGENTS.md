@@ -1,5 +1,19 @@
 # Project instructions
 
+## Update the installed VST3 after releases
+
+- Explicit instruction on October 31, 2026: whenever a new public version is released, replace Kevin's installed Windows VST3 with that latest release as part of completing the release.
+- Verify the installed binary version and hash against the released package. Publishing alone does not complete the update.
+- Preserve a rollback copy. Do not replace a loaded plug-in while a DAW is using it; arrange a safe close first.
+- Keep experimental issue-test builds separate unless Kevin explicitly requests installing one.
+- Explicit instruction on October 31, 2026: normally test only KB-09's latest versions. When investigating a bug report, test both the version used by the reporter when the bug occurs and the latest version. Verify the actual loaded plug-in path, version and checksum before testing; do not silently test an older installed build. Keep reporter-version baselines and current candidate results clearly identified.
+
+## Statistics checks must not control the user's computer
+
+- Explicit instruction on October 31, 2026: check downloads, demo plays, referral sources and countries through APIs or background access only.
+- Do not move the cursor, send keyboard input, change browser focus, or use native UI automation to check statistics. Keyboard navigation is not an acceptable workaround.
+- If background access cannot retrieve a statistic, report that limitation and any available verified figures; do not take over the user's browser.
+
 ## Preserve approved behavior; clarify ambiguity
 
 Kevin explicitly requested on October 18, 2026:

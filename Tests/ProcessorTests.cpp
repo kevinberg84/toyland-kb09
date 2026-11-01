@@ -104,6 +104,16 @@ int main(){
  // must notify the editor that its custom filename no longer describes the sound.
  {
   SH09Processor presets;presets.setCurrentProgram(9);
+  struct ProgramObserver : juce::AudioProcessorListener {
+   int notifications=0,hostProgram=-1;float hostCutoff=-1;bool dirty=false;
+   void audioProcessorParameterChanged(juce::AudioProcessor*,int,float) override {}
+   void audioProcessorChanged(juce::AudioProcessor* source,const ChangeDetails& details) override {
+    if(!details.programChanged)return;
+    ++notifications;hostProgram=source->getCurrentProgram();dirty=details.nonParameterStateChanged;
+    hostCutoff=static_cast<SH09Processor*>(source)->state.getParameter("cutoff")->getValue();
+   }
+  } observer;
+  presets.addListener(&observer);
   auto* cutoff=presets.state.getParameter("cutoff");const float factory=cutoff->getValue();
   const auto loadedRevision=presets.getProgramRevision();
   cutoff->setValueNotifyingHost(factory<.5f?.83f:.17f);
@@ -111,6 +121,8 @@ int main(){
   expect(custom!=factory&&presets.getProgramRevision()==loadedRevision,
          "ordinary sound edits preserve the current preset-label revision");
   presets.setCurrentProgram(9);
+  expect(observer.notifications==1&&observer.hostProgram==9&&observer.hostCutoff==factory&&observer.dirty,
+         "factory reselect publishes final program and complete patch to the host and marks state dirty");
   expect(presets.getCurrentProgram()==9&&cutoff->getValue()==factory&&presets.getProgramRevision()!=loadedRevision,
          "reapplying the same factory index restores its sound and advances the preset-label revision");
   const auto factoryRevision=presets.getProgramRevision();
@@ -118,6 +130,18 @@ int main(){
   expect(presets.getCurrentProgram()==9&&std::abs(cutoff->getValue()-custom)<1.0e-6f
          &&presets.getProgramRevision()!=factoryRevision,
          "custom state restore at the same index advances revision after restoring its sound");
+  const int countBeforeInvalid=observer.notifications;
+  presets.setCurrentProgram(-1);presets.setCurrentProgram(presets.getNumPrograms());
+  expect(observer.notifications==countBeforeInvalid&&std::abs(cutoff->getValue()-custom)<1.0e-6f,
+         "invalid program requests do not notify the host or alter the patch");
+  bool synchronized=true;
+  for(int program=0;program<presets.getNumPrograms();++program) {
+   const int before=observer.notifications;presets.setCurrentProgram(program);
+   synchronized &= observer.notifications==before+1&&observer.hostProgram==program&&observer.dirty
+                   &&observer.hostCutoff==cutoff->getValue();
+  }
+  expect(synchronized,"all 24 factory selections synchronize the host after applying their final values");
+  presets.removeListener(&observer);
  }
  p.setCurrentProgram(0);p.setPowerEnabled(false);p.setPowerEnabled(true);process();
  p.queueKeyboard(60,true,false);p.queueKeyboard(64,true,false);process();

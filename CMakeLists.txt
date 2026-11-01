@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.22)
-project(SH09 VERSION 1.10.0 LANGUAGES C CXX)
+project(SH09 VERSION 1.10.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(JUCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../JUCE" CACHE PATH "JUCE source directory")
 add_subdirectory("${JUCE_DIR}" JUCE)
+include(cmake/KB09VST3ProgramGuard.cmake)
+kb09_guard_vst3_program_changes()
 
 # AU is a native macOS target. AAX is opt-in because building its binary does
 # not supply the AAX digital signature required by normal Pro Tools releases.

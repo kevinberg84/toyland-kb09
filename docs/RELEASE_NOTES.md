@@ -1,3 +1,11 @@
+# 1.10.1 - Toyland KB-09
+
+- Fixed saved custom patches being overwritten during VST3 project recall, including the reproduced Renoise 3.5.4 failure.
+- Factory selections publish their final program identity to the host, retaining the earlier correction reported successful in Reason 12.
+- Controller readouts, explicit factory selection and normal automation are preserved.
+
+Sound-engine equations, parameter IDs, preset format, approved artwork, POWER timing and independent RATE rendering are unchanged. See VALIDATION_1.10.1.md for validation scope.
+
 # 1.10.0 - Toyland KB-09
 
 - Fixed a false "Preset not loaded" warning after a preset successfully loads. Genuine load failures still show a warning and preserve the current patch. The shared fix covers standalone and plug-in formats.
