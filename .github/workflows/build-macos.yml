@@ -78,6 +78,7 @@ jobs:
           name: KB-09-Mac-cheek-validation
           path: |
             gui-validation/cheek-age-*.png
+            gui-validation/knob_wear_*.png
             gui-validation/GUIRender.log
           if-no-files-found: ignore
           retention-days: 7

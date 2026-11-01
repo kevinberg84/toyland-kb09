@@ -907,7 +907,10 @@ void checkKnobMetalAging(SH09Processor& processor,juce::Component& editor,
             checks.expect(texture[3]<4,"aged collar dulls without the knob top's pitted corrosion texture");
         }
     }
-    checks.expect(changedPixels(capture(.6999f),capture(.7001f),2)==0,
+    const auto adjacentBelow=capture(.6999f),adjacentAbove=capture(.7001f);
+    writePNG(adjacentBelow,directory.getChildFile("knob_wear_adjacent_below.png"));
+    writePNG(adjacentAbove,directory.getChildFile("knob_wear_adjacent_above.png"));
+    checks.expect(changedPixels(adjacentBelow,adjacentAbove,2)==0,
                   "adjacent AGE values keep knob pit locations fixed without an abrupt damage event");
     checks.expect(changedPixels(images[0],capture(0.0f))==0,
                   "lowering AGE restores identical clean knob pixels after maximum wear");
